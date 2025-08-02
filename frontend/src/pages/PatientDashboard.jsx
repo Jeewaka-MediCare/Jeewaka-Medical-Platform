@@ -130,6 +130,7 @@ export default function PatientDashBoard() {
       <div className="mb-8 text-center">
         <h1 className="text-4xl font-bold mb-2 text-primary">Find Your Doctor</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
+          Fuck YOU
           Browse our extensive network of qualified healthcare professionals and book your appointment today
         </p>
       </div>
