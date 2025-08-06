@@ -7,15 +7,18 @@ import { defineConfig } from "vite"
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   preview: {
-  port: 8080,
-  strictPort: true,
- },
+    port: 3000,
+    strictPort: true,
+    host: true,
+    origin: "http://0.0.0.0:3000",
+  },
+  // For development server (npm run dev)
   server: {
-  port: 8080,
-  strictPort: true,
-  host: true,
-  origin: "http://0.0.0.0:8080",
- },
+    port: 3000,
+    strictPort: true,
+    host: true,  // Same as host: "0.0.0.0"
+    origin: "http://0.0.0.0:3000",
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

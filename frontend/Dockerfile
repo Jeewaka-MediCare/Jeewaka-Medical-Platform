@@ -1,20 +1,19 @@
 # Use Node Alpine image
 FROM node:lts-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy only package files first (for layer caching)
+# Copy package files first (for better caching)
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy all source code
+# Copy source code
 COPY . .
 
-# Expose Vite's dev server port
-EXPOSE 8080
+# Expose port
+EXPOSE 3000
 
-# Run the dev server
+# Start development server
 CMD ["npm", "run", "dev"]
