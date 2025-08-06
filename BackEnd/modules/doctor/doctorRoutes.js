@@ -5,11 +5,17 @@ import {
   getDoctorById,
   updateDoctor,
   deleteDoctor,
-  getDoctorByUuid
+  getDoctorByUuid,
+  searchDoctors,
+  getFilterOptions
 } from './doctorControllers.js';
 
 const doctorRoutes = express.Router();
 
+// Search doctors with filters
+doctorRoutes.get('/search', searchDoctors);
+// Get filter options for dropdowns
+doctorRoutes.get('/filter-options', getFilterOptions);
 // Create a new doctor
 doctorRoutes.post('/', createDoctor);
 // Get all doctors
