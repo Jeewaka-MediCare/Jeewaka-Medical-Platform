@@ -1,15 +1,23 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useAuthStore from '../../store/authStore';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { user, userRole, initializeAuth } = useAuthStore();
+
+  // Initialize auth state from AsyncStorage
+  useEffect(() => {
+    initializeAuth();
+  }, []);
 
   return (
     <Tabs
@@ -29,15 +37,22 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Doctors',
+          tabBarIcon: ({ color }) => <Ionicons name="medical" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="appointments"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Appointments',
+          tabBarIcon: ({ color }) => <Ionicons name="calendar" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
         }}
       />
     </Tabs>
