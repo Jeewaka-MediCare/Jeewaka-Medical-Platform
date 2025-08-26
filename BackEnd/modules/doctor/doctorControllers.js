@@ -51,6 +51,179 @@ export const getDoctorByUuid = async (req, res) => {
   }
 }
 
+// Search doctors with multiple filters
+export const searchDoctors = async (req, res) => {
+  try {
+    const { 
+      name, 
+      specialization, 
+      subSpecialization, 
+      minExperience, 
+      maxExperience, 
+      language,
+      minFee,
+      maxFee,
+      gender,
+      page = 1, 
+      limit = 10,
+      sortBy = 'name',
+      sortOrder = 'asc'
+    } = req.query;
+
+    // Build search query
+    let searchQuery = {};
+
+    // Name search (case-insensitive regex)
+    if (name) {
+      searchQuery.name = { $regex: name, $options: 'i' };
+    }
+
+    // Specialization search (case-insensitive regex)
+    if (specialization) {
+      searchQuery.specialization = { $regex: specialization, $options: 'i' };
+    }
+
+    // Sub-specialization search (case-insensitive regex)
+    if (subSpecialization) {
+      searchQuery.subSpecializations = { 
+        $elemMatch: { $regex: subSpecialization, $options: 'i' } 
+      };
+    }
+
+    // Years of experience filter
+    if (minExperience || maxExperience) {
+      searchQuery.yearsOfExperience = {};
+      if (minExperience) searchQuery.yearsOfExperience.$gte = parseInt(minExperience);
+      if (maxExperience) searchQuery.yearsOfExperience.$lte = parseInt(maxExperience);
+    }
+
+    // Language search (case-insensitive regex)
+    if (language) {
+      searchQuery.languagesSpoken = { 
+        $elemMatch: { $regex: language, $options: 'i' } 
+      };
+    }
+
+    // Consultation fee filter
+    if (minFee || maxFee) {
+      searchQuery.consultationFee = {};
+      if (minFee) searchQuery.consultationFee.$gte = parseFloat(minFee);
+      if (maxFee) searchQuery.consultationFee.$lte = parseFloat(maxFee);
+    }
+
+    // Gender filter
+    if (gender) {
+      searchQuery.gender = { $regex: gender, $options: 'i' };
+    }
+
+    // Sorting configuration
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    // Pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Execute search query
+    const doctors = await Doctor.find(searchQuery)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .select('-__v'); // Exclude version field
+
+    // Get total count for pagination
+    const totalDoctors = await Doctor.countDocuments(searchQuery);
+    const totalPages = Math.ceil(totalDoctors / parseInt(limit));
+
+    // Response
+    res.json({
+      success: true,
+      data: {
+        doctors,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages,
+          totalDoctors,
+          hasNext: parseInt(page) < totalPages,
+          hasPrev: parseInt(page) > 1,
+          limit: parseInt(limit)
+        },
+        filters: {
+          name,
+          specialization,
+          subSpecialization,
+          minExperience,
+          maxExperience,
+          language,
+          minFee,
+          maxFee,
+          gender
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Search Doctors Error:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to search doctors", 
+      details: error.message 
+    });
+  }
+}
+
+// Get unique values for filter dropdowns
+export const getFilterOptions = async (req, res) => {
+  try {
+    const [specializations, subSpecializations, languages] = await Promise.all([
+      Doctor.distinct('specialization').then(results => results.filter(Boolean)),
+      Doctor.distinct('subSpecializations').then(results => results.filter(Boolean)),
+      Doctor.distinct('languagesSpoken').then(results => results.filter(Boolean))
+    ]);
+
+    // Get experience range
+    const experienceStats = await Doctor.aggregate([
+      {
+        $group: {
+          _id: null,
+          minExperience: { $min: '$yearsOfExperience' },
+          maxExperience: { $max: '$yearsOfExperience' }
+        }
+      }
+    ]);
+
+    // Get fee range
+    const feeStats = await Doctor.aggregate([
+      {
+        $group: {
+          _id: null,
+          minFee: { $min: '$consultationFee' },
+          maxFee: { $max: '$consultationFee' }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        specializations: specializations.sort(),
+        subSpecializations: subSpecializations.sort(),
+        languages: languages.sort(),
+        experienceRange: experienceStats[0] || { minExperience: 0, maxExperience: 0 },
+        feeRange: feeStats[0] || { minFee: 0, maxFee: 0 },
+        genders: ['Male', 'Female', 'Other']
+      }
+    });
+
+  } catch (error) {
+    console.error('Get Filter Options Error:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to get filter options", 
+      details: error.message 
+    });
+  }
+}
+
 // Get doctor by ID
 export const getDoctorById = async (req, res) => {
   try {
