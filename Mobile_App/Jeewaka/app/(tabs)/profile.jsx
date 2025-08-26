@@ -81,9 +81,9 @@ export default function Profile() {
       
       <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
-          {user.profilePicture ? (
+          {user.profile ? (
             <Image 
-              source={{ uri: user.profilePicture }} 
+              source={{ uri: user.profile }} 
               style={styles.avatar} 
               resizeMode="cover"
             />

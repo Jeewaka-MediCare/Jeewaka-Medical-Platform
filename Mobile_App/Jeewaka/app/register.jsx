@@ -112,7 +112,7 @@ export default function Register() {
       const token = await userCredential.user.getIdToken();
       
       // Register user in backend
-      const { data } = await api.post('/auth/register', {
+      const { data } = await api.post('/api/auth/register', {
         name: patientForm.name,
         email: patientForm.email,
         phone: patientForm.phone,
@@ -158,7 +158,7 @@ export default function Register() {
       const token = await userCredential.user.getIdToken();
       
       // Register doctor in backend
-      const { data } = await api.post('/auth/register', {
+      const { data } = await api.post('/api/auth/register', {
         name: doctorForm.name,
         email: doctorForm.email,
         phone: doctorForm.phone,

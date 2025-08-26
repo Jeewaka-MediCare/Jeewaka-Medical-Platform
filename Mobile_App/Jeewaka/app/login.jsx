@@ -51,7 +51,7 @@ export default function Login() {
       
       // Get user data from API
       const token = await userCredential.user.getIdToken();
-      const { data } = await api.post('/auth/login', {
+      const { data } = await api.post('/api/auth/login', {
         email: formData.email,
       }, {
         headers: { Authorization: `Bearer ${token}` },

@@ -3,6 +3,8 @@ import { FlatList, StyleSheet, View, Text, ActivityIndicator } from 'react-nativ
 import { DoctorCard } from './DoctorCard';
 
 export const DoctorList = ({ doctors, loading, error }) => {
+  console.log('DoctorList received:', { doctorsCount: doctors?.length, loading, error });
+  
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -40,7 +42,7 @@ export const DoctorList = ({ doctors, loading, error }) => {
           id={item._id}
           name={item.name}
           specialization={item.specialization}
-          profile={item.profilePicture}
+          profile={item.profile} // Backend uses 'profile' not 'profilePicture'
           consultationFee={item.consultationFee || 0}
           avgRating={item.avgRating || 0}
           totalReviews={item.totalReviews || 0}
@@ -51,13 +53,18 @@ export const DoctorList = ({ doctors, loading, error }) => {
       )}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.listContainer}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
     />
   );
 };
 
 const styles = StyleSheet.create({
   listContainer: {
-    padding: 16,
+    paddingVertical: 8,
+    paddingBottom: 20,
+  },
+  separator: {
+    height: 8,
   },
   centerContainer: {
     flex: 1,

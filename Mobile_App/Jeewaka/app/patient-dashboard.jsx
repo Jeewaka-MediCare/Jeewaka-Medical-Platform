@@ -40,7 +40,7 @@ export default function PatientDashboard() {
     
     setLoading(true);
     try {
-      const { data } = await api.get(`/sessions/patient/${user._id}`);
+      const { data } = await api.get(`/api/session/patient/${user._id}`);
       
       // Filter appointments into upcoming and past
       const now = new Date();
@@ -89,7 +89,7 @@ export default function PatientDashboard() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await api.post(`/sessions/cancel/${appointmentId}`);
+              await api.post(`/api/session/cancel/${appointmentId}`);
               Alert.alert('Success', 'Appointment canceled successfully');
               fetchAppointments();
             } catch (error) {

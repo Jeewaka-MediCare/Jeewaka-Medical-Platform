@@ -8,6 +8,9 @@
     "scheme": "jeewaka",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "BACKEND_URL": "http://192.168.137.1:5000"
+    },
     "ios": {
       "supportsTablet": true
     },

@@ -72,7 +72,7 @@ export default function BookSession() {
     setLoading(true);
     
     try {
-      const { data } = await api.post('/sessions/book', {
+      const { data } = await api.post('/api/session/book', {
         sessionId,
         doctorId,
         slotIndex: selectedSlot.id,

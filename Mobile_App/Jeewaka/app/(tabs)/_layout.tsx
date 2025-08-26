@@ -9,6 +9,7 @@ import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useAuthStore from '../../store/authStore';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -20,7 +21,8 @@ export default function TabLayout() {
   }, []);
 
   return (
-    <Tabs
+    <ErrorBoundary>
+      <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
@@ -56,5 +58,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </ErrorBoundary>
   );
 }

@@ -62,7 +62,7 @@ export default function DoctorDashboard() {
     
     setLoading(true);
     try {
-      const { data } = await api.get(`/sessions/doctor/${user._id}/appointments`);
+      const { data } = await api.get(`/api/session/doctor/${user._id}/appointments`);
       setAppointments(data.appointments || []);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -79,7 +79,7 @@ export default function DoctorDashboard() {
     
     setLoading(true);
     try {
-      const { data } = await api.get(`/sessions/doctor/${user._id}`);
+      const { data } = await api.get(`/api/session/doctor/${user._id}`);
       setSessions(data.sessions || []);
     } catch (error) {
       console.error('Error fetching sessions:', error);
@@ -93,7 +93,7 @@ export default function DoctorDashboard() {
   // Fetch hospitals
   const fetchHospitals = async () => {
     try {
-      const { data } = await api.get('/hospitals');
+      const { data } = await api.get('/api/hospital');
       setHospitals(data.hospitals || []);
     } catch (error) {
       console.error('Error fetching hospitals:', error);
@@ -144,7 +144,7 @@ export default function DoctorDashboard() {
     
     setLoading(true);
     try {
-      await api.post('/sessions/create', {
+      await api.post('/api/session/create', {
         ...newSession,
         doctorId: user._id,
         date: format(newSession.date, 'yyyy-MM-dd'),

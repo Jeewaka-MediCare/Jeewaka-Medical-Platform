@@ -16,7 +16,7 @@ import useAuthStore from '../../store/authStore';
 import { format, parseISO } from 'date-fns';
 
 export default function DoctorDetails() {
-  const { id } = useLocalSearchParams();
+  const { id, doctorData } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
   
@@ -25,18 +25,60 @@ export default function DoctorDetails() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('about');
+
+  // Parse fallback data if available
+  const fallbackData = doctorData ? JSON.parse(doctorData) : null;
   
   // Fetch doctor details
   useEffect(() => {
     const fetchDoctorDetails = async () => {
+      // If we have fallback data, use it immediately to improve UX
+      if (fallbackData && fallbackData.doctor) {
+        setDoctor(fallbackData.doctor);
+        setRatingSummary(fallbackData.ratingSummary || null);
+        setSessions(fallbackData.sessions || []);
+        setLoading(false);
+      }
+      
       try {
-        const { data } = await api.get(`/doctors/${id}`);
-        setDoctor(data.doctor);
-        setRatingSummary(data.ratingSummary);
-        setSessions(data.sessions || []);
+        const { data } = await api.get(`/api/doctor/${id}`);
+        console.log('Doctor details received:', data);
+        
+        // Backend returns doctor object directly, not wrapped in data.doctor
+        setDoctor(data);
+        setRatingSummary(data.ratingSummary || null);
+        
+        // Sessions are references in doctor model, need separate API call
+        // For now, use empty array until we implement proper session fetching
+        setSessions([]);
+        
+        // TODO: Add separate API call to fetch doctor sessions
+        // const sessionsResponse = await api.get(`/api/session/doctor/${id}`);
+        // setSessions(sessionsResponse.data || []);
       } catch (error) {
         console.error('Error fetching doctor details:', error);
-        Alert.alert('Error', 'Failed to load doctor information');
+        
+        // Try to use fallback data if available
+        if (fallbackData && fallbackData.doctor) {
+          console.log('Using fallback data for doctor');
+          setDoctor(fallbackData.doctor);
+          setRatingSummary(fallbackData.ratingSummary || null);
+          setSessions(fallbackData.sessions || []);
+        } else {
+          // Check if it's a network error or server error
+          if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+            Alert.alert(
+              'Connection Error', 
+              'Unable to connect to the server. Please check your internet connection and try again.',
+              [
+                { text: 'Retry', onPress: () => fetchDoctorDetails() },
+                { text: 'Go Back', onPress: () => router.back() }
+              ]
+            );
+          } else {
+            Alert.alert('Error', 'Failed to load doctor information');
+          }
+        }
       } finally {
         setLoading(false);
       }
@@ -71,10 +113,20 @@ export default function DoctorDetails() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <Text>Loading...</Text>
+        <Text>Loading doctor details...</Text>
       </SafeAreaView>
     );
   }
+
+  if (!doctor) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <Text>Doctor not found</Text>
+      </SafeAreaView>
+    );
+  }
+
+  console.log('Rendering doctor:', doctor?.name, 'Specialization:', doctor?.specialization);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -98,8 +150,8 @@ export default function DoctorDetails() {
         <View style={styles.heroSection}>
           <Image
             source={
-              doctor?.profilePicture 
-                ? { uri: doctor.profilePicture } 
+              doctor?.profile 
+                ? { uri: doctor.profile } 
                 : require('../../assets/images/doctor-placeholder.png')
             }
             style={styles.doctorImage}
@@ -109,7 +161,24 @@ export default function DoctorDetails() {
           <View style={styles.heroOverlay}>
             <View style={styles.heroContent}>
               <Text style={styles.doctorName}>{doctor?.name}</Text>
-              <Text style={styles.doctorSpecialty}>{doctor?.specialization}</Text>
+              <Text style={styles.doctorSpecialty}>
+                {doctor?.specialization}
+                {doctor?.subSpecializations && doctor.subSpecializations.length > 0 && 
+                  ` • ${doctor.subSpecializations[0]}`
+                }
+              </Text>
+              
+              {/* Qualifications and Experience Badge */}
+              {(doctor?.qualifications?.length > 0 || doctor?.yearsOfExperience) && (
+                <View style={styles.credentialsBadge}>
+                  <Text style={styles.credentialsText}>
+                    {doctor?.qualifications?.join(', ')}
+                    {doctor?.yearsOfExperience && 
+                      ` • ${doctor.yearsOfExperience}+ years experience`
+                    }
+                  </Text>
+                </View>
+              )}
               
               <View style={styles.ratingContainer}>
                 <Ionicons name="star" size={18} color="#FFD700" />
@@ -152,10 +221,112 @@ export default function DoctorDetails() {
         <View style={styles.contentContainer}>
           {selectedTab === 'about' && (
             <View>
+              {/* Doctor Bio */}
+              {doctor?.bio && doctor.bio.trim() && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>About Doctor</Text>
+                  <Text style={styles.bioText}>{doctor.bio}</Text>
+                </View>
+              )}
+
+              {/* Qualifications */}
               <View style={styles.infoSection}>
-                <Text style={styles.sectionTitle}>Education</Text>
-                {doctor?.education && doctor.education.length > 0 ? (
-                  doctor.education.map((edu, index) => (
+                <Text style={styles.sectionTitle}>Qualifications</Text>
+                {doctor?.qualifications && doctor.qualifications.length > 0 ? (
+                  <View style={styles.qualificationsContainer}>
+                    {doctor.qualifications.map((qualification, index) => (
+                      <View key={index} style={styles.qualificationBadge}>
+                        <MaterialCommunityIcons name="certificate" size={16} color="#2563EB" />
+                        <Text style={styles.qualificationText}>{qualification}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={styles.noDataText}>No qualification information available</Text>
+                )}
+              </View>
+
+              {/* Professional Info */}
+              <View style={styles.infoSection}>
+                <Text style={styles.sectionTitle}>Professional Information</Text>
+                
+                <View style={styles.professionalInfoGrid}>
+                  <View style={styles.infoCard}>
+                    <MaterialCommunityIcons name="clock-outline" size={20} color="#2563EB" />
+                    <Text style={styles.infoCardLabel}>Experience</Text>
+                    <Text style={styles.infoCardValue}>
+                      {doctor?.yearsOfExperience ? `${doctor.yearsOfExperience} years` : 'Not specified'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.infoCard}>
+                    <MaterialCommunityIcons name="card-account-details" size={20} color="#2563EB" />
+                    <Text style={styles.infoCardLabel}>Registration</Text>
+                    <Text style={styles.infoCardValue}>
+                      {doctor?.regNo || 'Not specified'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.infoCard}>
+                    <MaterialCommunityIcons name="translate" size={20} color="#2563EB" />
+                    <Text style={styles.infoCardLabel}>Languages</Text>
+                    <Text style={styles.infoCardValue}>
+                      {doctor?.languagesSpoken && doctor.languagesSpoken.length > 0 
+                        ? doctor.languagesSpoken.join(', ') 
+                        : 'English'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.infoCard}>
+                    <MaterialCommunityIcons name="gender-male-female" size={20} color="#2563EB" />
+                    <Text style={styles.infoCardLabel}>Gender</Text>
+                    <Text style={styles.infoCardValue}>
+                      {doctor?.gender || 'Not specified'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Specializations */}
+              {doctor?.subSpecializations && doctor.subSpecializations.length > 0 && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>Sub-Specializations</Text>
+                  <View style={styles.specializationsContainer}>
+                    {doctor.subSpecializations.map((specialization, index) => (
+                      <View key={index} style={styles.specializationTag}>
+                        <Text style={styles.specializationText}>{specialization}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Contact Information */}
+              <View style={styles.infoSection}>
+                <Text style={styles.sectionTitle}>Contact Information</Text>
+                
+                <View style={styles.contactContainer}>
+                  {doctor?.phone && (
+                    <View style={styles.contactItem}>
+                      <MaterialCommunityIcons name="phone" size={18} color="#64748B" />
+                      <Text style={styles.contactText}>{doctor.phone}</Text>
+                    </View>
+                  )}
+                  
+                  {doctor?.email && (
+                    <View style={styles.contactItem}>
+                      <MaterialCommunityIcons name="email" size={18} color="#64748B" />
+                      <Text style={styles.contactText}>{doctor.email}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Legacy Education Section - Keep for backward compatibility */}
+              {doctor?.education && doctor.education.length > 0 && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>Education</Text>
+                  {doctor.education.map((edu, index) => (
                     <View key={index} style={styles.educationItem}>
                       <MaterialCommunityIcons name="school" size={18} color="#64748B" />
                       <View style={styles.educationContent}>
@@ -165,16 +336,15 @@ export default function DoctorDetails() {
                         </Text>
                       </View>
                     </View>
-                  ))
-                ) : (
-                  <Text style={styles.noDataText}>No education information available</Text>
-                )}
-              </View>
+                  ))}
+                </View>
+              )}
               
-              <View style={styles.infoSection}>
-                <Text style={styles.sectionTitle}>Experience</Text>
-                {doctor?.experience && doctor.experience.length > 0 ? (
-                  doctor.experience.map((exp, index) => (
+              {/* Legacy Experience Section - Keep for backward compatibility */}
+              {doctor?.experience && doctor.experience.length > 0 && (
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>Work Experience</Text>
+                  {doctor.experience.map((exp, index) => (
                     <View key={index} style={styles.experienceItem}>
                       <FontAwesome name="briefcase" size={16} color="#64748B" />
                       <View style={styles.experienceContent}>
@@ -184,16 +354,7 @@ export default function DoctorDetails() {
                         </Text>
                       </View>
                     </View>
-                  ))
-                ) : (
-                  <Text style={styles.noDataText}>No experience information available</Text>
-                )}
-              </View>
-              
-              {doctor?.bio && (
-                <View style={styles.infoSection}>
-                  <Text style={styles.sectionTitle}>About Doctor</Text>
-                  <Text style={styles.bioText}>{doctor.bio}</Text>
+                  ))}
                 </View>
               )}
             </View>
@@ -390,6 +551,19 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 8,
   },
+  credentialsBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginBottom: 8,
+    alignSelf: 'flex-start',
+  },
+  credentialsText: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 12,
+    fontWeight: '500',
+  },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -500,6 +674,91 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#334155',
     lineHeight: 22,
+  },
+  qualificationsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  qualificationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  qualificationText: {
+    fontSize: 14,
+    color: '#2563EB',
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  professionalInfoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  infoCard: {
+    width: '48%',
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  infoCardLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 8,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  infoCardValue: {
+    fontSize: 14,
+    color: '#1E293B',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  specializationsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  specializationTag: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  specializationText: {
+    fontSize: 14,
+    color: '#475569',
+    fontWeight: '500',
+  },
+  contactContainer: {
+    gap: 12,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  contactText: {
+    fontSize: 15,
+    color: '#334155',
+    marginLeft: 12,
+    flex: 1,
   },
   noDataText: {
     color: '#94A3B8',

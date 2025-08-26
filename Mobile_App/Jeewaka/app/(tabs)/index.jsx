@@ -8,6 +8,7 @@ import api from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import { debugNetworkInfo } from '../../services/networkTest';
 
 export default function Home() {
   const { user, userRole, loading: authLoading } = useAuthStore();
@@ -32,7 +33,7 @@ export default function Home() {
     setError(null);
     
     try {
-      let url = '/doctors/list';
+      let url = '/api/doctor';
       
       // Add query parameters based on filters
       const queryParams = [];
@@ -47,8 +48,12 @@ export default function Home() {
       }
       
       const { data } = await api.get(url);
-      setDoctors(data.doctors || []);
+      console.log('Doctors data received:', data);
+      console.log('Doctors count:', data?.length || 0);
+      setDoctors(data || []); // Backend returns doctors array directly
     } catch (err) {
+      console.error('Error fetching doctors:', err);
+      console.error('Error response:', err.response?.data);
       setError('Failed to load doctors. Please try again.');
       console.error(err);
     } finally {
@@ -59,6 +64,7 @@ export default function Home() {
 
   // Load doctors on component mount
   useEffect(() => {
+    debugNetworkInfo(); // Debug network configuration
     fetchDoctors();
   }, []);
 
@@ -80,7 +86,7 @@ export default function Home() {
       if (userRole === 'doctor') {
         router.push('/doctor-dashboard');
       } else {
-        router.push('/patient-profile');
+        router.push('/patient-dashboard');  // Fixed: was /patient-profile
       }
     } else {
       router.push('/login');
