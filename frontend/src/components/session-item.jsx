@@ -25,15 +25,19 @@ export function SessionItem({ session, onTimeSlotSelect }) {
     }
   }
 
-  const availableSlots = session.timeSlots.filter((slot) => slot.status === "available").length
-  const totalSlots = session.timeSlots.length
+  const slots = Array.isArray(session.timeSlots) ? session.timeSlots : []
+  const availableSlots = slots.filter((slot) => slot.status === "available").length
+  const totalSlots = slots.length
+
+  const hospitalName = session && session.hospital && session.hospital.name ? session.hospital.name : 'Unknown hospital'
+  const hospitalLocation = session && session.hospital && session.hospital.location ? session.hospital.location : 'Unknown location'
 
   return (
     <Card className="w-full shadow-lg border-0 bg-white hover:shadow-xl transition-shadow duration-300">
       <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="flex items-start justify-between">
           <div className="space-y-3">
-            <CardTitle className="text-xl font-bold text-gray-900">{session.hospital.name}</CardTitle>
+            <CardTitle className="text-xl font-bold text-gray-900">{hospitalName}</CardTitle>
             <div className="flex items-center gap-6 text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-blue-600" />
@@ -41,7 +45,7 @@ export function SessionItem({ session, onTimeSlotSelect }) {
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-blue-600" />
-                <span>{session.hospital.location}</span>
+                <span>{hospitalLocation}</span>
               </div>
             </div>
             <div className="text-sm text-gray-500">
@@ -69,26 +73,22 @@ export function SessionItem({ session, onTimeSlotSelect }) {
             Available Time Slots
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="flex flex-wrap gap-3">
             {session.timeSlots.map((timeSlot, index) => (
-            
               <Button
                 key={index}
                 variant="outline"
                 size="sm"
-                className={`text-xs font-medium transition-all duration-200 ${
+                aria-label={`Time slot ${timeSlot.startTime}–${timeSlot.endTime}`}
+                className={`text-xs font-medium transition-all duration-150 px-2 py-1 flex items-center justify-center min-w-[4.5rem] md:min-w-[5.5rem] max-w-[7rem] overflow-hidden text-center ${
                   timeSlot.status === "available"
-                    ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-400 hover:shadow-md"
-                    : "border-red-300 bg-red-50 text-red-700 cursor-not-allowed opacity-75"
+                    ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-400 hover:shadow-sm"
+                    : "border-red-300 bg-red-50 text-red-700 cursor-not-allowed opacity-80"
                 }`}
                 disabled={timeSlot.status === "booked"}
                 onClick={() => handleSlotClick(index, timeSlot)}
               >
-                <div className="flex flex-col items-center">
-                  <span>{timeSlot.startTime}</span>
-                  <span className="text-xs opacity-75">to</span>
-                  <span>{timeSlot.endTime}</span>
-                </div>
+                <span className="truncate block w-full text-xs leading-none">{`${timeSlot.startTime}–${timeSlot.endTime}`}</span>
               </Button>
             ))}
           </div>
@@ -100,7 +100,7 @@ export function SessionItem({ session, onTimeSlotSelect }) {
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
   )
 }

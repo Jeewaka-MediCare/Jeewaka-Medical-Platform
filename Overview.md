@@ -1,35 +1,3 @@
-Jeewaka - Unified HealthCare System
-
-User Roles: Doctor, Patient, Admin 
-
-Classes : 
-
-1. Patient 
-- Signup
-- Signin
-- View Doctors
-- View Doctor Profiles
-- Book Appointments
-- Payment for appointments
-- View their medical records
-- Join Teleconsultations using videosdk
-- Rate appointment
-
-2. Doctor
-- Open Sessions for appointment(Each session can have multiple appointments)
-- Update pricing in sessions
-- View calendar for patients bookings
-- View appointments
-- view medical records linked with appointments after patient consent
-- Join teleconsultation
-- View ratings
-- 
-
-3. Admin
-- Create, edit and delete admin, patient and doctor profiles
-- Verify doctor profiles and approve login after their document submission at registration
-- Analytics dashboard.
-
 ## Architecture review, questions, and next steps
 
 Summary:

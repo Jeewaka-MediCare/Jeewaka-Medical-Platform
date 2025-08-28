@@ -1,0 +1,453 @@
+[{
+	"_id": {
+		"$oid": "687c8a2f5b9997e7b8128e35"
+	},
+	"name": "amarabandu",
+	"email": "krishmalgamage9@gmail.com",
+	"phone": "0777858374",
+	"uuid": "G09A7srFI0dv4WUJ3L4PKueghq62",
+	"gender": "Male",
+	"profile": "http://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "2001-08-25T00:00:00Z"
+	},
+	"subSpecializations": [
+		"Radiation Oncology"
+	],
+	"regNo": "ndifeshfsihfus",
+	"qualifications": [
+		"MBBS"
+	],
+	"languagesSpoken": [
+		"English"
+	],
+	"sessions": [
+		{
+			"$oid": "687fc1d71517c523f55f5cf1"
+		}
+	],
+	"createdAt": {
+		"$date": "2025-07-20T06:18:23.2Z"
+	},
+	"__v": 1,
+	"bio": "amarabandu roopasinga i am docot",
+	"consultationFee": 15,
+	"specialization": "Oncology",
+	"yearsOfExperience": 11
+},
+{
+	"_id": {
+		"$oid": "688099c5bcd1cf0935370aee"
+	},
+	"name": "Dr. Emily Silva",
+	"email": "emily.silva@example.com",
+	"phone": "0711111111",
+	"uuid": "doc-uuid-001",
+	"gender": "Female",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1990-02-10T00:00:00Z"
+	},
+	"specialization": "Neurology",
+	"subSpecializations": [
+		"Pediatric Neurology"
+	],
+	"regNo": "REG1001",
+	"qualifications": [
+		"MBBS",
+		"MD"
+	],
+	"yearsOfExperience": 8,
+	"languagesSpoken": [
+		"English",
+		"Sinhala"
+	],
+	"bio": "",
+	"consultationFee": 2000,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-07-23T10:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "688099c5bcd1cf0935370aef"
+	},
+	"name": "Dr. John Fernando",
+	"email": "john.fernando@example.com",
+	"phone": "0722222222",
+	"uuid": "doc-uuid-002",
+	"gender": "Male",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1985-05-20T00:00:00Z"
+	},
+	"specialization": "Cardiology",
+	"subSpecializations": [
+		"Interventional Cardiology"
+	],
+	"regNo": "REG1002",
+	"qualifications": [
+		"MBBS",
+		"MD Cardiology"
+	],
+	"yearsOfExperience": 12,
+	"languagesSpoken": [
+		"English"
+	],
+	"bio": "",
+	"consultationFee": 2500,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-07-23T10:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "688099c5bcd1cf0935370af0"
+	},
+	"name": "Dr. Nadeesha Perera",
+	"email": "nadeesha.perera@example.com",
+	"phone": "0733333333",
+	"uuid": "doc-uuid-003",
+	"gender": "Female",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1988-07-18T00:00:00Z"
+	},
+	"specialization": "Dermatology",
+	"subSpecializations": [],
+	"regNo": "REG1003",
+	"qualifications": [
+		"MBBS",
+		"Diploma in Dermatology"
+	],
+	"yearsOfExperience": 10,
+	"languagesSpoken": [
+		"Sinhala",
+		"English"
+	],
+	"bio": "",
+	"consultationFee": 1800,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-07-23T10:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "688099c5bcd1cf0935370af1"
+	},
+	"name": "Dr. Malik Jayasuriya",
+	"email": "malik.jayasuriya@example.com",
+	"phone": "0744444444",
+	"uuid": "doc-uuid-004",
+	"gender": "Male",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1975-09-10T00:00:00Z"
+	},
+	"specialization": "Orthopedics",
+	"subSpecializations": [
+		"Joint Replacement"
+	],
+	"regNo": "REG1004",
+	"qualifications": [
+		"MBBS",
+		"MS Ortho"
+	],
+	"yearsOfExperience": 20,
+	"languagesSpoken": [
+		"English",
+		"Tamil"
+	],
+	"bio": "",
+	"consultationFee": 3000,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-07-23T10:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "688099c5bcd1cf0935370af2"
+	},
+	"name": "Dr. Chamara Gunawardena",
+	"email": "chamara.g@example.com",
+	"phone": "0755555555",
+	"uuid": "doc-uuid-005",
+	"gender": "Male",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1992-03-25T00:00:00Z"
+	},
+	"specialization": "Psychiatry",
+	"subSpecializations": [],
+	"regNo": "REG1005",
+	"qualifications": [
+		"MBBS",
+		"MD Psychiatry"
+	],
+	"yearsOfExperience": 5,
+	"languagesSpoken": [
+		"Sinhala",
+		"English"
+	],
+	"bio": "",
+	"consultationFee": 1500,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-07-23T10:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "688099c5bcd1cf0935370af3"
+	},
+	"name": "Dr. Hasini De Silva",
+	"email": "hasini.desilva@example.com",
+	"phone": "0766666666",
+	"uuid": "doc-uuid-006",
+	"gender": "Female",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1987-11-12T00:00:00Z"
+	},
+	"specialization": "Gynecology",
+	"subSpecializations": [
+		"Fertility"
+	],
+	"regNo": "REG1006",
+	"qualifications": [
+		"MBBS",
+		"MD Gynecology"
+	],
+	"yearsOfExperience": 11,
+	"languagesSpoken": [
+		"English",
+		"Sinhala"
+	],
+	"bio": "",
+	"consultationFee": 2200,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-07-23T10:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "688099c5bcd1cf0935370af4"
+	},
+	"name": "Dr. Kevin Rajapaksha",
+	"email": "kevin.rajapaksha@example.com",
+	"phone": "0777777777",
+	"uuid": "doc-uuid-007",
+	"gender": "Male",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1983-04-03T00:00:00Z"
+	},
+	"specialization": "ENT",
+	"subSpecializations": [],
+	"regNo": "REG1007",
+	"qualifications": [
+		"MBBS",
+		"MS ENT"
+	],
+	"yearsOfExperience": 14,
+	"languagesSpoken": [
+		"English",
+		"Tamil"
+	],
+	"bio": "",
+	"consultationFee": 1700,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-07-23T10:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "688099c5bcd1cf0935370af5"
+	},
+	"name": "Dr. Ruwani Kariyawasam",
+	"email": "ruwani.k@example.com",
+	"phone": "0788888888",
+	"uuid": "doc-uuid-008",
+	"gender": "Female",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1991-10-01T00:00:00Z"
+	},
+	"specialization": "Pediatrics",
+	"subSpecializations": [],
+	"regNo": "REG1008",
+	"qualifications": [
+		"MBBS",
+		"MD Pediatrics"
+	],
+	"yearsOfExperience": 7,
+	"languagesSpoken": [
+		"English",
+		"Sinhala"
+	],
+	"bio": "",
+	"consultationFee": 1600,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-07-23T10:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "688099c5bcd1cf0935370af6"
+	},
+	"name": "Dr. Sanjeewa Bandara",
+	"email": "sanjeewa.b@example.com",
+	"phone": "0799999999",
+	"uuid": "doc-uuid-009",
+	"gender": "Male",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1980-01-20T00:00:00Z"
+	},
+	"specialization": "General Medicine",
+	"subSpecializations": [],
+	"regNo": "REG1009",
+	"qualifications": [
+		"MBBS",
+		"MD Internal Medicine"
+	],
+	"yearsOfExperience": 18,
+	"languagesSpoken": [
+		"Sinhala",
+		"English"
+	],
+	"bio": "",
+	"consultationFee": 1400,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-07-23T10:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "688099c5bcd1cf0935370af7"
+	},
+	"name": "Dr. Iresha Liyanage",
+	"email": "iresha.l@example.com",
+	"phone": "0701234567",
+	"uuid": "doc-uuid-010",
+	"gender": "Female",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1993-06-05T00:00:00Z"
+	},
+	"specialization": "Endocrinology",
+	"subSpecializations": [],
+	"regNo": "REG1010",
+	"qualifications": [
+		"MBBS",
+		"MD Endocrinology"
+	],
+	"yearsOfExperience": 6,
+	"languagesSpoken": [
+		"English",
+		"Sinhala"
+	],
+	"bio": "",
+	"consultationFee": 2300,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-07-23T10:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68af5eb1cb921f595de9ae3d"
+	},
+	"name": "doctor",
+	"email": "doc@gmail.com",
+	"phone": "0123456789",
+	"uuid": "68af5eb1cb921f595de9ae32",
+	"gender": "Female",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1996-01-01T00:00:00Z"
+	},
+	"subSpecializations": [],
+	"regNo": "seD200C",
+	"qualifications": [],
+	"yearsOfExperience": 0,
+	"languagesSpoken": [],
+	"bio": "",
+	"consultationFee": 0,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-08-27T19:38:25.788Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68af5fedcb921f595de9b7b4"
+	},
+	"name": "dddooo",
+	"email": "dddooo@gmail.com",
+	"phone": "0123456789",
+	"uuid": "68af5feccb921f595de9b7b2",
+	"gender": "Male",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1998-06-09T00:00:00Z"
+	},
+	"subSpecializations": [],
+	"regNo": "we200789",
+	"qualifications": [],
+	"yearsOfExperience": 0,
+	"languagesSpoken": [],
+	"bio": "",
+	"consultationFee": 0,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-08-27T19:43:41.115Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68b0110481f64aaf183773dd"
+	},
+	"name": "doctord",
+	"email": "doctord@gmail.com",
+	"phone": "0112343546",
+	"uuid": "68b0110381f64aaf183773db",
+	"gender": "Male",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "1998-02-03T00:00:00Z"
+	},
+	"subSpecializations": [],
+	"regNo": "qre99905",
+	"qualifications": [],
+	"yearsOfExperience": 0,
+	"languagesSpoken": [],
+	"bio": "",
+	"consultationFee": 0,
+	"sessions": [],
+	"createdAt": {
+		"$date": "2025-08-28T08:19:16.166Z"
+	},
+	"__v": 0
+}]
+

@@ -1,0 +1,690 @@
+[{
+	"_id": {
+		"$oid": "687e83310b4a56d306c626f7"
+	},
+	"doctorId": {
+		"$oid": "687c8a2f5b9997e7b8128e35"
+	},
+	"date": {
+		"$date": "2025-08-25T00:00:00Z"
+	},
+	"hospital": {
+		"$oid": "687d15a166f108143c4e074e"
+	},
+	"meetingLink": "",
+	"type": "in-person",
+	"timeSlots": [
+		{
+			"startTime": "09:00",
+			"endTime": "09:30",
+			"status": "booked",
+			"appointmentStatus": "upcoming",
+			"patientId": {
+				"$oid": "687c898e5b9997e7b8128e33"
+			}
+		},
+		{
+			"startTime": "09:30",
+			"endTime": "10:00",
+			"status": "booked",
+			"appointmentStatus": "upcoming",
+			"patientId": {
+				"$oid": "687c898e5b9997e7b8128e33"
+			}
+		},
+		{
+			"startTime": "10:00",
+			"endTime": "10:30",
+			"status": "booked",
+			"appointmentStatus": "upcoming",
+			"patientId": {
+				"$oid": "68a02999b6c0f1d633b1d945"
+			}
+		},
+		{
+			"startTime": "10:30",
+			"endTime": "11:00",
+			"status": "booked",
+			"appointmentStatus": "upcoming",
+			"patientId": {
+				"$oid": "687c898e5b9997e7b8128e33"
+			}
+		},
+		{
+			"startTime": "11:00",
+			"endTime": "11:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:30",
+			"endTime": "12:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		}
+	],
+	"createdAt": {
+		"$date": "2025-07-21T18:13:05.998Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-28T04:38:16.947Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "687fbf9b82dc30c9287a215e"
+	},
+	"doctorId": {
+		"$oid": "687c8a2f5b9997e7b8128e35"
+	},
+	"date": {
+		"$date": "2025-08-25T00:00:00Z"
+	},
+	"hospital": {
+		"$oid": "687d15a166f108143c4e074e"
+	},
+	"meetingLink": "",
+	"type": "in-person",
+	"timeSlots": [
+		{
+			"startTime": "09:00",
+			"endTime": "09:30",
+			"status": "booked",
+			"appointmentStatus": "confirmed",
+			"patientId": {
+				"$oid": "68b0078dbac578cb5f6d4261"
+			},
+			"paymentAmount": 15,
+			"paymentCurrency": "usd",
+			"paymentDate": {
+				"$date": "2025-08-28T08:49:45.23Z"
+			},
+			"paymentIntentId": "pi_3S11JVD3q2KwZfFn1V5hcM4J"
+		},
+		{
+			"startTime": "09:30",
+			"endTime": "10:00",
+			"status": "booked",
+			"appointmentStatus": "upcoming",
+			"patientId": {
+				"$oid": "68b0078dbac578cb5f6d4261"
+			}
+		},
+		{
+			"startTime": "10:00",
+			"endTime": "10:30",
+			"status": "booked",
+			"appointmentStatus": "confirmed",
+			"patientId": {
+				"$oid": "68b0078dbac578cb5f6d4261"
+			},
+			"paymentAmount": 15,
+			"paymentCurrency": "usd",
+			"paymentDate": {
+				"$date": "2025-08-28T08:53:33.791Z"
+			},
+			"paymentIntentId": "pi_3S11ZXD3q2KwZfFn0orULJF9"
+		},
+		{
+			"startTime": "10:30",
+			"endTime": "11:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:00",
+			"endTime": "11:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:30",
+			"endTime": "12:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		}
+	],
+	"createdAt": {
+		"$date": "2025-07-22T16:43:07.115Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-28T08:53:33.796Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "687fc1d71517c523f55f5cf1"
+	},
+	"doctorId": {
+		"$oid": "687c8a2f5b9997e7b8128e35"
+	},
+	"date": {
+		"$date": "2025-02-08T00:00:00Z"
+	},
+	"hospital": {
+		"$oid": "687d15a166f108143c4e074e"
+	},
+	"meetingLink": "",
+	"type": "in-person",
+	"timeSlots": [
+		{
+			"startTime": "09:00",
+			"endTime": "09:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "09:30",
+			"endTime": "10:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:00",
+			"endTime": "10:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:30",
+			"endTime": "11:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:00",
+			"endTime": "11:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:30",
+			"endTime": "12:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		}
+	],
+	"createdAt": {
+		"$date": "2025-07-22T16:52:39.043Z"
+	},
+	"updatedAt": {
+		"$date": "2025-07-22T16:52:39.043Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68af6521cb921f595de9b829"
+	},
+	"doctorId": {
+		"$oid": "68af5feccb921f595de9b7b2"
+	},
+	"date": {
+		"$date": "2025-08-30T00:00:00Z"
+	},
+	"hospital": {
+		"$oid": "687d15b966f108143c4e0750"
+	},
+	"meetingLink": "",
+	"type": "in-person",
+	"timeSlots": [
+		{
+			"startTime": "09:00",
+			"endTime": "09:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "09:30",
+			"endTime": "10:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:00",
+			"endTime": "10:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:30",
+			"endTime": "11:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:00",
+			"endTime": "11:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:30",
+			"endTime": "12:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		}
+	],
+	"createdAt": {
+		"$date": "2025-08-27T20:05:53.189Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-27T20:05:53.189Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68af6528cb921f595de9b82d"
+	},
+	"doctorId": {
+		"$oid": "68af5feccb921f595de9b7b2"
+	},
+	"date": {
+		"$date": "2025-08-30T00:00:00Z"
+	},
+	"hospital": {
+		"$oid": "687d15b966f108143c4e0750"
+	},
+	"meetingLink": "",
+	"type": "in-person",
+	"timeSlots": [
+		{
+			"startTime": "09:00",
+			"endTime": "09:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "09:30",
+			"endTime": "10:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:00",
+			"endTime": "10:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:30",
+			"endTime": "11:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:00",
+			"endTime": "11:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:30",
+			"endTime": "12:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		}
+	],
+	"createdAt": {
+		"$date": "2025-08-27T20:06:00.133Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-27T20:06:00.133Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68af677312e8d196e7f3ab53"
+	},
+	"doctorId": {
+		"$oid": "68af5feccb921f595de9b7b2"
+	},
+	"date": {
+		"$date": "2025-08-30T00:00:00Z"
+	},
+	"hospital": {
+		"$oid": "687d162166f108143c4e0758"
+	},
+	"meetingLink": "",
+	"type": "in-person",
+	"timeSlots": [
+		{
+			"startTime": "09:00",
+			"endTime": "09:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "09:30",
+			"endTime": "10:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:00",
+			"endTime": "10:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:30",
+			"endTime": "11:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:00",
+			"endTime": "11:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:30",
+			"endTime": "12:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		}
+	],
+	"createdAt": {
+		"$date": "2025-08-27T20:15:47.961Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-27T20:15:47.961Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68af67a812e8d196e7f3ab57"
+	},
+	"doctorId": {
+		"$oid": "68af5feccb921f595de9b7b2"
+	},
+	"date": {
+		"$date": "2025-08-30T00:00:00Z"
+	},
+	"hospital": {
+		"$oid": "687d162166f108143c4e0758"
+	},
+	"meetingLink": "",
+	"type": "in-person",
+	"timeSlots": [
+		{
+			"startTime": "09:00",
+			"endTime": "09:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "09:30",
+			"endTime": "10:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:00",
+			"endTime": "10:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:30",
+			"endTime": "11:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:00",
+			"endTime": "11:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:30",
+			"endTime": "12:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		}
+	],
+	"createdAt": {
+		"$date": "2025-08-27T20:16:40.536Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-27T20:16:40.536Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68af6859f2cc586e0816ba91"
+	},
+	"doctorId": {
+		"$oid": "68af5feccb921f595de9b7b2"
+	},
+	"date": {
+		"$date": "2025-08-30T00:00:00Z"
+	},
+	"hospital": {
+		"$oid": "687d162166f108143c4e0758"
+	},
+	"meetingLink": "",
+	"type": "in-person",
+	"timeSlots": [
+		{
+			"startTime": "09:00",
+			"endTime": "09:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "09:30",
+			"endTime": "10:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:00",
+			"endTime": "10:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:30",
+			"endTime": "11:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:00",
+			"endTime": "11:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:30",
+			"endTime": "12:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		}
+	],
+	"createdAt": {
+		"$date": "2025-08-27T20:19:37.434Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-27T20:19:37.434Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68af685ef2cc586e0816ba95"
+	},
+	"doctorId": {
+		"$oid": "68af5feccb921f595de9b7b2"
+	},
+	"date": {
+		"$date": "2025-08-30T00:00:00Z"
+	},
+	"hospital": {
+		"$oid": "687d162166f108143c4e0758"
+	},
+	"meetingLink": "",
+	"type": "in-person",
+	"timeSlots": [
+		{
+			"startTime": "09:00",
+			"endTime": "09:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "09:30",
+			"endTime": "10:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:00",
+			"endTime": "10:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:30",
+			"endTime": "11:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:00",
+			"endTime": "11:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:30",
+			"endTime": "12:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		}
+	],
+	"createdAt": {
+		"$date": "2025-08-27T20:19:42.781Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-27T20:19:42.781Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68b006398f10ebf8e2ecfc0a"
+	},
+	"doctorId": {
+		"$oid": "68af5feccb921f595de9b7b2"
+	},
+	"date": {
+		"$date": "2025-08-31T00:00:00Z"
+	},
+	"hospital": {
+		"$oid": "687d15a166f108143c4e074e"
+	},
+	"meetingLink": "",
+	"type": "in-person",
+	"timeSlots": [
+		{
+			"startTime": "09:00",
+			"endTime": "09:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "09:30",
+			"endTime": "10:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:00",
+			"endTime": "10:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "10:30",
+			"endTime": "11:00",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		},
+		{
+			"startTime": "11:00",
+			"endTime": "11:30",
+			"status": "available",
+			"appointmentStatus": "pending",
+			"patientId": null
+		}
+	],
+	"createdAt": {
+		"$date": "2025-08-28T07:33:13.532Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-28T07:33:13.532Z"
+	},
+	"__v": 0
+}]
+

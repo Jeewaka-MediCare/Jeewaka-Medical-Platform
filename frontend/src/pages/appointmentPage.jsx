@@ -1,82 +1,137 @@
 import { Link } from "react-router-dom"
+import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { ChevronLeft, Calendar, Clock, MapPin, Globe, CheckCircle, XCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import api from "@/services/api.js"
+import useAuthStore from "@/store/authStore"
 
-// Mock data for past appointments
-const pastAppointments = [
-  {
-    id: "apt1",
-    doctorName: "Dr. Jane Doe",
-    doctorSpecialization: "Cardiologist",
-    doctorImage: "/placeholder.svg?height=100&width=100",
-    date: "2025-07-10",
-    startTime: "09:00",
-    endTime: "09:15",
-    type: "online",
-    status: "completed",
-    hospital: {
-      name: "City Hospital",
-      location: "Colombo",
-    },
-    notes: "Regular checkup. Blood pressure normal. Follow-up in 3 months.",
-  },
-  {
-    id: "apt2",
-    doctorName: "Dr. John Smith",
-    doctorSpecialization: "Neurologist",
-    doctorImage: "/placeholder.svg?height=100&width=100",
-    date: "2025-06-25",
-    startTime: "14:30",
-    endTime: "14:45",
-    type: "in-person",
-    status: "completed",
-    hospital: {
-      name: "General Hospital",
-      location: "Kandy",
-    },
-    notes: "Headache assessment. Prescribed medication for migraines.",
-  },
-  {
-    id: "apt3",
-    doctorName: "Dr. Sarah Johnson",
-    doctorSpecialization: "Pediatrician",
-    doctorImage: "/placeholder.svg?height=100&width=100",
-    date: "2025-06-15",
-    startTime: "10:00",
-    endTime: "10:15",
-    type: "online",
-    status: "cancelled",
-    hospital: {
-      name: "Children's Hospital",
-      location: "Colombo",
-    },
-    notes: null,
-  },
-]
-
-// Mock data for upcoming appointments
-const upcomingAppointments = [
-  {
-    id: "apt4",
-    doctorName: "Dr. Jane Doe",
-    doctorSpecialization: "Cardiologist",
-    doctorImage: "/placeholder.svg?height=100&width=100",
-    date: "2025-07-25",
-    startTime: "09:00",
-    endTime: "09:15",
-    type: "online",
-    status: "upcoming",
-    hospital: {
-      name: "City Hospital",
-      location: "Colombo",
-    },
-  },
-]
+// We'll fetch sessions and derive appointments for the logged-in patient
+// Keep a small fallback in case API is unavailable (empty arrays handled below)
 
 export default function AppointmentsPage() {
+  const { user } = useAuthStore()
+  const [upcomingAppointments, setUpcomingAppointments] = useState([])
+  const [pastAppointments, setPastAppointments] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [patientBackendId, setPatientBackendId] = useState(null)
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      if (!user) {
+        setUpcomingAppointments([])
+        setPastAppointments([])
+        setLoading(false)
+        return
+      }
+
+      try {
+        // Ensure we have the backend patient _id for matching
+        let backendPatientId = patientBackendId
+        if (!backendPatientId) {
+          // Try common fields from stored user object
+          if (user._id) backendPatientId = user._id
+          // if not, try to resolve by Firebase uid
+          else if (user.uid) {
+            try {
+              const pRes = await api.get(`/api/patient/uuid/${user.uid}`)
+              if (pRes.data && pRes.data._id) {
+                backendPatientId = pRes.data._id
+                setPatientBackendId(backendPatientId)
+              }
+            } catch (pErr) {
+              // no patient found for uid, continue without backend id
+              console.warn('No backend patient record found for uid', user.uid)
+            }
+          }
+        }
+
+        const res = await api.get('/api/session')
+        const sessions = res.data || []
+
+        // Collect slots booked for this user across sessions
+        const appointments = []
+        sessions.forEach((session) => {
+          const hospital = session.hospital || { name: 'Unknown hospital', location: '' }
+          const doctorName = session.doctorId?.name || session.doctorId || 'Doctor'
+          session.timeSlots?.forEach((slot, idx) => {
+            // patientId might be stored as ObjectId string or as uuid; compare against backend id, uuid, or firebase uid
+            const patientMatch = slot.patientId && (
+              (backendPatientId && String(slot.patientId) === String(backendPatientId)) ||
+              (user.uuid && String(slot.patientId) === String(user.uuid)) ||
+              (user.uid && String(slot.patientId) === String(user.uid)) ||
+              (user._id && String(slot.patientId) === String(user._id))
+            )
+            if (patientMatch) {
+              appointments.push({
+                id: `${session._id}:${idx}`,
+                sessionId: session._id,
+                slotIndex: idx,
+                doctorName,
+                doctorSpecialization: session.specialization || '',
+                // Use the session date (ISO) for the appointment date when available.
+                date: session.date || null,
+                // time strings are stored as simple HH:mm in timeSlots; show them directly
+                startTime: slot.startTime || session.startTime || null,
+                endTime: slot.endTime || session.endTime || null,
+                type: session.type || 'in-person',
+                status: slot.appointmentStatus || slot.status || 'booked',
+                hospital,
+                notes: slot.notes || null,
+                payment: {
+                  intentId: slot.paymentIntentId,
+                  amount: slot.paymentAmount,
+                  currency: slot.paymentCurrency,
+                  date: slot.paymentDate
+                }
+              })
+            }
+          })
+        })
+
+        // split upcoming vs past by date/status
+        const now = new Date()
+        const upcoming = appointments.filter(a => a.status !== 'completed' && a.status !== 'cancelled')
+        const past = appointments.filter(a => a.status === 'completed' || a.status === 'cancelled')
+
+        setUpcomingAppointments(upcoming)
+        setPastAppointments(past)
+      } catch (err) {
+        console.error('Failed to load appointments:', err)
+        setUpcomingAppointments([])
+        setPastAppointments([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    // initial fetch
+    fetchAppointments()
+
+    // If a booking was just made, webhook processing can lag — retry once shortly after
+    const retryTimer = setTimeout(async () => {
+      try {
+        const needRetry = upcomingAppointments.length === 0 && pastAppointments.length === 0
+        if (needRetry) await fetchAppointments()
+      } catch (e) {
+        /* ignore */
+      }
+    }, 2000)
+
+    return () => clearTimeout(retryTimer)
+  }, [user])
+
+  // While loading, show a placeholder message instead of immediate empty state
+  if (loading) {
+    return (
+      <main className="container mx-auto py-8 px-4">
+        <h1 className="text-2xl font-semibold">Loading your appointments…</h1>
+      </main>
+    )
+  }
+
   return (
     <main className="container mx-auto py-8 px-4">
       <div className="mb-6">
@@ -110,7 +165,7 @@ export default function AppointmentsPage() {
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-lg">{appointment.doctorName}</CardTitle>
                       <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                        Upcoming
+                        {appointment.status === 'booked' ? 'Upcoming' : appointment.status}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{appointment.doctorSpecialization}</p>
@@ -120,12 +175,12 @@ export default function AppointmentsPage() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-primary" />
-                          <span>{format(new Date(appointment.date), "EEEE, MMMM d, yyyy")}</span>
+                          <span>{appointment.date && !isNaN(new Date(appointment.date)) ? format(new Date(appointment.date), "EEEE, MMMM d, yyyy") : 'Date TBD'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-primary" />
                           <span>
-                            {appointment.startTime} - {appointment.endTime}
+                            {appointment.startTime || 'TBD'} - {appointment.endTime || 'TBD'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -145,16 +200,23 @@ export default function AppointmentsPage() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-2 justify-end items-start md:items-end">
-                        <Link href={`/appointments/${appointment.id}`} className="text-primary hover:underline text-sm">
+                        <div className="text-sm text-muted-foreground text-right">
+                          <div>Session: <span className="font-mono text-xs">{appointment.sessionId}</span></div>
+                          <div>Payment: <span className="font-mono text-xs">{appointment.payment?.intentId || '—'}</span></div>
+                          <div>Status: <strong>{appointment.status}</strong></div>
+                        </div>
+                        <Link to={`/appointments/${appointment.id}?sessionId=${appointment.sessionId}&slotIndex=${appointment.slotIndex}`} className="text-primary hover:underline text-sm">
                           View Details
                         </Link>
                         {appointment.type === "online" && (
-                          <Link
-                            href="#"
+                          <a
+                            href={appointment.meetingLink || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-primary/90"
                           >
-                            Join Video Call
-                          </Link>
+                            Join session
+                          </a>
                         )}
                       </div>
                     </div>
@@ -203,13 +265,13 @@ export default function AppointmentsPage() {
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <span className="text-muted-foreground">
-                            {format(new Date(appointment.date), "EEEE, MMMM d, yyyy")}
+                            {appointment.date && !isNaN(new Date(appointment.date)) ? format(new Date(appointment.date), "EEEE, MMMM d, yyyy") : 'Date TBD'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           <span className="text-muted-foreground">
-                            {appointment.startTime} - {appointment.endTime}
+                            {appointment.startTime || 'TBD'} - {appointment.endTime || 'TBD'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -229,12 +291,17 @@ export default function AppointmentsPage() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-2 justify-end items-start md:items-end">
-                        <Link href={`/appointments/${appointment.id}`} className="text-primary hover:underline text-sm">
+                        <div className="text-sm text-muted-foreground text-right">
+                          <div>Session: <span className="font-mono text-xs">{appointment.sessionId}</span></div>
+                          <div>Payment: <span className="font-mono text-xs">{appointment.payment?.intentId || '—'}</span></div>
+                          <div>Status: <strong>{appointment.status}</strong></div>
+                        </div>
+                        <Link to={`/appointments/${appointment.id}?sessionId=${appointment.sessionId}&slotIndex=${appointment.slotIndex}`} className="text-primary hover:underline text-sm">
                           View Details
                         </Link>
                         {appointment.status === "completed" && (
                           <Link
-                            href="#"
+                            to="#"
                             className="text-primary border border-primary px-4 py-2 rounded-md text-sm hover:bg-primary/5"
                           >
                             Book Again

@@ -1,5 +1,5 @@
 import express from 'express';
-import { createSession , getSessionById , getSessions , updateSession , deleteSession , addTimeSlot , updateTimeSlot , deleteTimeSlot  } from './sessionController.js';
+import { createSession , getSessionById , getSessions , updateSession , deleteSession , addTimeSlot , updateTimeSlot , deleteTimeSlot , bookAppointment } from './sessionController.js';
 
 const sessionRouter  = express.Router();
 
@@ -27,5 +27,8 @@ sessionRouter.put('/:sessionId/timeslot/:slotIndex', updateTimeSlot);
 
 // Delete a time slot from a session
 sessionRouter.delete('/:sessionId/timeslot/:slotIndex', deleteTimeSlot);
+
+// Book an appointment with payment verification
+sessionRouter.post('/:sessionId/book', bookAppointment);
 
 export default sessionRouter;
