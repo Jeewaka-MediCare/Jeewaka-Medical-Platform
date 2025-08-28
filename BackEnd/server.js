@@ -10,6 +10,7 @@ import authRoutes from './modules/auth/authRoutes.js';
 import hospitalRouter from './modules/hospital/hospitalRoutes.js';
 import sessionRouter from './modules/session/sessionRoutes.js';
 import patientRouter from './modules/patient/patientRoute.js';
+import adminRouter from './modules/admin/adminRoutes.js';
 // Load environment variables
 dotenv.config();
 
@@ -33,6 +34,8 @@ app.use('/api/hospital' , hospitalRouter)
 app.use('/api/session', sessionRouter);
 //docotr Card routes
 app.use('/api/doctorCard', doctorCardRouter);
+// admin routes
+app.use('/api/admin', adminRouter);
 
 // Connect to MongoDB
 connectDB();
