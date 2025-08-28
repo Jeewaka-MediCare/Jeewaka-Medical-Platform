@@ -13,10 +13,12 @@ import { Eye, EyeOff, Loader2, UserCheck, Stethoscope } from "lucide-react"
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { auth } from "./firebase"
 import api from "../services/api"
+import { useNavigate } from "react-router-dom"
 
 
 
 export function SignupForm({ className, ...props }) {
+  const navigate = useNavigate()
   // Validation schemas
   const doctorSchema = z
     .object({
@@ -214,6 +216,7 @@ export function SignupForm({ className, ...props }) {
         console.log("User data:", JSON.stringify(currentForm, null, 2))
 
         // Handle successful registration (redirect, etc.)
+        navigate("/")
       } catch (error) {
         console.error("Registration failed:", error)
         // Handle registration error

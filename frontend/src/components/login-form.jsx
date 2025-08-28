@@ -82,12 +82,19 @@ export function LoginForm({ className, ...props }) {
         if (role === "doctor") {
           res = await api.get(`/api/doctor/uuid/${uid}`);
           console.log( "user", res.data)
-          localStorage.setItem("userData", JSON.stringify(res.data));
+          localStorage.setItem("userData", JSON.stringify({...res.data , role: "doctor"}));
         } else if (role === "patient") {
           res = await api.get(`/api/patient/uuid/${uid}`);
           console.log(res.data)
-          localStorage.setItem("userData", JSON.stringify(res.data));
-        } else {
+          localStorage.setItem("userData", JSON.stringify({...res.data, role: "patient"}));
+
+        }else if (role === "admin") {
+          res = await api.get(`/api/admin/uuid/${uid}`);
+          console.log(res.data)
+          localStorage.setItem("userData", JSON.stringify({...res.data , role: "admin"}));
+
+        }
+         else {
           res = {
             data: {
               name: "Unknown",
@@ -106,7 +113,10 @@ export function LoginForm({ className, ...props }) {
             navigate("/doctor-dashboard");
           } else if (role === "patient") {
             navigate("/patient-dashboard");
-          } else {
+          } else if (role === "admin") {
+            navigate("/admin-dashboard");
+          }
+          else {
             navigate("/");
           }
         } else {
