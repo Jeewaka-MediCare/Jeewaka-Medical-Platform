@@ -1,0 +1,132 @@
+[{
+	"_id": {
+		"$oid": "687c898e5b9997e7b8128e33"
+	},
+	"name": "Trinith Vihanga",
+	"email": "gt202054194@gmail.com",
+	"uuid": "l48zRY6PFpTefMWXNGjyWwgLo6u1",
+	"profile": "https://www.bing.com/images/search?view=detailV2&ccid=hGSCbXlc&id=317D9F7971F27317249FEBCD1E8132C925837B61&thid=OIP.hGSCbXlcOjL_9mmzerqAbQHaHa&mediaurl=https%3a%2f%2fwww.pngmart.com%2ffiles%2f23%2fProfile-PNG-Photo.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8464826d795c3a32fff669b37aba806d%3frik%3dYXuDJckygR7N6w%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=profile+photo&simid=608018884673290624&FORM=IRPRST&ck=4BDF1503C9F51D7DFE6865BF623638F4&selectedIndex=0&itb=1",
+	"dob": {
+		"$date": "2001-08-25T00:00:00Z"
+	},
+	"sex": "Male",
+	"createdAt": {
+		"$date": "2025-07-20T06:15:42.016Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "6889928b891731fb0df4815a"
+	},
+	"name": "yashodha thathsarani",
+	"email": "yash@gmail.com",
+	"uuid": "iYJNTc29f6eoMKyjbMbSDrFVEzo1",
+	"dob": {
+		"$date": "2002-03-07T00:00:00Z"
+	},
+	"sex": "Female",
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68a02441f31a201b3060ef66"
+	},
+	"name": "dummyPatient",
+	"email": "dummymail@gmail.com",
+	"uuid": "NZURQhxd8mZaVzpYDv9gmZff19E3",
+	"dob": {
+		"$date": "2003-12-29T00:00:00Z"
+	},
+	"sex": "Male",
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68a02999b6c0f1d633b1d945"
+	},
+	"name": "yashodha",
+	"email": "yy@gmail.com",
+	"uuid": "6RAZXqtQQpeE4VAbNZQJuPNl3Et2",
+	"dob": {
+		"$date": "2025-08-13T00:00:00Z"
+	},
+	"sex": "Female",
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68a0332c85d006b25b054264"
+	},
+	"name": "etyg",
+	"email": "egh@f.com",
+	"uuid": "c5N5mCl7mnOEy7GmXt8rCu4rEXa2",
+	"dob": {
+		"$date": "2025-08-01T00:00:00Z"
+	},
+	"sex": "Male",
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68add19d1b7f5c084928b563"
+	},
+	"name": "ABC Perara",
+	"email": "abc@gmail.com",
+	"uuid": "68add19a1b7f5c084928b561",
+	"dob": {
+		"$date": "2025-04-30T00:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68af5da6cb921f595de9a783"
+	},
+	"name": "wwwwww",
+	"email": "wwwww@gmail.com",
+	"uuid": "68af5da5cb921f595de9a781",
+	"dob": {
+		"$date": "1998-07-15T00:00:00Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68afe0fe0b385e0230b0f15b"
+	},
+	"name": "admin",
+	"email": "admin@mail.com",
+	"uuid": "kWEjO2gaXrhKsuwuxfOdeN2nxNm2",
+	"dob": {
+		"$date": "2001-08-25T00:00:00Z"
+	},
+	"sex": "Male",
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68b0078dbac578cb5f6d4261"
+	},
+	"name": "Dewmina Wijekoon",
+	"email": "dewmandula@gmail.com",
+	"uuid": "GqzNC2IEF0NbuZmahEvDDzCKCpF3",
+	"dob": {
+		"$date": "2002-12-14T00:00:00Z"
+	},
+	"sex": "Male",
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "68b0107d81f64aaf183773c2"
+	},
+	"name": "aaaaa",
+	"email": "aaaaa@gmail.com",
+	"uuid": "68b0107d81f64aaf183773c0",
+	"dob": {
+		"$date": "2018-01-30T00:00:00Z"
+	},
+	"__v": 0
+}]
+
