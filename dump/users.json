@@ -1,0 +1,149 @@
+[{
+	"_id": {
+		"$oid": "68add19a1b7f5c084928b561"
+	},
+	"name": "ABC Perara",
+	"email": "abc@gmail.com",
+	"password": "$2b$12$UhxJNsvIvdZmT1daZxYUcefi/KMUEAMxCtqvkRNRl651.jagWmTry",
+	"role": "patient",
+	"profile": "https://www.pngmart.com/files/23/Profile-PNG-Photo.png",
+	"isActive": true,
+	"isEmailVerified": false,
+	"loginAttempts": 0,
+	"createdAt": {
+		"$date": "2025-08-26T15:24:12.376Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-26T15:24:13.192Z"
+	},
+	"__v": 0,
+	"patientProfile": {
+		"$oid": "68add19d1b7f5c084928b563"
+	}
+},
+{
+	"_id": {
+		"$oid": "68af5da5cb921f595de9a781"
+	},
+	"name": "wwwwww",
+	"email": "wwwww@gmail.com",
+	"password": "$2b$12$0Q3HpGH/S6pmldgldpeKDOHxnFYwVHb4nYlxL9pzhJSJPv7KkLb4K",
+	"role": "patient",
+	"profile": "https://www.pngmart.com/files/23/Profile-PNG-Photo.png",
+	"isActive": true,
+	"isEmailVerified": false,
+	"createdAt": {
+		"$date": "2025-08-27T19:33:57.563Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-28T08:15:29.181Z"
+	},
+	"__v": 0,
+	"patientProfile": {
+		"$oid": "68af5da6cb921f595de9a783"
+	},
+	"lastLogin": {
+		"$date": "2025-08-28T08:15:29.18Z"
+	}
+},
+{
+	"_id": {
+		"$oid": "68af5eb1cb921f595de9ae32"
+	},
+	"name": "doctor",
+	"email": "doc@gmail.com",
+	"password": "$2b$12$ZkYwU6oGhIHjZD9RMXoEXugMQGgrSJ5mfghaPLgj0U5Xw4YhjdORW",
+	"role": "doctor",
+	"profile": "https://www.pngmart.com/files/23/Profile-PNG-Photo.png",
+	"isActive": true,
+	"isEmailVerified": false,
+	"createdAt": {
+		"$date": "2025-08-27T19:38:25.12Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-27T19:39:48.469Z"
+	},
+	"__v": 0,
+	"doctorProfile": {
+		"$oid": "68af5eb1cb921f595de9ae3d"
+	},
+	"lastLogin": {
+		"$date": "2025-08-27T19:39:48.467Z"
+	}
+},
+{
+	"_id": {
+		"$oid": "68af5feccb921f595de9b7b2"
+	},
+	"name": "dddooo",
+	"email": "dddooo@gmail.com",
+	"password": "$2b$12$2a6/Z4Bd7.z9h9/cgKfl4ePIiU.ERBCNNSSiAkXc3CJbKcl1wYUY.",
+	"role": "doctor",
+	"profile": "https://www.pngmart.com/files/23/Profile-PNG-Photo.png",
+	"isActive": true,
+	"isEmailVerified": false,
+	"createdAt": {
+		"$date": "2025-08-27T19:43:40.47Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-28T07:31:47.758Z"
+	},
+	"__v": 0,
+	"doctorProfile": {
+		"$oid": "68af5fedcb921f595de9b7b4"
+	},
+	"lastLogin": {
+		"$date": "2025-08-28T07:31:47.757Z"
+	}
+},
+{
+	"_id": {
+		"$oid": "68b0107d81f64aaf183773c0"
+	},
+	"name": "aaaaa",
+	"email": "aaaaa@gmail.com",
+	"password": "$2b$12$220Ax/uLGexQ0cpvxFsY8uLG.xUtAgeg/2EZZdbR/vd.mrjB/zU3S",
+	"role": "patient",
+	"profile": "https://www.pngmart.com/files/23/Profile-PNG-Photo.png",
+	"isActive": true,
+	"isEmailVerified": false,
+	"createdAt": {
+		"$date": "2025-08-28T08:17:01.428Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-28T08:17:09.409Z"
+	},
+	"__v": 0,
+	"patientProfile": {
+		"$oid": "68b0107d81f64aaf183773c2"
+	},
+	"lastLogin": {
+		"$date": "2025-08-28T08:17:09.409Z"
+	}
+},
+{
+	"_id": {
+		"$oid": "68b0110381f64aaf183773db"
+	},
+	"name": "doctord",
+	"email": "doctord@gmail.com",
+	"password": "$2b$12$HcUyE0TVDBYxqh3SbU5J1u55FWwGLCSLfTpHr1eaeePHlvFFTPzWa",
+	"role": "doctor",
+	"profile": "https://www.pngmart.com/files/23/Profile-PNG-Photo.png",
+	"isActive": true,
+	"isEmailVerified": false,
+	"createdAt": {
+		"$date": "2025-08-28T08:19:15.776Z"
+	},
+	"updatedAt": {
+		"$date": "2025-08-28T08:19:20.931Z"
+	},
+	"__v": 0,
+	"doctorProfile": {
+		"$oid": "68b0110481f64aaf183773dd"
+	},
+	"lastLogin": {
+		"$date": "2025-08-28T08:19:20.931Z"
+	}
+}]
+

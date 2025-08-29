@@ -37,9 +37,15 @@ export const getAllDoctorCards = async (req, res) => {
         const avgRating = ratingStats.length > 0 ? ratingStats[0].avgRating : 0;
         const totalReviews = ratingStats.length > 0 ? ratingStats[0].totalReviews : 0;
 
+        // Ensure sessions have a safe hospital object when population fails
+        const safeSessions = sessions.map(s => ({
+          ...s,
+          hospital: s.hospital || { name: 'Unknown hospital', location: '' }
+        }));
+
         return {
           doctor,
-          sessions,
+          sessions: safeSessions,
           ratingSummary: {
             avgRating: parseFloat(avgRating.toFixed(1)),
             totalReviews,
@@ -70,9 +76,15 @@ export const getDoctorCardById = async (req, res) => {
       return res.status(404).json({ message: 'Doctor not found' });
     }
 
-    const sessions = await Session.find({ doctorId: doctor._id })
+    let sessions = await Session.find({ doctorId: doctor._id })
       .populate('hospital', 'name location')
       .lean();
+
+    // Fallback for any sessions where populate returned null
+    sessions = sessions.map(s => ({
+      ...s,
+      hospital: s.hospital || { name: 'Unknown hospital', location: '' }
+    }));
 
     // Rating summary
     const ratingStats = await Rating.aggregate([

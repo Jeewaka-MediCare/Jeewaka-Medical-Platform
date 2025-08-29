@@ -11,7 +11,11 @@ import hospitalRouter from './modules/hospital/hospitalRoutes.js';
 import sessionRouter from './modules/session/sessionRoutes.js';
 import patientRouter from './modules/patient/patientRoute.js';
 import adminRouter from './modules/admin/adminRoutes.js';
+<<<<<<< HEAD
 import adminVerificationRouter from './modules/doctorCertificates/doctorVerificationRoutes.js';
+=======
+import paymentsRouter from './modules/payments/paymentsRoutes.js';
+>>>>>>> 9ab59f75bc37fde13fcfd803b0b58319aac10597
 // Load environment variables
 dotenv.config();
 
@@ -37,8 +41,13 @@ app.use('/api/session', sessionRouter);
 app.use('/api/doctorCard', doctorCardRouter);
 // admin routes
 app.use('/api/admin', adminRouter);
+<<<<<<< HEAD
 //admin verification routes
 app.use('/api/admin-verification', adminVerificationRouter);
+=======
+// Register payments routes
+app.use('/api/payments', paymentsRouter);
+>>>>>>> 9ab59f75bc37fde13fcfd803b0b58319aac10597
 
 // Connect to MongoDB
 connectDB();

@@ -20,48 +20,74 @@ import { SessionItem } from "@/components/session-item";
 import { ReviewItem } from "@/components/review-item";
 import { BookingConfirmationDialog } from "@/components/booking-confirmation-dialog";
 import { WriteReviewDialog } from "@/components/write-review-dialog";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 export default function DoctorViewPage() {
-  console.log(JSON.parse(localStorage.getItem("userData")));
+  console.log('🔐 DoctorViewPage - Component rendered');
+  console.log('🔐 DoctorViewPage - localStorage state on render:', {
+    userData: localStorage.getItem("userData"),
+    userRole: localStorage.getItem("userRole")
+  });
+
+  // Safe parse of userData from localStorage
+  let parsedUserData = null;
+  try {
+    const raw = localStorage.getItem("userData");
+    parsedUserData = raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    console.warn('🔐 DoctorViewPage - Failed to parse userData from localStorage', err);
+    parsedUserData = null;
+  }
+  console.log('🔐 DoctorViewPage - Parsed userData:', parsedUserData);
+
   const [data, setData] = useState(null);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [loggedInUser, setLoggedInUser] = useState(null);
   const location = useLocation();
+  const params = useParams();
+  const navigate = useNavigate();
   const passedData = location.state;
 
-  // useEffect(() => {
-  //   const user = JSON.parse(localStorage.getItem("userData"));
-  //   console.log("Parsed userData:", user); // <- confirm _id is present
-  //   setLoggedInUser(user);
-
-  //   if (passedData) {
-  //     console.log("passedData", passedData);
-  //     setData({
-  //       doctor: passedData.doctor,
-  //       ratingSummary: passedData.ratingSummary,
-  //       sessions: passedData.sessions,
-  //       reviews: passedData.ratingSummary?.allRatings || [],
-  //     });
-  //   }
-  // }, [passedData]);
-
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("userData"));
-    console.log("Parsed userData:", user); 
+    console.log('🔐 DoctorViewPage - useEffect triggered');
+    console.log('🔐 DoctorViewPage - localStorage state in useEffect:', {
+      userData: localStorage.getItem("userData"),
+      userRole: localStorage.getItem("userRole")
+    });
+
+    const userRaw = localStorage.getItem("userData");
+    let user = null;
+    try { user = userRaw ? JSON.parse(userRaw) : null } catch (e) { user = null }
+    console.log("🔐 DoctorViewPage - Parsed userData in useEffect:", user);
     setLoggedInUser(user);
+
+    const doctorIdFromState = passedData && passedData.doctor && passedData.doctor._id;
+    const doctorId = doctorIdFromState || params.id;
+
+    if (!doctorId) {
+      console.error('🔐 DoctorViewPage - No doctor id provided via state or route param');
+      // Navigate back to doctors list or show an error page
+      navigate('/patient-dashboard');
+      return;
+    }
+
     const getDoctorData = async () => {
-      const res = await api.get(`/api/doctorCard/${passedData.doctor._id}`);
-      console.log("docotocard details", res.data);
-      setData({
-        doctor: res.data.doctor,
-        ratingSummary: res.data.ratingSummary,
-        sessions: res.data.sessions,
-        reviews: res.data.reviews
-      });
+      try {
+        const res = await api.get(`/api/doctorCard/${doctorId}`);
+        console.log("docotocard details", res.data);
+        setData({
+          doctor: res.data.doctor,
+          ratingSummary: res.data.ratingSummary,
+          sessions: res.data.sessions,
+          reviews: res.data.reviews
+        });
+      } catch (err) {
+        console.error('🔐 DoctorViewPage - Error fetching doctor data:', err);
+        navigate('/patient-dashboard');
+      }
     };
     getDoctorData();
   }, []);
@@ -86,10 +112,16 @@ export default function DoctorViewPage() {
     if (!selectedBooking) return;
 
     const { sessionId, timeSlotIndex, timeSlot } = selectedBooking;
+
+    console.log('🔐 DoctorViewPage - Booking attempt - localStorage state:', {
+      userData: localStorage.getItem("userData"),
+      userRole: localStorage.getItem("userRole")
+    });
+
     const user = JSON.parse(localStorage.getItem("userData"));
-    console.log("User data:", user);
+    console.log("🔐 DoctorViewPage - User data for booking:", user);
     const patientId = user._id;
-    console.log("patientId", patientId);
+    console.log("🔐 DoctorViewPage - patientId for booking:", patientId);
 
     if (loggedInUser) {
       const payload = {
@@ -172,10 +204,10 @@ export default function DoctorViewPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading doctor information...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg text-muted-foreground">Loading doctor information...</p>
         </div>
       </div>
     );
@@ -184,13 +216,13 @@ export default function DoctorViewPage() {
   const { doctor, sessions, reviews, ratingSummary } = data;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <main className="container mx-auto py-8 px-4">
+    <div className="min-h-screen bg-background">
+  <main className="container mx-auto py-8 px-6 max-w-6xl">
         {/* Back link */}
-        <div className="mb-6">
+        <div className="mb-4">
           <Link
             to="/patient-dashboard"
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
+            className="inline-flex items-center text-primary hover:opacity-90 font-medium transition-colors"
           >
             <ChevronLeft className="h-5 w-5 mr-1" />
             Back to Doctors
@@ -198,11 +230,11 @@ export default function DoctorViewPage() {
         </div>
 
         {/* Profile section */}
-        <div className="bg-white rounded-2xl shadow-xl border-0 p-8 mb-8 backdrop-blur-sm bg-white/95">
-          <div className="flex flex-col lg:flex-row gap-8">
+  <div className="bg-card/95 rounded-md shadow-md border-0 p-8 mb-6 backdrop-blur-sm">
+          <div className="flex flex-col lg:flex-row gap-6">
             {/* Doctor Image */}
             <div className="w-full lg:w-1/4">
-              <div className="relative aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
+              <div className="relative aspect-square rounded-md overflow-hidden shadow-md border-2 border-border">
                 <img
                   src={doctor.profile || "/placeholder.svg"}
                   alt={doctor.name}
@@ -213,59 +245,51 @@ export default function DoctorViewPage() {
             </div>
 
             {/* Doctor Details */}
-            <div className="flex-1 space-y-6">
+            <div className="flex-1 space-y-5">
               <div className="space-y-2">
-                <h1 className="text-4xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-foreground">
                   {doctor.name}
                 </h1>
-                <p className="text-blue-600 text-xl font-semibold">
+                <p className="text-primary text-lg font-semibold">
                   {doctor.specialization}
                 </p>
-                <p className="text-gray-600 text-sm">
+                <p className="text-muted-foreground text-sm">
                   Registration No: {doctor.regNo}
                 </p>
               </div>
 
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 rounded-xl shadow-lg">
-                  <p className="text-2xl font-bold">
-                    ${doctor.consultationFee}
-                  </p>
-                  <p className="text-blue-100 text-sm">Consultation Fee</p>
+                <div className="bg-primary text-primary-foreground px-6 py-4 rounded-md shadow">
+                  <p className="text-xl font-semibold">${doctor.consultationFee}</p>
+                  <p className="text-primary-foreground text-sm">Consultation Fee</p>
                 </div>
-                <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-6 py-4 rounded-xl shadow-lg">
+                <div className="bg-accent text-accent-foreground px-6 py-4 rounded-md shadow">
                   <div className="flex items-center gap-2">
-                    <Star className="h-6 w-6 fill-white" />
-                    <span className="text-2xl font-bold">
-                      {ratingSummary.avgRating || 0}
-                    </span>
+                    <Star className="h-5 w-5" />
+                    <span className="text-xl font-semibold">{ratingSummary.avgRating || 0}</span>
                   </div>
-                  <p className="text-yellow-100 text-sm">
-                    {ratingSummary.totalReviews} reviews
-                  </p>
+                  <p className="text-accent-foreground text-sm">{ratingSummary.totalReviews} reviews</p>
                 </div>
-                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-xl shadow-lg">
+                <div className="bg-secondary text-secondary-foreground px-6 py-4 rounded-md shadow">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-6 w-6" />
-                    <span className="text-2xl font-bold">
-                      {doctor.yearsOfExperience}
-                    </span>
+                    <Clock className="h-5 w-5" />
+                    <span className="text-xl font-semibold">{doctor.yearsOfExperience}</span>
                   </div>
-                  <p className="text-green-100 text-sm">Years Experience</p>
+                  <p className="text-secondary-foreground text-sm">Years Experience</p>
                 </div>
               </div>
 
               {/* Contact Info */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-muted rounded-md p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-blue-600" />
-                    <span className="text-gray-700">{doctor.phone}</span>
+                    <Phone className="h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground">{doctor.phone}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 text-blue-600" />
-                    <span className="text-gray-700">{doctor.email}</span>
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground">{doctor.email}</span>
                   </div>
                 </div>
               </div>
@@ -273,9 +297,9 @@ export default function DoctorViewPage() {
               {/* Additional Info */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Languages className="h-5 w-5 text-blue-600" />
-                    <span className="font-semibold text-gray-900">
+          <div className="flex items-center gap-2">
+          <Languages className="h-4 w-4 text-primary" />
+          <span className="font-semibold text-foreground">
                       Languages
                     </span>
                   </div>
@@ -283,8 +307,7 @@ export default function DoctorViewPage() {
                     {doctor.languagesSpoken?.map((lang) => (
                       <Badge
                         key={lang}
-                        variant="secondary"
-                        className="bg-blue-100 text-blue-800 hover:bg-blue-200"
+            variant="secondary"
                       >
                         {lang}
                       </Badge>
@@ -293,8 +316,8 @@ export default function DoctorViewPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-blue-600" />
-                    <span className="font-semibold text-gray-900">
+          <Award className="h-4 w-4 text-primary" />
+          <span className="font-semibold text-foreground">
                       Sub-specializations
                     </span>
                   </div>
@@ -302,8 +325,7 @@ export default function DoctorViewPage() {
                     {doctor.subSpecializations?.map((s) => (
                       <Badge
                         key={s}
-                        variant="secondary"
-                        className="bg-green-100 text-green-800 hover:bg-green-200"
+            variant="secondary"
                       >
                         {s}
                       </Badge>
@@ -312,8 +334,8 @@ export default function DoctorViewPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5 text-blue-600" />
-                    <span className="font-semibold text-gray-900">
+          <GraduationCap className="h-4 w-4 text-primary" />
+          <span className="font-semibold text-foreground">
                       Qualifications
                     </span>
                   </div>
@@ -322,7 +344,7 @@ export default function DoctorViewPage() {
                       <Badge
                         key={idx}
                         variant="outline"
-                        className="block w-fit"
+            className="block w-fit"
                       >
                         {q}
                       </Badge>
@@ -336,14 +358,14 @@ export default function DoctorViewPage() {
 
         {/* Doctor Bio */}
         {doctor.bio && (
-          <Card className="mb-8 shadow-lg border-0 bg-white/95 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-2xl text-gray-900">
+          <Card className="mb-6 shadow-sm border-0 bg-card/95 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl text-foreground">
                 About Dr. {doctor.name.split(" ")[1] || doctor.name}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 leading-relaxed text-lg">
+              <p className="text-muted-foreground leading-relaxed text-base">
                 {doctor.bio}
               </p>
             </CardContent>
@@ -351,18 +373,18 @@ export default function DoctorViewPage() {
         )}
 
         {/* Tabs for Sessions & Reviews */}
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border-0 overflow-hidden">
+        <div className="bg-card/95 backdrop-blur-sm rounded-md shadow-md border-0 overflow-hidden">
           <Tabs defaultValue="sessions" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-gray-50 p-2 rounded-none">
+            <TabsList className="grid w-full grid-cols-2 bg-muted p-2 rounded-none">
               <TabsTrigger
                 value="sessions"
-                className="text-lg py-4 data-[state=active]:bg-white data-[state=active]:shadow-md"
+                className="text-base py-3 data-[state=active]:bg-card data-[state=active]:shadow"
               >
                 Available Sessions
               </TabsTrigger>
               <TabsTrigger
                 value="reviews"
-                className="text-lg py-4 data-[state=active]:bg-white data-[state=active]:shadow-md"
+                className="text-base py-3 data-[state=active]:bg-card data-[state=active]:shadow"
               >
                 Patient Reviews
               </TabsTrigger>
@@ -383,7 +405,7 @@ export default function DoctorViewPage() {
                 </Button>
               </div>
               {sessions && sessions.length > 0 ? (
-                <div className="grid gap-6">
+                <div className="p-4 md:p-6 space-y-4">
                   {sessions.map((session) => (
                     <SessionItem
                       key={session._id}
