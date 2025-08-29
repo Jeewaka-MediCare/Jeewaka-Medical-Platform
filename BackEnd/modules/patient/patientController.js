@@ -10,6 +10,16 @@ export const createPatient = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const getAllPatients = async (req, res) => {
+  try {
+
+    const patients = await Patient.find();
+    res.status(200).json(patients);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 export const getPatientByUuid = async (req, res) => {
   const { uuid } = req.params;
   
@@ -35,6 +45,7 @@ export const getPatient = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // ✅ Update a patient
 export const updatePatient = async (req, res) => {
