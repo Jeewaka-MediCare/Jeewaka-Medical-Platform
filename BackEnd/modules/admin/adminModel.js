@@ -5,6 +5,7 @@ const adminSchema = new mongoose.Schema({
 
     email: { type: String, unique: true },
     uuid: { type: String, required: true, unique: true },
+    createdAt: { type: Date, default: Date.now }
 });
 
 const Admin = mongoose.model('Admin', adminSchema);
