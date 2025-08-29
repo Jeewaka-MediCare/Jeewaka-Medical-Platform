@@ -621,7 +621,7 @@ export function SignupForm({ className, ...props }) {
             <button
               type="button"
               className="underline underline-offset-4 hover:text-primary"
-              onClick={() => console.log("Login clicked")}
+              onClick={() => navigate('/login')}
             >
               Sign in
             </button>
