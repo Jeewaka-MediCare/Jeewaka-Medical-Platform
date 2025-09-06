@@ -108,24 +108,32 @@ export default function Register() {
         patientForm.password
       );
       
-      // Get token for API authentication
-      const token = await userCredential.user.getIdToken();
-      
-      // Register user in backend
-      const { data } = await api.post('/api/auth/register', {
+      // Register patient in backend using existing patient endpoint
+      const { data } = await api.post('/api/patient/', {
         name: patientForm.name,
         email: patientForm.email,
-        phone: patientForm.phone,
-        gender: patientForm.gender,
-        dob: format(patientForm.dob, 'yyyy-MM-dd'),
-        role: 'patient',
-        uid: userCredential.user.uid
+        uuid: userCredential.user.uid,
+        dob: patientForm.dob,
+        sex: patientForm.gender
+      });
+      
+      // Set user role in Firebase custom claims using auth endpoint
+      const token = await userCredential.user.getIdToken();
+      await api.post('/api/auth/role', {
+        uid: userCredential.user.uid,
+        role: 'patient'
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Set user data and role
-      setUser(data.user);
+      // Set user data and role in app state
+      setUser({
+        _id: data._id,
+        name: data.name,
+        email: data.email,
+        uuid: data.uuid,
+        profile: data.profile
+      });
       setUserRole('patient');
       
       // Navigate to home
@@ -134,7 +142,7 @@ export default function Register() {
     } catch (error) {
       Alert.alert(
         'Registration Failed',
-        error.message || 'Failed to register. Please try again.'
+        error.response?.data?.error || error.message || 'Failed to register. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -154,26 +162,36 @@ export default function Register() {
         doctorForm.password
       );
       
-      // Get token for API authentication
-      const token = await userCredential.user.getIdToken();
-      
-      // Register doctor in backend
-      const { data } = await api.post('/api/auth/register', {
+      // Register doctor in backend using existing doctor endpoint
+      const { data } = await api.post('/api/doctor/', {
         name: doctorForm.name,
         email: doctorForm.email,
         phone: doctorForm.phone,
+        uuid: userCredential.user.uid,
         gender: doctorForm.gender,
-        dob: format(doctorForm.dob, 'yyyy-MM-dd'),
+        dob: doctorForm.dob,
         regNo: doctorForm.regNo,
-        specialization: doctorForm.specialization,
-        role: 'doctor',
-        uid: userCredential.user.uid
+        specialization: doctorForm.specialization
+      });
+      
+      // Set user role in Firebase custom claims using auth endpoint
+      const token = await userCredential.user.getIdToken();
+      await api.post('/api/auth/role', {
+        uid: userCredential.user.uid,
+        role: 'doctor'
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Set user data and role
-      setUser(data.user);
+      // Set user data and role in app state
+      const doctor = data.doctor || data; // Handle different response formats
+      setUser({
+        _id: doctor._id,
+        name: doctor.name,
+        email: doctor.email,
+        uuid: doctor.uuid,
+        profile: doctor.profile
+      });
       setUserRole('doctor');
       
       // Navigate to doctor dashboard
@@ -182,7 +200,7 @@ export default function Register() {
     } catch (error) {
       Alert.alert(
         'Registration Failed',
-        error.message || 'Failed to register. Please try again.'
+        error.response?.data?.error || error.message || 'Failed to register. Please try again.'
       );
     } finally {
       setLoading(false);

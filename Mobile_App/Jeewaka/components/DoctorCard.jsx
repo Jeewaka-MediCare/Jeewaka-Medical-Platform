@@ -58,15 +58,18 @@ export const DoctorCard = ({
           <Text style={styles.name} numberOfLines={1}>{name}</Text>
           <Text style={styles.specialization} numberOfLines={1}>
             {specialization}
-            {subSpecializations.length > 0 && ` • ${subSpecializations[0]}`}
+            {subSpecializations.length > 0 && <Text> • {subSpecializations[0]}</Text>}
           </Text>
           
           {/* Qualifications and Experience */}
-          <View style={styles.credentialsContainer}>
-            <Text style={styles.qualifications} numberOfLines={1}>
-              {qualifications.join(', ')} • {yearsOfExperience}+ years exp
-            </Text>
-          </View>
+          {(qualifications.length > 0 || yearsOfExperience > 0) && (
+            <View style={styles.credentialsContainer}>
+              <Text style={styles.qualifications} numberOfLines={1}>
+                {qualifications.length > 0 ? qualifications.join(', ') : 'General Practice'}
+                {yearsOfExperience > 0 && <Text> • {yearsOfExperience}+ years exp</Text>}
+              </Text>
+            </View>
+          )}
           
           <View style={styles.ratingContainer}>
             <AntDesign name="star" size={14} color="#FFD700" />
@@ -77,7 +80,7 @@ export const DoctorCard = ({
 
         <View style={styles.feeContainer}>
           <Text style={styles.feeLabel}>Fee</Text>
-          <Text style={styles.feeAmount}>${consultationFee?.toLocaleString() || '0'}</Text>
+          <Text style={styles.feeAmount}>LKR{consultationFee?.toLocaleString() || '0'}</Text>
         </View>
       </View>
 
@@ -119,20 +122,6 @@ export const DoctorCard = ({
         </View>
       </View>
 
-      {/* Action Footer */}
-      <View style={styles.footer}>
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.secondaryButton}>
-            <AntDesign name="message1" size={16} color="#2563EB" />
-            <Text style={styles.secondaryButtonText}>Message</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.primaryButton}>
-            <AntDesign name="calendar" size={16} color="#fff" />
-            <Text style={styles.primaryButtonText}>Book Now</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
     </TouchableOpacity>
   );
 };
@@ -252,8 +241,7 @@ const styles = StyleSheet.create({
   infoSection: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    paddingBottom: 16,
   },
   infoRow: {
     flexDirection: 'row',
@@ -272,46 +260,5 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontWeight: '500',
     flex: 1,
-  },
-  footer: {
-    padding: 16,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  secondaryButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#2563EB',
-    backgroundColor: 'transparent',
-  },
-  secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2563EB',
-    marginLeft: 6,
-  },
-  primaryButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#2563EB',
-  },
-  primaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
-    marginLeft: 6,
   },
 });

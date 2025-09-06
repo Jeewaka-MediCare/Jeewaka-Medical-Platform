@@ -40,20 +40,71 @@ export default function PatientDashboard() {
     
     setLoading(true);
     try {
-      const { data } = await api.get(`/api/session/patient/${user._id}`);
+      console.log('Patient Dashboard - Fetching appointments for patient:', user._id);
+      const { data } = await api.get('/api/session');
+      
+      // Filter sessions that have appointments for this patient
+      const patientSessions = (data || []).filter(session =>
+        session.timeSlots && session.timeSlots.some(slot =>
+          slot.patientId && slot.patientId === user._id
+        )
+      );
+      
+      // Transform session data into individual appointments
+      const appointments = [];
+      patientSessions.forEach(session => {
+        // Get only the time slots for this patient
+        const patientTimeSlots = session.timeSlots.filter(slot => 
+          slot.patientId && slot.patientId === user._id
+        );
+        
+        patientTimeSlots.forEach(slot => {
+          appointments.push({
+            _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
+            sessionId: session._id,
+            date: session.date,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            status: slot.status,
+            appointmentStatus: slot.appointmentStatus,
+            doctor: session.doctorId,
+            hospital: session.hospital,
+            meetingLink: session.meetingLink,
+            type: session.type
+          });
+        });
+      });
       
       // Filter appointments into upcoming and past
       const now = new Date();
       
-      const upcoming = data.appointments.filter(apt => {
-        const appointmentDate = parseISO(`${apt.session.date}T${apt.startTime}`);
-        return appointmentDate > now;
+      const upcoming = appointments.filter(apt => {
+        try {
+          // Extract just the date part from the ISO string and combine with time
+          const dateOnly = apt.date.split('T')[0]; // Get '2025-02-08' from '2025-02-08T00:00:00.000Z'
+          const appointmentDate = parseISO(`${dateOnly}T${apt.startTime}`);
+          return appointmentDate > now;
+        } catch (error) {
+          console.error('Error parsing appointment date:', apt.date, apt.startTime, error);
+          return false;
+        }
       });
       
-      const past = data.appointments.filter(apt => {
-        const appointmentDate = parseISO(`${apt.session.date}T${apt.startTime}`);
-        return appointmentDate <= now;
+      const past = appointments.filter(apt => {
+        try {
+          // Extract just the date part from the ISO string and combine with time
+          const dateOnly = apt.date.split('T')[0]; // Get '2025-02-08' from '2025-02-08T00:00:00.000Z'
+          const appointmentDate = parseISO(`${dateOnly}T${apt.startTime}`);
+          return appointmentDate <= now;
+        } catch (error) {
+          console.error('Error parsing appointment date:', apt.date, apt.startTime, error);
+          return false;
+        }
       });
+      
+      console.log('Patient Dashboard - Total appointments processed:', appointments.length);
+      console.log('Patient Dashboard - Upcoming appointments:', upcoming.length);
+      console.log('Patient Dashboard - Past appointments:', past.length);
       
       setUpcomingAppointments(upcoming);
       setPastAppointments(past);
@@ -77,29 +128,9 @@ export default function PatientDashboard() {
     fetchAppointments();
   }, [user]);
 
-  // Handle cancel appointment
+  // Handle cancel appointment - temporarily disabled
   const handleCancelAppointment = async (appointmentId) => {
-    Alert.alert(
-      'Cancel Appointment',
-      'Are you sure you want to cancel this appointment?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.post(`/api/session/cancel/${appointmentId}`);
-              Alert.alert('Success', 'Appointment canceled successfully');
-              fetchAppointments();
-            } catch (error) {
-              console.error('Error canceling appointment:', error);
-              Alert.alert('Error', 'Failed to cancel appointment');
-            }
-          }
-        }
-      ]
-    );
+    Alert.alert('Coming Soon', 'Appointment cancellation feature will be available soon');
   };
 
   // Handle view doctor profile
@@ -124,7 +155,7 @@ export default function PatientDashboard() {
           <View key={appointment._id} style={styles.appointmentCard}>
             <View style={styles.cardHeader}>
               <Text style={styles.appointmentDate}>
-                {format(parseISO(appointment.session.date), 'EEE, MMM dd, yyyy')}
+                {format(parseISO(appointment.date), 'EEE, MMM dd, yyyy')}
               </Text>
               
               <View style={styles.badgeContainer}>
@@ -151,23 +182,25 @@ export default function PatientDashboard() {
               
               <View style={styles.detailRow}>
                 <Ionicons 
-                  name={appointment.session.sessionType === 'in-person' ? 'location-outline' : 'videocam-outline'} 
+                  name={appointment.type === 'in-person' ? 'location-outline' : 'videocam-outline'} 
                   size={18} 
                   color="#64748B" 
                 />
                 <Text style={styles.detailText}>
-                  {appointment.session.sessionType === 'in-person' 
-                    ? (appointment.session.hospital?.name || 'Hospital') 
+                  {appointment.type === 'in-person' 
+                    ? (appointment.hospital?.name || 'Hospital') 
                     : 'Video Consultation'
                   }
                 </Text>
               </View>
             </View>
             
+            {/* Video Consultation Card */}
+            
             <View style={styles.cardActions}>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => handleViewDoctor(appointment.doctor._id)}
+                onPress={() => handleViewDoctor(appointment.doctor?._id || appointment.doctor)}
               >
                 <Text style={styles.actionButtonText}>View Doctor</Text>
               </TouchableOpacity>
@@ -217,7 +250,7 @@ export default function PatientDashboard() {
           <View key={appointment._id} style={styles.appointmentCard}>
             <View style={styles.cardHeader}>
               <Text style={styles.appointmentDate}>
-                {format(parseISO(appointment.session.date), 'EEE, MMM dd, yyyy')}
+                {format(parseISO(appointment.date), 'EEE, MMM dd, yyyy')}
               </Text>
               
               <View style={styles.badgeContainer}>
@@ -244,13 +277,13 @@ export default function PatientDashboard() {
               
               <View style={styles.detailRow}>
                 <Ionicons 
-                  name={appointment.session.sessionType === 'in-person' ? 'location-outline' : 'videocam-outline'} 
+                  name={appointment.type === 'in-person' ? 'location-outline' : 'videocam-outline'} 
                   size={18} 
                   color="#64748B" 
                 />
                 <Text style={styles.detailText}>
-                  {appointment.session.sessionType === 'in-person' 
-                    ? (appointment.session.hospital?.name || 'Hospital') 
+                  {appointment.type === 'in-person' 
+                    ? (appointment.hospital?.name || 'Hospital') 
                     : 'Video Consultation'
                   }
                 </Text>
@@ -260,7 +293,7 @@ export default function PatientDashboard() {
             <View style={styles.cardActions}>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => handleViewDoctor(appointment.doctor._id)}
+                onPress={() => handleViewDoctor(appointment.doctor?._id || appointment.doctor)}
               >
                 <Text style={styles.actionButtonText}>View Doctor</Text>
               </TouchableOpacity>

@@ -104,10 +104,10 @@ export default function Profile() {
           <>
             <TouchableOpacity 
               style={styles.menuItem}
-              onPress={() => router.push('/patient-dashboard')}
+              onPress={() => router.push('/edit-profile')}
             >
-              <Ionicons name="calendar-outline" size={24} color="#1E293B" />
-              <Text style={styles.menuText}>My Appointments</Text>
+              <Ionicons name="person-outline" size={24} color="#1E293B" />
+              <Text style={styles.menuText}>Edit Profile</Text>
               <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
             </TouchableOpacity>
             

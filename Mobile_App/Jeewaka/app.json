@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "extra": {
-      "BACKEND_URL": "http://192.168.137.1:5000"
+      "BACKEND_URL": "http://10.13.0.57:5000"
     },
     "ios": {
       "supportsTablet": true

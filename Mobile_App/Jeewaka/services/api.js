@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 // Function to determine the appropriate baseURL
 const getBaseUrl = () => {
   // Check if we have environment variable from .env file
-  const envBackendUrl = Constants.expoConfig?.extra?.BACKEND_URL;
+  const envBackendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
   if (envBackendUrl) {
     console.log(`Using backend URL from environment: ${envBackendUrl}`);
     return envBackendUrl;
@@ -34,7 +34,7 @@ const getBaseUrl = () => {
   }
   
   // Fallback or production URL
-  return 'http://10.0.2.2:5000'; // Replace with your production API URL in real deployment
+  return 'http://10.13.0.57:5000'; // Replace with your production API URL in real deployment
 };
 
 const api = axios.create({

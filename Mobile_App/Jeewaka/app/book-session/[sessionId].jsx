@@ -21,46 +21,16 @@ export default function BookSession() {
   
   const session = JSON.parse(sessionData);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedSlotIndex, setSelectedSlotIndex] = useState(null);
   const [loading, setLoading] = useState(false);
   
-  // Generate time slots based on session data
-  const generateTimeSlots = () => {
-    const slots = [];
-    const startTime = session.startTime;
-    const [hours, minutes] = startTime.split(':').map(Number);
-    const slotDuration = session.slotDuration || 30;
-    
-    for (let i = 0; i < session.totalSlots; i++) {
-      const slotStartMinutes = hours * 60 + minutes + (i * slotDuration);
-      const slotHour = Math.floor(slotStartMinutes / 60);
-      const slotMinute = slotStartMinutes % 60;
-      
-      const formattedStartTime = `${slotHour.toString().padStart(2, '0')}:${slotMinute.toString().padStart(2, '0')}`;
-      
-      const endMinutes = slotStartMinutes + slotDuration;
-      const endHour = Math.floor(endMinutes / 60);
-      const endMinute = endMinutes % 60;
-      
-      const formattedEndTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
-      
-      const slotStatus = session.bookedSlots && session.bookedSlots.includes(i) ? 'booked' : 'available';
-      
-      slots.push({
-        id: i,
-        startTime: formattedStartTime,
-        endTime: formattedEndTime,
-        status: slotStatus,
-      });
-    }
-    
-    return slots;
-  };
-  
-  const timeSlots = generateTimeSlots();
+  // Use the actual time slots from the session (like web app)
+  const timeSlots = session.timeSlots || [];
 
-  const handleSlotSelect = (slot) => {
-    if (slot.status === 'booked') return;
+  const handleSlotSelect = (slot, index) => {
+    if (slot.status === 'booked' || slot.status === 'unavailable') return;
     setSelectedSlot(slot);
+    setSelectedSlotIndex(index);
   };
 
   const handleConfirmBooking = async () => {
@@ -72,19 +42,22 @@ export default function BookSession() {
     setLoading(true);
     
     try {
-      const { data } = await api.post('/api/session/book', {
-        sessionId,
-        doctorId,
-        slotIndex: selectedSlot.id,
+      // Use existing backend route to update the time slot
+      const updateData = {
         patientId: user._id,
-      });
+        status: 'booked',
+        appointmentStatus: 'upcoming'
+      };
+
+      const { data } = await api.put(`/api/session/${sessionId}/timeslot/${selectedSlotIndex}`, updateData);
       
       if (data.success) {
+        // Show success message for all bookings
         Alert.alert(
           'Booking Successful',
           'Your appointment has been booked successfully!',
           [
-            { text: 'View My Appointments', onPress: () => router.push('/appointments') },
+            { text: 'View My Appointments', onPress: () => router.push('/patient-dashboard') },
             { text: 'OK', onPress: () => router.push('/') }
           ]
         );
@@ -125,11 +98,11 @@ export default function BookSession() {
           
           <View style={styles.sessionTypeBadge}>
             <Text style={styles.sessionTypeText}>
-              {session.sessionType === 'in-person' ? 'In-Person' : 'Video Call'}
+              {session.type === 'in-person' ? 'In-Person' : 'Video Call'}
             </Text>
           </View>
           
-          {session.sessionType === 'in-person' && session.hospital && (
+          {session.type === 'in-person' && session.hospital && (
             <View style={styles.locationContainer}>
               <Ionicons name="location-outline" size={18} color="#64748B" />
               <Text style={styles.locationText}>{session.hospital.name}</Text>
@@ -139,35 +112,43 @@ export default function BookSession() {
         
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Select Time Slot</Text>
-          <Text style={styles.sectionSubtitle}>Each slot is {session.slotDuration} minutes</Text>
+          <Text style={styles.sectionSubtitle}>Available time slots</Text>
           
-          <View style={styles.timeSlotsContainer}>
-            {timeSlots.map((slot) => (
+          {timeSlots.length === 0 ? (
+            <View style={styles.noSlotsContainer}>
+              <Text style={styles.noSlotsText}>No time slots available for this session</Text>
+            </View>
+          ) : (
+            <View style={styles.timeSlotsContainer}>
+              {timeSlots.map((slot, index) => (
               <TouchableOpacity
-                key={slot.id}
+                key={index}
                 style={[
                   styles.timeSlot,
-                  slot.status === 'booked' && styles.bookedSlot,
-                  selectedSlot?.id === slot.id && styles.selectedSlot
+                  (slot.status === 'booked' || slot.status === 'unavailable') && styles.bookedSlot,
+                  selectedSlotIndex === index && styles.selectedSlot
                 ]}
-                onPress={() => handleSlotSelect(slot)}
-                disabled={slot.status === 'booked'}
+                onPress={() => handleSlotSelect(slot, index)}
+                disabled={slot.status === 'booked' || slot.status === 'unavailable'}
               >
                 <Text
                   style={[
                     styles.timeSlotText,
-                    slot.status === 'booked' && styles.bookedSlotText,
-                    selectedSlot?.id === slot.id && styles.selectedSlotText
+                    (slot.status === 'booked' || slot.status === 'unavailable') && styles.bookedSlotText,
+                    selectedSlotIndex === index && styles.selectedSlotText
                   ]}
                 >
                   {`${slot.startTime} - ${slot.endTime}`}
                 </Text>
-                {slot.status === 'booked' && (
-                  <Text style={styles.bookedText}>Booked</Text>
+                {(slot.status === 'booked' || slot.status === 'unavailable') && (
+                  <Text style={styles.bookedText}>
+                    {slot.status === 'booked' ? 'Booked' : 'Unavailable'}
+                  </Text>
                 )}
               </TouchableOpacity>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
         
         <View style={styles.summaryContainer}>
@@ -197,7 +178,7 @@ export default function BookSession() {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Session Type</Text>
             <Text style={styles.summaryValue}>
-              {session.sessionType === 'in-person' ? 'In-Person' : 'Video Call'}
+              {session.type === 'in-person' ? 'In-Person' : 'Video Call'}
             </Text>
           </View>
           
@@ -205,7 +186,7 @@ export default function BookSession() {
           
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Consultation Fee</Text>
-            <Text style={styles.totalValue}>${session.fee || 0}</Text>
+            <Text style={styles.totalValue}>${session.consultationFee || session.fee || 0}</Text>
           </View>
         </View>
       </ScrollView>
@@ -409,5 +390,14 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     fontSize: 16,
+  },
+  noSlotsContainer: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  noSlotsText: {
+    fontSize: 16,
+    color: '#64748B',
+    textAlign: 'center',
   },
 });

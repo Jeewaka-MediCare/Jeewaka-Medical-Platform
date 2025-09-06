@@ -33,24 +33,58 @@ export default function Home() {
     setError(null);
     
     try {
-      let url = '/api/doctor';
+      // Check if we have any search filters
+      const hasFilters = searchFilters.query || searchFilters.specialization || 
+                        searchFilters.minFee || searchFilters.maxFee || searchFilters.minRating;
+      
+      let url = hasFilters ? '/api/doctor/search' : '/api/doctor';
       
       // Add query parameters based on filters
-      const queryParams = [];
-      if (searchFilters.query) queryParams.push(`query=${encodeURIComponent(searchFilters.query)}`);
-      if (searchFilters.specialization) queryParams.push(`specialization=${encodeURIComponent(searchFilters.specialization)}`);
-      if (searchFilters.minFee) queryParams.push(`minFee=${searchFilters.minFee}`);
-      if (searchFilters.maxFee) queryParams.push(`maxFee=${searchFilters.maxFee}`);
-      if (searchFilters.minRating) queryParams.push(`minRating=${searchFilters.minRating}`);
-      
-      if (queryParams.length > 0) {
-        url = `${url}?${queryParams.join('&')}`;
+      if (hasFilters) {
+        const queryParams = [];
+        if (searchFilters.query) queryParams.push(`name=${encodeURIComponent(searchFilters.query)}`); // Changed from 'query' to 'name'
+        if (searchFilters.specialization) queryParams.push(`specialization=${encodeURIComponent(searchFilters.specialization)}`);
+        if (searchFilters.minFee) queryParams.push(`minFee=${searchFilters.minFee}`);
+        if (searchFilters.maxFee) queryParams.push(`maxFee=${searchFilters.maxFee}`);
+        if (searchFilters.minRating) queryParams.push(`minRating=${searchFilters.minRating}`);
+        
+        if (queryParams.length > 0) {
+          url = `${url}?${queryParams.join('&')}`;
+        }
       }
       
-      const { data } = await api.get(url);
-      console.log('Doctors data received:', data);
-      console.log('Doctors count:', data?.length || 0);
-      setDoctors(data || []); // Backend returns doctors array directly
+      const response = await api.get(url);
+      console.log('API Response Status:', response.status);
+      console.log('Full API Response:', response);
+      console.log('Response Data:', response.data);
+      console.log('Response Data Type:', typeof response.data);
+      
+      // Handle different response structures
+      let doctorsData;
+      if (hasFilters) {
+        // /api/doctor/search returns { success, data: { doctors, pagination } }
+        doctorsData = response.data?.data?.doctors || [];
+      } else {
+        // /api/doctor returns doctors array directly
+        doctorsData = response.data || [];
+      }
+      
+      console.log('Doctors data received:', doctorsData);
+      console.log('Doctors count:', doctorsData.length || 0);
+      
+      // Add default rating and review data for now
+      const doctors = doctorsData.map(doctor => ({
+        ...doctor,
+        ratingSummary: {
+          avgRating: 0,
+          totalReviews: 0
+        },
+        sessions: [],
+        avgRating: 0,
+        totalReviews: 0
+      }));
+      
+      setDoctors(doctors);
     } catch (err) {
       console.error('Error fetching doctors:', err);
       console.error('Error response:', err.response?.data);

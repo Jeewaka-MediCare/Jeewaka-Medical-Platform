@@ -17,7 +17,7 @@ import useAuthStore from '../store/authStore';
 import { format, parseISO, addDays } from 'date-fns';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
-import { TextInput } from 'react-native-gesture-handler';
+import { TextInput, GestureHandlerRootView } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 
@@ -49,7 +49,6 @@ export default function DoctorDashboard() {
     totalSlots: 6,
     sessionType: 'in-person',
     hospital: '',
-    meetingLink: '',
     fee: 2500,
   });
   
@@ -62,8 +61,40 @@ export default function DoctorDashboard() {
     
     setLoading(true);
     try {
-      const { data } = await api.get(`/api/session/doctor/${user._id}/appointments`);
-      setAppointments(data.appointments || []);
+      const { data } = await api.get('/api/session');
+      
+      // Filter sessions for this doctor only
+      const doctorSessions = (data || []).filter(session => 
+        session.doctorId && session.doctorId._id === user._id
+      );
+      
+      // Transform session data into individual appointments
+      const appointments = [];
+      doctorSessions.forEach(session => {
+        // Get only booked time slots
+        const bookedSlots = (session.timeSlots || []).filter(slot => 
+          slot.patientId && slot.status !== 'available'
+        );
+        
+        bookedSlots.forEach(slot => {
+          appointments.push({
+            _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
+            sessionId: session._id,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            status: slot.status,
+            appointmentStatus: slot.appointmentStatus,
+            patient: slot.patientId,
+            session: {
+              date: session.date,
+              sessionType: session.type,
+              hospital: session.hospital,
+            }
+          });
+        });
+      });
+      
+      setAppointments(appointments);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       Alert.alert('Error', 'Failed to load appointments');
@@ -79,8 +110,14 @@ export default function DoctorDashboard() {
     
     setLoading(true);
     try {
-      const { data } = await api.get(`/api/session/doctor/${user._id}`);
-      setSessions(data.sessions || []);
+      const { data } = await api.get('/api/session');
+      
+      // Filter sessions for this doctor only
+      const doctorSessions = (data || []).filter(session => 
+        session.doctorId && session.doctorId._id === user._id
+      );
+      
+      setSessions(doctorSessions);
     } catch (error) {
       console.error('Error fetching sessions:', error);
       Alert.alert('Error', 'Failed to load sessions');
@@ -94,7 +131,8 @@ export default function DoctorDashboard() {
   const fetchHospitals = async () => {
     try {
       const { data } = await api.get('/api/hospital');
-      setHospitals(data.hospitals || []);
+      console.log('Hospitals received:', data.length, 'hospitals');
+      setHospitals(data || []);
     } catch (error) {
       console.error('Error fetching hospitals:', error);
     }
@@ -137,20 +175,47 @@ export default function DoctorDashboard() {
       return;
     }
     
-    if (newSession.sessionType === 'video' && !newSession.meetingLink) {
-      Alert.alert('Error', 'Please provide a meeting link for video session');
-      return;
-    }
     
     setLoading(true);
     try {
-      await api.post('/api/session/create', {
-        ...newSession,
-        doctorId: user._id,
-        date: format(newSession.date, 'yyyy-MM-dd'),
-      });
+      // Generate time slots like the web app
+      const timeSlots = [];
+      const startTime = newSession.startTime || '09:00';
+      const slotDuration = newSession.slotDuration || 30;
+      const totalSlots = newSession.totalSlots || 6;
       
-      Alert.alert('Success', 'Session created successfully');
+      const start = new Date(`2024-01-01 ${startTime}:00`);
+      for (let i = 0; i < totalSlots; i++) {
+        const slotStart = new Date(start.getTime() + i * slotDuration * 60000);
+        const slotEnd = new Date(slotStart.getTime() + slotDuration * 60000);
+        timeSlots.push({
+          startTime: slotStart.toTimeString().slice(0, 5),
+          endTime: slotEnd.toTimeString().slice(0, 5),
+          status: "available",
+          appointmentStatus: "pending",
+          patientId: null,
+        });
+      }
+
+      const payload = {
+        doctorId: user._id,
+        timeSlots: timeSlots,
+        type: newSession.sessionType,
+        hospital: newSession.hospital,
+        date: format(newSession.date, 'yyyy-MM-dd'),
+      };
+
+      console.log("Creating session with payload:", payload);
+      const response = await api.post('/api/session', payload);
+      
+      if (response.data.success) {
+        console.log("Session created successfully:", response.data.session);
+        Alert.alert('Success', 'Session created successfully');
+      } else {
+        console.log("Failed to create session:", response.data.message);
+        Alert.alert('Error', 'Failed to create session');
+        return;
+      }
       setModalVisible(false);
       fetchSessions();
       
@@ -162,8 +227,7 @@ export default function DoctorDashboard() {
         totalSlots: 6,
         sessionType: 'in-person',
         hospital: '',
-        meetingLink: '',
-        fee: 2500,
+            fee: 2500,
       });
     } catch (error) {
       console.error('Error creating session:', error);
@@ -219,15 +283,16 @@ export default function DoctorDashboard() {
                 </Text>
               </View>
               
-              {appointment.session.sessionType === 'video' && (
+              {appointment.session.sessionType === 'online' && (
                 <View style={styles.infoRow}>
                   <Ionicons name="link-outline" size={18} color="#64748B" />
                   <Text style={styles.infoText}>
-                    {appointment.session.meetingLink || 'No meeting link available'}
+                    Online Session
                   </Text>
                 </View>
               )}
             </View>
+
             
             <View style={styles.cardActions}>
               <TouchableOpacity 
@@ -240,21 +305,14 @@ export default function DoctorDashboard() {
                 <Text style={styles.actionText}>View Patient</Text>
               </TouchableOpacity>
               
-              {appointment.session.sessionType === 'video' && (
+              {appointment.session.sessionType === 'online' && (
                 <TouchableOpacity 
                   style={[styles.actionButton, styles.startButton]}
                   onPress={() => {
-                    // Handle start video call
-                    if (appointment.session.meetingLink) {
-                      // Open the meeting link
-                      // This would typically use Linking.openURL
-                      Alert.alert('Open Meeting', 'Opening video call link');
-                    } else {
-                      Alert.alert('Error', 'No meeting link available');
-                    }
+                    Alert.alert('Info', 'Video consultation feature is temporarily disabled');
                   }}
                 >
-                  <Text style={[styles.actionText, styles.startText]}>Start Call</Text>
+                  <Text style={[styles.actionText, styles.startText]}>Online Session</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -330,14 +388,6 @@ export default function DoctorDashboard() {
                   </View>
                 )}
                 
-                {session.sessionType === 'video' && session.meetingLink && (
-                  <View style={styles.detailRow}>
-                    <Ionicons name="link-outline" size={18} color="#64748B" />
-                    <Text style={styles.detailText} numberOfLines={1}>
-                      {session.meetingLink}
-                    </Text>
-                  </View>
-                )}
                 
                 <View style={styles.detailRow}>
                   <Ionicons name="people-outline" size={18} color="#64748B" />
@@ -476,14 +526,14 @@ export default function DoctorDashboard() {
                   <TouchableOpacity
                     style={[
                       styles.radioButton,
-                      newSession.sessionType === 'video' && styles.radioButtonActive
+                      newSession.sessionType === 'online' && styles.radioButtonActive
                     ]}
-                    onPress={() => setNewSession({ ...newSession, sessionType: 'video' })}
+                    onPress={() => setNewSession({ ...newSession, sessionType: 'online' })}
                   >
                     <Text
                       style={[
                         styles.radioText,
-                        newSession.sessionType === 'video' && styles.radioTextActive
+                        newSession.sessionType === 'online' && styles.radioTextActive
                       ]}
                     >
                       Video Call
@@ -492,9 +542,10 @@ export default function DoctorDashboard() {
                 </View>
               </View>
               
-              {newSession.sessionType === 'in-person' ? (
+              {newSession.sessionType === 'in-person' && (
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Hospital</Text>
+                  {console.log('Current hospitals state:', hospitals)}
                   <View style={styles.pickerContainer}>
                     <Picker
                       selectedValue={newSession.hospital}
@@ -504,25 +555,19 @@ export default function DoctorDashboard() {
                       style={styles.picker}
                     >
                       <Picker.Item label="Select Hospital" value="" />
-                      {hospitals.map((hospital) => (
+                      {hospitals.length === 0 && console.log('No hospitals available')}
+                      {hospitals.map((hospital) => {
+                        console.log('Rendering hospital:', hospital.name);
+                        return (
                         <Picker.Item 
                           key={hospital._id} 
                           label={hospital.name} 
                           value={hospital._id} 
                         />
-                      ))}
+                        );
+                      })}
                     </Picker>
                   </View>
-                </View>
-              ) : (
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Meeting Link</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    placeholder="Enter video call link"
-                    value={newSession.meetingLink}
-                    onChangeText={(value) => setNewSession({ ...newSession, meetingLink: value })}
-                  />
                 </View>
               )}
               
@@ -668,12 +713,13 @@ export default function DoctorDashboard() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <Stack.Screen
-        options={{
-          title: 'Doctor Dashboard',
-        }}
-      />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Stack.Screen
+          options={{
+            title: 'Doctor Dashboard',
+          }}
+        />
       
       <TabView
         navigationState={{ index, routes }}
@@ -683,7 +729,8 @@ export default function DoctorDashboard() {
         renderTabBar={renderTabBar}
         style={styles.tabView}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 

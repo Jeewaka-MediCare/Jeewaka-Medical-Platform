@@ -41,20 +41,19 @@ export default function DoctorDetails() {
       }
       
       try {
-        const { data } = await api.get(`/api/doctor/${id}`);
+        // Use the same endpoint as web app to get doctor with sessions and reviews
+        const { data } = await api.get(`/api/doctorCard/${id}`);
         console.log('Doctor details received:', data);
         
-        // Backend returns doctor object directly, not wrapped in data.doctor
-        setDoctor(data);
+        // Backend returns structured data with doctor, sessions, ratingSummary, and reviews
+        setDoctor({
+          ...data.doctor,
+          avgRating: data.ratingSummary?.avgRating || 0,
+          totalReviews: data.ratingSummary?.totalReviews || 0,
+          reviews: data.reviews || []
+        });
         setRatingSummary(data.ratingSummary || null);
-        
-        // Sessions are references in doctor model, need separate API call
-        // For now, use empty array until we implement proper session fetching
-        setSessions([]);
-        
-        // TODO: Add separate API call to fetch doctor sessions
-        // const sessionsResponse = await api.get(`/api/session/doctor/${id}`);
-        // setSessions(sessionsResponse.data || []);
+        setSessions(data.sessions || []);
       } catch (error) {
         console.error('Error fetching doctor details:', error);
         
@@ -164,7 +163,7 @@ export default function DoctorDetails() {
               <Text style={styles.doctorSpecialty}>
                 {doctor?.specialization}
                 {doctor?.subSpecializations && doctor.subSpecializations.length > 0 && 
-                  ` • ${doctor.subSpecializations[0]}`
+                  <Text> • {doctor.subSpecializations[0]}</Text>
                 }
               </Text>
               
@@ -172,9 +171,9 @@ export default function DoctorDetails() {
               {(doctor?.qualifications?.length > 0 || doctor?.yearsOfExperience) && (
                 <View style={styles.credentialsBadge}>
                   <Text style={styles.credentialsText}>
-                    {doctor?.qualifications?.join(', ')}
+                    {doctor?.qualifications?.length > 0 ? doctor.qualifications.join(', ') : 'General Practice'}
                     {doctor?.yearsOfExperience && 
-                      ` • ${doctor.yearsOfExperience}+ years experience`
+                      <Text> • {doctor.yearsOfExperience}+ years experience</Text>
                     }
                   </Text>
                 </View>
@@ -189,7 +188,7 @@ export default function DoctorDetails() {
               
               <View style={styles.feeContainer}>
                 <Text style={styles.feeLabel}>Consultation Fee</Text>
-                <Text style={styles.feeAmount}>${doctor?.consultationFee?.toLocaleString() || '0'}</Text>
+                <Text style={styles.feeAmount}>LKR{doctor?.consultationFee?.toLocaleString() || '0'}</Text>
               </View>
             </View>
           </View>
@@ -451,7 +450,8 @@ export default function DoctorDetails() {
                             style={[
                               styles.ratingBar,
                               { 
-                                width: `${ratingSummary[rating] ? 
+                                width: `
+                                {ratingSummary[rating] ? 
                                   (ratingSummary[rating] / doctor?.totalReviews * 100) : 0}%` 
                               }
                             ]}

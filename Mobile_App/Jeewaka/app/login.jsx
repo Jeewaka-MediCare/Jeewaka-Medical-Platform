@@ -49,23 +49,43 @@ export default function Login() {
         formData.password
       );
       
-      // Get user data from API
-      const token = await userCredential.user.getIdToken();
-      const { data } = await api.post('/api/auth/login', {
-        email: formData.email,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const user = userCredential.user;
+      const uid = user.uid;
+      
+      // Get Firebase custom claims (role)
+      const idTokenResult = await user.getIdTokenResult();
+      const role = idTokenResult.claims.role;
+      
+      console.log('User UID:', uid);
+      console.log('User role:', role);
+      
+      let res;
+      if (role === 'doctor') {
+        res = await api.get(`/api/doctor/uuid/${uid}`);
+      } else if (role === 'patient') {
+        res = await api.get(`/api/patient/uuid/${uid}`);
+      } else if (role === 'admin') {
+        res = await api.get(`/api/admin/uuid/${uid}`);
+      } else {
+        throw new Error('Invalid user role or role not set');
+      }
       
       // Set user data and role
-      setUser(data.user);
-      setUserRole(data.role);
-      
-      // Navigate based on user role
-      if (data.role === 'doctor') {
-        router.replace('/doctor-dashboard');
+      if (res && res.data) {
+        setUser({ ...res.data, role });
+        setUserRole(role);
+        
+        // Navigate based on user role
+        if (role === 'doctor') {
+          router.replace('/doctor-dashboard');
+        } else if (role === 'patient') {
+          router.replace('/');
+        } else if (role === 'admin') {
+          // Admin dashboard not implemented in mobile app yet, redirect to patient view
+          router.replace('/');
+        }
       } else {
-        router.replace('/');
+        throw new Error('Failed to retrieve user data');
       }
     } catch (error) {
       Alert.alert(
