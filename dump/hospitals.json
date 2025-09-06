@@ -1,0 +1,99 @@
+[{
+	"_id": {
+		"$oid": "687d15b966f108143c4e0750"
+	},
+	"name": "Teaching Hospital Karapitiya",
+	"location": "Galle",
+	"createdAt": {
+		"$date": "2025-07-20T16:13:45.906Z"
+	},
+	"updatedAt": {
+		"$date": "2025-07-20T16:13:45.906Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "687d15c666f108143c4e0752"
+	},
+	"name": "Teaching Hospital Kandy",
+	"location": "Kandy",
+	"createdAt": {
+		"$date": "2025-07-20T16:13:58.246Z"
+	},
+	"updatedAt": {
+		"$date": "2025-07-20T16:13:58.246Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "687d15e866f108143c4e0754"
+	},
+	"name": "Jaffna Teaching Hospital",
+	"location": "Jaffna",
+	"createdAt": {
+		"$date": "2025-07-20T16:14:32.877Z"
+	},
+	"updatedAt": {
+		"$date": "2025-07-20T16:14:32.877Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "687d161666f108143c4e0756"
+	},
+	"name": "General Hospital Kurunegala",
+	"location": "Kurunegala",
+	"createdAt": {
+		"$date": "2025-07-20T16:15:18.557Z"
+	},
+	"updatedAt": {
+		"$date": "2025-07-20T16:15:18.557Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "687d162166f108143c4e0758"
+	},
+	"name": "District General Hospital Anuradhapura",
+	"location": "Anuradhapura",
+	"createdAt": {
+		"$date": "2025-07-20T16:15:29.943Z"
+	},
+	"updatedAt": {
+		"$date": "2025-07-20T16:15:29.943Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "687d163066f108143c4e075a"
+	},
+	"name": "Base Hospital Kalutara",
+	"location": "Kalutara",
+	"createdAt": {
+		"$date": "2025-07-20T16:15:44.893Z"
+	},
+	"updatedAt": {
+		"$date": "2025-07-20T16:15:44.893Z"
+	},
+	"__v": 0
+},
+{
+	"_id": {
+		"$oid": "687d163c66f108143c4e075c"
+	},
+	"name": "Base Hospital Nuwara Eliya",
+	"location": "Nuwara Eliya",
+	"createdAt": {
+		"$date": "2025-07-20T16:15:56.744Z"
+	},
+	"updatedAt": {
+		"$date": "2025-07-20T16:15:56.744Z"
+	},
+	"__v": 0
+}]
+

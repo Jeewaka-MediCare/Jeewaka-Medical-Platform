@@ -21,6 +21,23 @@ const timeSlotSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Patient',
     default: null
+  },
+  // Payment-related fields
+  paymentIntentId: {
+    type: String,
+    default: null
+  },
+  paymentAmount: {
+    type: Number,
+    default: null
+  },
+  paymentCurrency: {
+    type: String,
+    default: null
+  },
+  paymentDate: {
+    type: Date,
+    default: null
   }
 }, { _id: false });
 
