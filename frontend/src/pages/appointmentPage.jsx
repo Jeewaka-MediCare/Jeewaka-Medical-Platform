@@ -2,9 +2,9 @@ import { Link } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { ChevronLeft, Calendar, Clock, MapPin, Globe, CheckCircle, XCircle } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { VideoCallButton } from "@/components/VideoCallButton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import api from "@/services/api.js"
 import useAuthStore from "@/store/authStore"
 
@@ -209,14 +209,11 @@ export default function AppointmentsPage() {
                           View Details
                         </Link>
                         {appointment.type === "online" && (
-                          <a
-                            href={appointment.meetingLink || '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <VideoCallButton
+                            sessionId={appointment.sessionId}
+                            slotIndex={appointment.slotIndex}
                             className="bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-primary/90"
-                          >
-                            Join session
-                          </a>
+                          />
                         )}
                       </div>
                     </div>

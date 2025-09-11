@@ -1,34 +1,56 @@
-import express from 'express';
-import { createSession , getSessionById , getSessions , updateSession , deleteSession , addTimeSlot , updateTimeSlot , deleteTimeSlot , bookAppointment } from './sessionController.js';
+import express from "express";
+import {
+  createSession,
+  getSessionById,
+  getSessions,
+  updateSession,
+  updateSessionMeetingId, // ------------------------new----------------------------
+  updateAppointmentMeetingId, // ------------------------new----------------------------
+  deleteSession,
+  addTimeSlot,
+  updateTimeSlot,
+  deleteTimeSlot,
+  bookAppointment,
+} from "./sessionController.js";
 
-const sessionRouter  = express.Router();
-
+const sessionRouter = express.Router();
 
 // Create a new session
-sessionRouter.post('/',createSession);
+sessionRouter.post("/", createSession);
 
 // Get all sessions
-sessionRouter.get('/', getSessions);
+sessionRouter.get("/", getSessions);
 
 // Get a single session by ID
-sessionRouter.get('/:sessionId', getSessionById);
+sessionRouter.get("/:sessionId", getSessionById);
 
 // Update a session
-sessionRouter.patch('/:sessionId',updateSession);
+sessionRouter.patch("/:sessionId", updateSession);
+
+// ------------------------new----------------------------
+// Update session meeting ID
+sessionRouter.patch("/:sessionId/meeting-id", updateSessionMeetingId);
+
+// Update appointment (timeSlot) meeting ID
+sessionRouter.patch(
+  "/:sessionId/appointment/:slotIndex/meeting-id",
+  updateAppointmentMeetingId
+);
+// -------------------------------------------------------
 
 // Delete a session
-sessionRouter.delete('/:sessionId', deleteSession);
+sessionRouter.delete("/:sessionId", deleteSession);
 
 // Add a time slot to a session
-sessionRouter.post('/:sessionId/timeslot', addTimeSlot);
+sessionRouter.post("/:sessionId/timeslot", addTimeSlot);
 
 // Update a time slot in a session
-sessionRouter.put('/:sessionId/timeslot/:slotIndex', updateTimeSlot);
+sessionRouter.put("/:sessionId/timeslot/:slotIndex", updateTimeSlot);
 
 // Delete a time slot from a session
-sessionRouter.delete('/:sessionId/timeslot/:slotIndex', deleteTimeSlot);
+sessionRouter.delete("/:sessionId/timeslot/:slotIndex", deleteTimeSlot);
 
 // Book an appointment with payment verification
-sessionRouter.post('/:sessionId/book', bookAppointment);
+sessionRouter.post("/:sessionId/book", bookAppointment);
 
 export default sessionRouter;

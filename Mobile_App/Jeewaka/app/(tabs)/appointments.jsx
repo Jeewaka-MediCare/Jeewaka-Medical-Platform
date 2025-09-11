@@ -16,6 +16,7 @@ import useAuthStore from '../../store/authStore';
 import { format, parseISO } from 'date-fns';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
+import VideoCallButton from '../../components/VideoCallButton';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
@@ -53,25 +54,24 @@ export default function Appointments() {
       // Transform session data into individual appointments
       const appointments = [];
       patientSessions.forEach(session => {
-        // Get only the time slots for this patient
-        const patientTimeSlots = session.timeSlots.filter(slot => 
-          slot.patientId && slot.patientId === user._id
-        );
-        
-        patientTimeSlots.forEach(slot => {
-          appointments.push({
-            _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
-            sessionId: session._id,
-            date: session.date,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            status: slot.status,
-            appointmentStatus: slot.appointmentStatus,
-            doctor: session.doctorId,
-            hospital: session.hospital,
-            meetingLink: session.meetingLink,
-            type: session.type
-          });
+        // Get all time slots and find ones for this patient
+        session.timeSlots.forEach((slot, originalSlotIndex) => {
+          if (slot.patientId && slot.patientId === user._id) {
+            appointments.push({
+              _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
+              sessionId: session._id,
+              slotIndex: originalSlotIndex, // Use original slot index for backend API calls
+              date: session.date,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              status: slot.status,
+              appointmentStatus: slot.appointmentStatus,
+              doctor: session.doctorId,
+              hospital: session.hospital,
+              meetingLink: session.meetingLink,
+              type: session.type
+            });
+          }
         });
       });
       
@@ -292,6 +292,15 @@ export default function Appointments() {
               >
                 <Text style={styles.actionButtonText}>View Doctor</Text>
               </TouchableOpacity>
+              
+              {appointment.type === 'online' && (
+                <VideoCallButton
+                  style={[styles.actionButton, styles.videoCallButton]}
+                  title="Join Video Call"
+                  sessionId={appointment.sessionId}
+                  slotIndex={appointment.slotIndex}
+                />
+              )}
               
               <TouchableOpacity
                 style={[styles.actionButton, styles.cancelButton]}
@@ -626,6 +635,9 @@ const styles = StyleSheet.create({
   },
   reviewButtonText: {
     color: '#10B981',
+  },
+  videoCallButton: {
+    backgroundColor: '#DBEAFE',
   },
   emptyState: {
     flex: 1,

@@ -20,6 +20,7 @@ import { Dimensions } from 'react-native';
 import { TextInput, GestureHandlerRootView } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
+import VideoCallButton from '../components/VideoCallButton';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
@@ -71,26 +72,25 @@ export default function DoctorDashboard() {
       // Transform session data into individual appointments
       const appointments = [];
       doctorSessions.forEach(session => {
-        // Get only booked time slots
-        const bookedSlots = (session.timeSlots || []).filter(slot => 
-          slot.patientId && slot.status !== 'available'
-        );
-        
-        bookedSlots.forEach(slot => {
-          appointments.push({
-            _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
-            sessionId: session._id,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            status: slot.status,
-            appointmentStatus: slot.appointmentStatus,
-            patient: slot.patientId,
-            session: {
-              date: session.date,
-              sessionType: session.type,
-              hospital: session.hospital,
-            }
-          });
+        // Get all time slots and find booked ones with their original indexes
+        (session.timeSlots || []).forEach((slot, slotIndex) => {
+          if (slot.patientId && slot.status !== 'available') {
+            appointments.push({
+              _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
+              sessionId: session._id,
+              slotIndex: slotIndex, // Add slot index for appointment-specific video calls
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              status: slot.status,
+              appointmentStatus: slot.appointmentStatus,
+              patient: slot.patientId,
+              session: {
+                date: session.date,
+                sessionType: session.type,
+                hospital: session.hospital,
+              }
+            });
+          }
         });
       });
       
@@ -175,7 +175,6 @@ export default function DoctorDashboard() {
       return;
     }
     
-    
     setLoading(true);
     try {
       // Generate time slots like the web app
@@ -200,10 +199,15 @@ export default function DoctorDashboard() {
       const payload = {
         doctorId: user._id,
         timeSlots: timeSlots,
-        type: newSession.sessionType,
-        hospital: newSession.hospital,
+        type: newSession.sessionType, // Changed from 'sessionType' to 'type'
         date: format(newSession.date, 'yyyy-MM-dd'),
+        fee: newSession.fee || 0,
       };
+
+      // Only include hospital for in-person sessions
+      if (newSession.sessionType === 'in-person' && newSession.hospital) {
+        payload.hospital = newSession.hospital;
+      }
 
       console.log("Creating session with payload:", payload);
       const response = await api.post('/api/session', payload);
@@ -211,27 +215,26 @@ export default function DoctorDashboard() {
       if (response.data.success) {
         console.log("Session created successfully:", response.data.session);
         Alert.alert('Success', 'Session created successfully');
+        setModalVisible(false);
+        fetchSessions();
+        
+        // Reset form
+        setNewSession({
+          date: addDays(new Date(), 1),
+          startTime: '09:00',
+          slotDuration: 30,
+          totalSlots: 6,
+          sessionType: 'in-person',
+          hospital: '',
+          fee: 2500,
+        });
       } else {
         console.log("Failed to create session:", response.data.message);
-        Alert.alert('Error', 'Failed to create session');
-        return;
+        Alert.alert('Error', response.data.message || 'Failed to create session');
       }
-      setModalVisible(false);
-      fetchSessions();
-      
-      // Reset form
-      setNewSession({
-        date: addDays(new Date(), 1),
-        startTime: '09:00',
-        slotDuration: 30,
-        totalSlots: 6,
-        sessionType: 'in-person',
-        hospital: '',
-            fee: 2500,
-      });
     } catch (error) {
-      console.error('Error creating session:', error);
-      Alert.alert('Error', 'Failed to create session');
+      console.error("Error creating session:", error);
+      Alert.alert('Error', error.response?.data?.error || 'Failed to create session');
     } finally {
       setLoading(false);
     }
@@ -306,14 +309,12 @@ export default function DoctorDashboard() {
               </TouchableOpacity>
               
               {appointment.session.sessionType === 'online' && (
-                <TouchableOpacity 
+                <VideoCallButton
                   style={[styles.actionButton, styles.startButton]}
-                  onPress={() => {
-                    Alert.alert('Info', 'Video consultation feature is temporarily disabled');
-                  }}
-                >
-                  <Text style={[styles.actionText, styles.startText]}>Online Session</Text>
-                </TouchableOpacity>
+                  title="Start Video Call"
+                  sessionId={appointment.sessionId}
+                  slotIndex={appointment.slotIndex}
+                />
               )}
             </View>
           </View>

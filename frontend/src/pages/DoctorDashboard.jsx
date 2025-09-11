@@ -213,18 +213,6 @@ export default function DoctorSessionManager() {
                           ) : null}
                         </CardDescription>
                       </div>
-                      {selectedSession.meetingLink && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a
-                            href={selectedSession.meetingLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Video className="h-4 w-4 mr-2" />
-                            Join Meeting
-                          </a>
-                        </Button>
-                      )}
                     </div>
                   </CardHeader>
                   <CardContent>
