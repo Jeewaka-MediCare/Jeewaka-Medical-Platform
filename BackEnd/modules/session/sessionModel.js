@@ -70,12 +70,6 @@ const sessionSchema = new mongoose.Schema(
         return this.type === "in-person";
       },
     },
-    // ------------------------new----------------------------
-    fee: {
-      type: Number,
-      default: 0,
-    },
-    // -------------------------------------------------------
 
     meetingLink: {
       type: String,

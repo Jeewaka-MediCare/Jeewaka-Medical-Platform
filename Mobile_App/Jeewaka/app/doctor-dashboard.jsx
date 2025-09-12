@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import useAuthStore from '../store/authStore';
 import { format, parseISO, addDays } from 'date-fns';
@@ -50,7 +50,6 @@ export default function DoctorDashboard() {
     totalSlots: 6,
     sessionType: 'in-person',
     hospital: '',
-    fee: 2500,
   });
   
   // Hospital options
@@ -201,7 +200,6 @@ export default function DoctorDashboard() {
         timeSlots: timeSlots,
         type: newSession.sessionType, // Changed from 'sessionType' to 'type'
         date: format(newSession.date, 'yyyy-MM-dd'),
-        fee: newSession.fee || 0,
       };
 
       // Only include hospital for in-person sessions
@@ -226,7 +224,6 @@ export default function DoctorDashboard() {
           totalSlots: 6,
           sessionType: 'in-person',
           hospital: '',
-          fee: 2500,
         });
       } else {
         console.log("Failed to create session:", response.data.message);
@@ -370,13 +367,6 @@ export default function DoctorDashboard() {
                   <Ionicons name="time-outline" size={18} color="#64748B" />
                   <Text style={styles.detailText}>
                     {session.startTime} ({session.slotDuration} mins per slot)
-                  </Text>
-                </View>
-                
-                <View style={styles.detailRow}>
-                  <MaterialIcons name="attach-money" size={18} color="#64748B" />
-                  <Text style={styles.detailText}>
-                    ${session.fee || 0} consultation fee
                   </Text>
                 </View>
                 
@@ -593,19 +583,6 @@ export default function DoctorDashboard() {
                   value={newSession.totalSlots.toString()}
                   onChangeText={(value) => 
                     setNewSession({ ...newSession, totalSlots: parseInt(value) || 1 })
-                  }
-                  keyboardType="number-pad"
-                />
-              </View>
-              
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Consultation Fee ($)</Text>
-                <TextInput
-                  style={styles.formInput}
-                  placeholder="Fee amount"
-                  value={newSession.fee.toString()}
-                  onChangeText={(value) => 
-                    setNewSession({ ...newSession, fee: parseInt(value) || 0 })
                   }
                   keyboardType="number-pad"
                 />

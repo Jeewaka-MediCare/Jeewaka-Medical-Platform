@@ -11,30 +11,8 @@ const getBaseUrl = () => {
     return envBackendUrl;
   }
 
-  // When running in an Expo development build or Expo Go
-  if (__DEV__) {
-    // For Android emulator
-    if (Platform.OS === "android" && !Constants.expoConfig?.debuggerHost) {
-      return "http://10.0.2.2:5000";
-    }
-
-    // For iOS simulator
-    if (Platform.OS === "ios" && !Constants.expoConfig?.debuggerHost) {
-      return "http://localhost:5000";
-    }
-
-    // For physical device via Expo Go
-    // Extract the IP address from the debuggerHost
-    const debuggerHost = Constants.expoConfig?.debuggerHost;
-    if (debuggerHost) {
-      const hostAddress = debuggerHost.split(":")[0];
-      console.log(`Debugging on ${hostAddress}`);
-      return `http://${hostAddress}:5000`;
-    }
-  }
-
-  // Fallback or production URL
-  return "http://10.13.0.57:5000"; // Replace with your production API URL in real deployment
+  // Always use your specific backend server
+  return "http://10.191.245.57:5000";
 };
 
 const api = axios.create({
