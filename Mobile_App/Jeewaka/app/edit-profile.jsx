@@ -8,6 +8,8 @@ import {
   TextInput,
   Alert,
   Image,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +22,8 @@ export default function EditProfile() {
   const router = useRouter();
   
   const [loading, setLoading] = useState(false);
+  const [specializations, setSpecializations] = useState([]);
+  const [showSpecializationPicker, setShowSpecializationPicker] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -42,7 +46,23 @@ export default function EditProfile() {
         specialization: user.specialization || '',
       });
     }
-  }, [user]);
+    
+    // Fetch specializations if user is a doctor
+    if (userRole === 'doctor') {
+      fetchSpecializations();
+    }
+  }, [user, userRole]);
+
+  const fetchSpecializations = async () => {
+    try {
+      const response = await api.get('/api/doctor/filter-options');
+      if (response.data && response.data.data) {
+        setSpecializations(response.data.data.specializations || []);
+      }
+    } catch (error) {
+      console.error('Error fetching specializations:', error);
+    }
+  };
 
   const handleUpdateProfile = async () => {
     if (!user) return;
@@ -111,7 +131,7 @@ export default function EditProfile() {
       />
       
       <ScrollView style={styles.scrollView}>
-        <View style={styles.profileHeader}>
+        {/* <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
             {user.profile ? (
               <Image 
@@ -125,11 +145,7 @@ export default function EditProfile() {
               </View>
             )}
           </View>
-          
-          <TouchableOpacity style={styles.changePhotoButton}>
-            <Text style={styles.changePhotoText}>Change Photo</Text>
-          </TouchableOpacity>
-        </View>
+        </View> */}
 
         <View style={styles.formSection}>
           <View style={styles.formGroup}>
@@ -180,12 +196,15 @@ export default function EditProfile() {
             <>
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Specialization</Text>
-                <TextInput
+                <TouchableOpacity
                   style={styles.formInput}
-                  value={formData.specialization}
-                  onChangeText={(value) => setFormData({...formData, specialization: value})}
-                  placeholder="Enter your specialization"
-                />
+                  onPress={() => setShowSpecializationPicker(true)}
+                >
+                  <Text style={[styles.pickerText, !formData.specialization && styles.placeholderText]}>
+                    {formData.specialization || 'Select your specialization'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#64748B" />
+                </TouchableOpacity>
               </View>
 
               <View style={styles.formGroup}>
@@ -200,7 +219,7 @@ export default function EditProfile() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Consultation Fee ($)</Text>
+                <Text style={styles.formLabel}>Consultation Fee (LKR)</Text>
                 <TextInput
                   style={styles.formInput}
                   value={formData.consultationFee}
@@ -232,6 +251,55 @@ export default function EditProfile() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Specialization Picker Modal */}
+      <Modal
+        visible={showSpecializationPicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSpecializationPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Specialization</Text>
+              <TouchableOpacity 
+                onPress={() => setShowSpecializationPicker(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            
+            
+            <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
+              {specializations.map((spec, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.optionItem,
+                    formData.specialization === spec && styles.selectedOption
+                  ]}
+                  onPress={() => {
+                    setFormData({...formData, specialization: spec});
+                    setShowSpecializationPicker(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    formData.specialization === spec && styles.selectedOptionText
+                  ]}>
+                    {spec}
+                  </Text>
+                  {formData.specialization === spec && (
+                    <Ionicons name="checkmark" size={20} color="#2563EB" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -277,18 +345,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#64748B',
   },
-  changePhotoButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#2563EB',
-  },
-  changePhotoText: {
-    color: '#2563EB',
-    fontSize: 14,
-    fontWeight: '500',
-  },
   formSection: {
     backgroundColor: 'white',
     marginTop: 12,
@@ -312,6 +368,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1E293B',
     backgroundColor: 'white',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   disabledInput: {
     backgroundColor: '#F1F5F9',
@@ -329,6 +388,7 @@ const styles = StyleSheet.create({
   buttonSection: {
     padding: 20,
     paddingTop: 12,
+    paddingBottom: 40,
   },
   saveButton: {
     backgroundColor: '#2563EB',
@@ -354,5 +414,71 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 16,
     fontWeight: '500',
+  },
+  pickerText: {
+    fontSize: 16,
+    color: '#000',
+    flex: 1,
+  },
+  placeholderText: {
+    color: '#9CA3AF',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 34,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  optionsList: {
+    maxHeight: 300,
+    paddingHorizontal: 20,
+  },
+  optionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  selectedOption: {
+    backgroundColor: '#F0F9FF',
+    borderColor: '#2563EB',
+    borderWidth: 1,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    marginVertical: 2,
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#374151',
+    flex: 1,
+  },
+  selectedOptionText: {
+    color: '#2563EB',
+    fontWeight: '600',
   },
 });
