@@ -17,6 +17,7 @@ import { format, parseISO } from 'date-fns';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
 import VideoCallButton from '../../components/VideoCallButton';
+import DoctorDashboardContent from '../../components/DoctorDashboardContent';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
@@ -197,31 +198,17 @@ export default function Appointments() {
     );
   }
 
-  // If user is doctor, redirect to doctor dashboard
+  // If user is doctor, show doctor dashboard directly in appointments tab
   if (!loading && user && userRole === 'doctor') {
     return (
       <SafeAreaView style={styles.container}>
         <Stack.Screen
           options={{
-            title: 'My Appointments',
+            title: 'Dashboard',
             headerShown: true,
           }}
         />
-        
-        <View style={styles.content}>
-          <Ionicons name="medical-outline" size={80} color="#94A3B8" style={styles.icon} />
-          <Text style={styles.title}>Doctor Account</Text>
-          <Text style={styles.message}>
-            Please use the Doctor Dashboard to manage your appointments
-          </Text>
-          
-          <TouchableOpacity 
-            style={styles.loginButton} 
-            onPress={() => router.push('/doctor-dashboard')}
-          >
-            <Text style={styles.loginButtonText}>Go to Dashboard</Text>
-          </TouchableOpacity>
-        </View>
+        <DoctorDashboardContent />
       </SafeAreaView>
     );
   }

@@ -77,7 +77,7 @@ export default function Login() {
         
         // Navigate based on user role
         if (role === 'doctor') {
-          router.replace('/doctor-dashboard');
+          router.replace('/appointments');  // Changed from doctor-dashboard to appointments tab
         } else if (role === 'patient') {
           router.replace('/');
         } else if (role === 'admin') {

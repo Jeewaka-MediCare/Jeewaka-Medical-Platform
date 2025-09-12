@@ -121,17 +121,8 @@ export default function Profile() {
             </TouchableOpacity>
           </>
         ) : (
-          // Doctor menu options
+          // Doctor menu options - removed dashboard link since it's now in appointments tab
           <>
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => router.push('/doctor-dashboard')}
-            >
-              <Ionicons name="calendar-outline" size={24} color="#1E293B" />
-              <Text style={styles.menuText}>Appointments & Sessions</Text>
-              <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
-            </TouchableOpacity>
-            
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => router.push('/edit-profile')}

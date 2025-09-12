@@ -194,8 +194,8 @@ export default function Register() {
       });
       setUserRole('doctor');
       
-      // Navigate to doctor dashboard
-      router.replace('/doctor-dashboard');
+      // Navigate to appointments tab (where dashboard functionality now resides)
+      router.replace('/appointments');
       
     } catch (error) {
       Alert.alert(

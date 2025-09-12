@@ -68,7 +68,7 @@ export default function AppointmentVideoConsultation() {
         if (currentTime > appointmentEndTime) {
           Alert.alert(
             "Appointment Ended",
-            "This appointment has already ended. Please contact your doctor if you need to reschedule."
+            "This appointment has already ended. You can no longer join the video consultation."
           );
           router.back();
           return;
