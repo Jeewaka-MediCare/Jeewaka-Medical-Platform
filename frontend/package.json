@@ -23,7 +23,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-tooltip": "^1.2.7",
-    "@stripe/react-stripe-js": "^3.9.2",
+    "@stripe/react-stripe-js": "^3.10.0",
     "@stripe/stripe-js": "^7.9.0",
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.10.0",
@@ -42,7 +42,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11",
-    "zod": "^4.1.4",
+    "zod": "^4.1.7",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
