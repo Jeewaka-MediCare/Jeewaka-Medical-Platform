@@ -51,7 +51,46 @@ export default function EditProfile() {
     if (userRole === 'doctor') {
       fetchSpecializations();
     }
+
+    // Fetch latest user data from server to ensure we have all fields
+    if (user && user.uuid) {
+      fetchLatestUserData();
+    }
   }, [user, userRole]);
+
+  const fetchLatestUserData = async () => {
+    try {
+      if (!user || !user.uuid) return;
+      
+      const endpoint = userRole === 'doctor' 
+        ? `/api/doctor/uuid/${user.uuid}` 
+        : `/api/patient/uuid/${user.uuid}`;
+      
+      const response = await api.get(endpoint);
+      if (response.data) {
+        const latestUserData = response.data;
+        
+        // Update the form data with the latest server data
+        setFormData({
+          name: latestUserData.name || '',
+          email: latestUserData.email || '',
+          phone: latestUserData.phone || '',
+          bio: latestUserData.bio || '',
+          yearsOfExperience: latestUserData.yearsOfExperience?.toString() || '',
+          consultationFee: latestUserData.consultationFee?.toString() || '',
+          specialization: latestUserData.specialization || '',
+        });
+        
+        // Also update the stored user data with missing fields if needed
+        if (!user.phone && latestUserData.phone) {
+          updateUser({ ...user, phone: latestUserData.phone });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching latest user data:', error);
+      // Don't show error to user, just log it - form will still work with stored data
+    }
+  };
 
   const fetchSpecializations = async () => {
     try {
@@ -72,11 +111,13 @@ export default function EditProfile() {
       const updateData = {
         name: formData.name,
         phone: formData.phone,
-        bio: formData.bio,
       };
 
       // Add doctor-specific fields if user is a doctor
       if (userRole === 'doctor') {
+        if (formData.bio) {
+          updateData.bio = formData.bio;
+        }
         if (formData.yearsOfExperience) {
           updateData.yearsOfExperience = parseInt(formData.yearsOfExperience) || 0;
         }
@@ -92,10 +133,25 @@ export default function EditProfile() {
       const response = await api.put(endpoint, updateData);
 
       if (response.data) {
-        // Update the user in the auth store
-        updateUser(response.data.doctor || response.data.patient);
-        Alert.alert('Success', 'Profile updated successfully!');
-        router.back();
+        // Handle different response formats from backend
+        let updatedUserData;
+        if (userRole === 'doctor') {
+          // Doctor endpoint returns { success: true, doctor: {...} }
+          updatedUserData = response.data.doctor;
+        } else {
+          // Patient endpoint returns the patient object directly
+          updatedUserData = response.data;
+        }
+
+        if (updatedUserData) {
+          // Merge with existing user data to preserve all fields (especially auth-related ones)
+          const mergedUserData = { ...user, ...updatedUserData };
+          updateUser(mergedUserData);
+          Alert.alert('Success', 'Profile updated successfully!');
+          router.back();
+        } else {
+          throw new Error('Invalid response from server');
+        }
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -127,6 +183,19 @@ export default function EditProfile() {
         options={{
           title: 'Edit Profile',
           headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1E293B',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+          headerTitleStyle: {
+            color: 'white',
+            fontSize: 20,
+            fontWeight: '600',
+          },
+          headerTintColor: 'white',
+          headerBackTitleVisible: false,
         }}
       />
       
@@ -155,6 +224,7 @@ export default function EditProfile() {
               value={formData.name}
               onChangeText={(value) => setFormData({...formData, name: value})}
               placeholder="Enter your name"
+              placeholderTextColor="#94A3B8"
             />
           </View>
 
@@ -165,6 +235,7 @@ export default function EditProfile() {
               value={formData.email}
               editable={false}
               placeholder="Email address"
+              placeholderTextColor="#94A3B8"
             />
             <Text style={styles.helperText}>Email cannot be changed</Text>
           </View>
@@ -176,24 +247,26 @@ export default function EditProfile() {
               value={formData.phone}
               onChangeText={(value) => setFormData({...formData, phone: value})}
               placeholder="Enter your phone number"
+              placeholderTextColor="#94A3B8"
               keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Bio</Text>
-            <TextInput
-              style={[styles.formInput, styles.textArea]}
-              value={formData.bio}
-              onChangeText={(value) => setFormData({...formData, bio: value})}
-              placeholder="Tell us about yourself"
-              multiline
-              numberOfLines={4}
             />
           </View>
 
           {userRole === 'doctor' && (
             <>
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Bio</Text>
+                <TextInput
+                  style={[styles.formInput, styles.textArea]}
+                  value={formData.bio}
+                  onChangeText={(value) => setFormData({...formData, bio: value})}
+                  placeholder="Tell us about yourself"
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Specialization</Text>
                 <TouchableOpacity
@@ -214,6 +287,7 @@ export default function EditProfile() {
                   value={formData.yearsOfExperience}
                   onChangeText={(value) => setFormData({...formData, yearsOfExperience: value})}
                   placeholder="Enter years of experience"
+                  placeholderTextColor="#94A3B8"
                   keyboardType="number-pad"
                 />
               </View>
@@ -225,6 +299,7 @@ export default function EditProfile() {
                   value={formData.consultationFee}
                   onChangeText={(value) => setFormData({...formData, consultationFee: value})}
                   placeholder="Enter consultation fee"
+                  placeholderTextColor="#94A3B8"
                   keyboardType="number-pad"
                 />
               </View>

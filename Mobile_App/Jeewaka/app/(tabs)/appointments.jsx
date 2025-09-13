@@ -113,8 +113,36 @@ export default function Appointments() {
       console.log('Upcoming appointments:', upcoming.length);
       console.log('Past appointments:', past.length);
       
-      setUpcomingAppointments(upcoming);
-      setPastAppointments(past);
+      // Sort upcoming appointments: soonest first (ascending by start time)
+      const sortedUpcoming = upcoming.sort((a, b) => {
+        try {
+          const dateOnlyA = a.date.split('T')[0];
+          const dateOnlyB = b.date.split('T')[0];
+          const startDateA = parseISO(`${dateOnlyA}T${a.startTime}`);
+          const startDateB = parseISO(`${dateOnlyB}T${b.startTime}`);
+          return startDateA.getTime() - startDateB.getTime();
+        } catch (error) {
+          console.error('Error sorting upcoming appointments:', error);
+          return 0;
+        }
+      });
+      
+      // Sort past appointments: most recent first (descending by end time)
+      const sortedPast = past.sort((a, b) => {
+        try {
+          const dateOnlyA = a.date.split('T')[0];
+          const dateOnlyB = b.date.split('T')[0];
+          const endDateA = parseISO(`${dateOnlyA}T${a.endTime}`);
+          const endDateB = parseISO(`${dateOnlyB}T${b.endTime}`);
+          return endDateB.getTime() - endDateA.getTime();
+        } catch (error) {
+          console.error('Error sorting past appointments:', error);
+          return 0;
+        }
+      });
+      
+      setUpcomingAppointments(sortedUpcoming);
+      setPastAppointments(sortedPast);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       Alert.alert('Error', 'Failed to load appointments');
@@ -206,6 +234,18 @@ export default function Appointments() {
           options={{
             title: 'Dashboard',
             headerShown: true,
+            headerStyle: {
+              backgroundColor: '#1E293B',
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 0,
+            },
+            headerTitleStyle: {
+              color: 'white',
+              fontSize: 20,
+              fontWeight: '600',
+            },
+            headerTintColor: 'white',
           }}
         />
         <DoctorDashboardContent />
@@ -286,7 +326,9 @@ export default function Appointments() {
                 <View style={styles.detailRow}>
                   <Ionicons name="medical-outline" size={18} color="#64748B" />
                   <Text style={styles.detailText}>
-                    {appointment.doctor?.name || 'Doctor'}
+                    {appointment.doctor?.specialization && appointment.doctor?.name
+                      ? `${appointment.doctor.specialization} - ${appointment.doctor.name}`
+                      : appointment.doctor?.name || 'Doctor'}
                   </Text>
                 </View>
                 
@@ -317,7 +359,7 @@ export default function Appointments() {
                 {appointment.type === 'online' && (
                   <VideoCallButton
                     style={[styles.actionButton, styles.videoCallButton]}
-                    title="Join Video Call"
+                    title="Video Call"
                     sessionId={appointment.sessionId}
                     slotIndex={appointment.slotIndex}
                   />
@@ -390,7 +432,9 @@ export default function Appointments() {
               <View style={styles.detailRow}>
                 <Ionicons name="medical-outline" size={18} color="#64748B" />
                 <Text style={styles.detailText}>
-                  {appointment.doctor?.name || 'Doctor'}
+                  {appointment.doctor?.specialization && appointment.doctor?.name
+                    ? `${appointment.doctor.specialization} - ${appointment.doctor.name}`
+                    : appointment.doctor?.name || 'Doctor'}
                 </Text>
               </View>
               
@@ -468,17 +512,18 @@ export default function Appointments() {
       <Stack.Screen
         options={{
           title: 'My Appointments',
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1E293B', // Dark header like in the image
+          },
+          headerTitleStyle: {
+            color: 'white',
+            fontSize: 20,
+            fontWeight: '600',
+          },
+          headerTintColor: 'white',
         }}
       />
-      
-      {user ? (
-        <View style={styles.profileCard}>
-          <View style={styles.profileInfo}>
-            <Text style={styles.welcomeText}>Welcome,</Text>
-            <Text style={styles.nameText}>{user.name}</Text>
-          </View>
-        </View>
-      ) : null}
       
       <TabView
         navigationState={{ index, routes }}
@@ -555,24 +600,6 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#64748B',
-  },
-  profileCard: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  profileInfo: {
-    marginBottom: 8,
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  nameText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1E293B',
   },
   tabView: {
     flex: 1,
@@ -673,7 +700,7 @@ const styles = StyleSheet.create({
     color: '#10B981',
   },
   videoCallButton: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#49bdeaff',
   },
   emptyState: {
     flex: 1,
