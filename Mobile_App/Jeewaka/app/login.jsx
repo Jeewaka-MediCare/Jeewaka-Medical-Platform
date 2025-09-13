@@ -78,12 +78,12 @@ export default function Login() {
         
         // Navigate based on user role
         if (role === 'doctor') {
-          router.replace('/appointments');  // Changed from doctor-dashboard to appointments tab
+          router.replace('/(tabs)/appointments');  // Direct to My Appointments tab
         } else if (role === 'patient') {
-          router.replace('/');
+          router.replace('/(tabs)');  // Direct to Jeewaka tab
         } else if (role === 'admin') {
-          // Admin dashboard not implemented in mobile app yet, redirect to patient view
-          router.replace('/');
+          // Admin dashboard not implemented in mobile app yet, redirect to Jeewaka tab
+          router.replace('/(tabs)');
         }
       } else {
         throw new Error('Failed to retrieve user data');

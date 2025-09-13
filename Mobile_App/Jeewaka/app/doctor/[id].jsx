@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../../services/api';
 import useAuthStore from '../../store/authStore';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isSameDay, parse } from 'date-fns';
 
 export default function DoctorDetails() {
   const { id, doctorData } = useLocalSearchParams();
@@ -168,73 +168,152 @@ export default function DoctorDetails() {
     });
   };
 
+  // Get detailed availability information for session slots
+  const getSlotAvailabilityInfo = (session) => {
+    if (!session.timeSlots || session.timeSlots.length === 0) {
+      return {
+        total: 0,
+        available: 0,
+        booked: 0,
+        timePassed: 0,
+        isFullyBooked: false,
+        isAllTimePassed: false,
+        hasAvailableSlots: false,
+        displayMessage: 'No Slots Available'
+      };
+    }
+
+    const sessionDateObj = parseISO(session.date);
+    const today = new Date();
+    const isToday = isSameDay(sessionDateObj, today);
+
+    let available = 0;
+    let booked = 0;
+    let timePassed = 0;
+
+    session.timeSlots.forEach(slot => {
+      if (slot.status === 'booked') {
+        booked++;
+      } else if (slot.status === 'available') {
+        // Check if this available slot has passed its time today
+        if (isToday) {
+          const [hours, minutes] = slot.startTime.split(':').map(Number);
+          const slotDateTime = new Date(sessionDateObj);
+          slotDateTime.setHours(hours, minutes, 0, 0);
+          
+          if (today > slotDateTime) {
+            timePassed++;
+          } else {
+            available++;
+          }
+        } else {
+          available++;
+        }
+      } else {
+        // Handle other statuses like 'unavailable'
+        timePassed++;
+      }
+    });
+
+    const total = session.timeSlots.length;
+    const isFullyBooked = booked === total;
+    const isAllTimePassed = timePassed === total && booked === 0;
+    const hasAvailableSlots = available > 0;
+
+    let displayMessage = 'Book Appointment';
+    if (hasAvailableSlots) {
+      displayMessage = 'Book Appointment';
+    } else if (isFullyBooked) {
+      displayMessage = 'Fully Booked';
+    } else if (isAllTimePassed) {
+      displayMessage = 'Time Passed';
+    } else {
+      displayMessage = 'No Available Slots';
+    }
+
+    return {
+      total,
+      available,
+      booked,
+      timePassed,
+      isFullyBooked,
+      isAllTimePassed,
+      hasAvailableSlots,
+      displayMessage
+    };
+  };
+
   // Reusable SessionCard component
-  const SessionCard = ({ session, isPast = false }) => (
-    <View style={[styles.sessionCard, isPast && styles.pastSessionCard]}>
-      <View style={styles.sessionHeader}>
-        <Text style={[styles.sessionDate, isPast && styles.pastSessionDate]}>
-          {format(parseISO(session.date), 'MMM dd, yyyy')}
-        </Text>
-        <View style={[styles.sessionTypeBadge, isPast && styles.pastSessionTypeBadge]}>
-          <Text style={[styles.sessionTypeText, isPast && styles.pastSessionTypeText]}>
-            {session.type === 'in-person' ? 'In-person' : 
-             session.type === 'video' ? 'Video' : 
-             session.type === 'online' ? 'Online' : 'Unknown'}
+  const SessionCard = ({ session, isPast = false }) => {
+    const slotInfo = getSlotAvailabilityInfo(session);
+    
+    return (
+      <View style={[styles.sessionCard, isPast && styles.pastSessionCard]}>
+        <View style={styles.sessionHeader}>
+          <Text style={[styles.sessionDate, isPast && styles.pastSessionDate]}>
+            {format(parseISO(session.date), 'MMM dd, yyyy')}
           </Text>
-        </View>
-      </View>
-      
-      <View style={styles.sessionDetails}>
-        <View style={styles.sessionDetail}>
-          <Ionicons name="time-outline" size={16} color={isPast ? "#9CA3AF" : "#64748B"} />
-          <Text style={[styles.sessionDetailText, isPast && styles.pastSessionDetailText]}>
-            {session.timeSlots && session.timeSlots.length > 0 
-              ? `${session.timeSlots[0].startTime} - ${session.timeSlots[session.timeSlots.length - 1].endTime}` 
-              : 'Time not specified'}
-          </Text>
-        </View>
-        
-        {Boolean(session.type === 'in-person' && session.hospital) && (
-          <View style={styles.sessionDetail}>
-            <Ionicons name="location-outline" size={16} color={isPast ? "#9CA3AF" : "#64748B"} />
-            <Text style={[styles.sessionDetailText, isPast && styles.pastSessionDetailText]} numberOfLines={1}>
-              {session.hospital.name}
+          <View style={[styles.sessionTypeBadge, isPast && styles.pastSessionTypeBadge]}>
+            <Text style={[styles.sessionTypeText, isPast && styles.pastSessionTypeText]}>
+              {session.type === 'in-person' ? 'In-person' : 'Video'}
             </Text>
           </View>
+        </View>
+        
+        <View style={styles.sessionDetails}>
+          <View style={styles.sessionDetail}>
+            <Ionicons name="time-outline" size={16} color={isPast ? "#9CA3AF" : "#64748B"} />
+            <Text style={[styles.sessionDetailText, isPast && styles.pastSessionDetailText]}>
+              {session.timeSlots && session.timeSlots.length > 0 
+                ? `${session.timeSlots[0].startTime} - ${session.timeSlots[session.timeSlots.length - 1].endTime}` 
+                : 'Time not specified'}
+            </Text>
+          </View>
+          
+          {Boolean(session.type === 'in-person' && session.hospital) && (
+            <View style={styles.sessionDetail}>
+              <Ionicons name="location-outline" size={16} color={isPast ? "#9CA3AF" : "#64748B"} />
+              <Text style={[styles.sessionDetailText, isPast && styles.pastSessionDetailText]} numberOfLines={1}>
+                {session.hospital.name}
+              </Text>
+            </View>
+          )}
+          
+          <View style={styles.sessionDetail}>
+            <Ionicons name="people-outline" size={16} color={isPast ? "#9CA3AF" : "#64748B"} />
+            <Text style={[styles.sessionDetailText, isPast && styles.pastSessionDetailText]}>
+              {session.timeSlots ? 
+                isPast 
+                  ? `${slotInfo.total} total slots${slotInfo.booked > 0 ? `, ${slotInfo.booked} were booked` : ''}${slotInfo.available > 0 ? `, ${slotInfo.available} were available` : ''}`
+                  : `${slotInfo.available}/${slotInfo.total} slots available${slotInfo.booked > 0 ? `, ${slotInfo.booked} booked` : ''}${slotInfo.timePassed > 0 ? `, ${slotInfo.timePassed} time passed` : ''}` 
+                : 'Slots info not available'}
+            </Text>
+          </View>
+        </View>
+        
+        {!isPast && (
+          <TouchableOpacity
+            style={[
+              styles.bookButton,
+              !slotInfo.hasAvailableSlots && styles.disabledButton
+            ]}
+            onPress={() => handleBookSession(session)}
+            disabled={!slotInfo.hasAvailableSlots}
+          >
+            <Text style={styles.bookButtonText}>
+              {slotInfo.displayMessage}
+            </Text>
+          </TouchableOpacity>
         )}
         
-        <View style={styles.sessionDetail}>
-          <Ionicons name="people-outline" size={16} color={isPast ? "#9CA3AF" : "#64748B"} />
-          <Text style={[styles.sessionDetailText, isPast && styles.pastSessionDetailText]}>
-            {session.timeSlots ? 
-              `${session.timeSlots.filter(slot => slot.status === 'available').length}/${session.timeSlots.length} slots ${isPast ? 'were' : 'available'}` :
-              'Slots info not available'}
-          </Text>
-        </View>
+        {isPast && (
+          <View style={styles.pastSessionFooter}>
+            <Text style={styles.pastSessionLabel}>Session Completed</Text>
+          </View>
+        )}
       </View>
-      
-      {!isPast && (
-        <TouchableOpacity
-          style={[
-            styles.bookButton,
-            (!session.timeSlots || session.timeSlots.filter(slot => slot.status === 'available').length === 0) && styles.disabledButton
-          ]}
-          onPress={() => handleBookSession(session)}
-          disabled={!session.timeSlots || session.timeSlots.filter(slot => slot.status === 'available').length === 0}
-        >
-          <Text style={styles.bookButtonText}>
-            {(!session.timeSlots || session.timeSlots.filter(slot => slot.status === 'available').length === 0) ? 'Fully Booked' : 'Book Appointment'}
-          </Text>
-        </TouchableOpacity>
-      )}
-      
-      {isPast && (
-        <View style={styles.pastSessionFooter}>
-          <Text style={styles.pastSessionLabel}>Session Completed</Text>
-        </View>
-      )}
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (

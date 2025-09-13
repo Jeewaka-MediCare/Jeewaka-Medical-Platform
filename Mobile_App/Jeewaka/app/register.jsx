@@ -139,7 +139,7 @@ export default function Register() {
       setUserRole('patient');
       
       // Navigate to home
-      router.replace('/');
+      router.replace('/(tabs)');
       
     } catch (error) {
       Alert.alert(
@@ -198,7 +198,7 @@ export default function Register() {
       setUserRole('doctor');
       
       // Navigate to appointments tab (where dashboard functionality now resides)
-      router.replace('/appointments');
+      router.replace('/(tabs)/appointments');
       
     } catch (error) {
       Alert.alert(
