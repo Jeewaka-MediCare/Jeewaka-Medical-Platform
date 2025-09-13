@@ -17,6 +17,63 @@ import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../store/authStore';
 import api from '../services/api';
 
+// Array Input Component for handling dynamic lists
+const ArrayInput = ({ label, items, onAddItem, onRemoveItem, placeholder }) => {
+  const [inputValue, setInputValue] = useState('');
+
+  const handleAddItem = () => {
+    if (inputValue.trim()) {
+      onAddItem(inputValue.trim());
+      setInputValue('');
+    }
+  };
+
+  return (
+    <View style={styles.arrayInputContainer}>
+      <Text style={styles.formLabel}>{label}</Text>
+      
+      {/* Input field for adding new item */}
+      <View style={styles.addItemContainer}>
+        <TextInput
+          style={[styles.formInput, styles.arrayTextInput]}
+          value={inputValue}
+          onChangeText={setInputValue}
+          placeholder={placeholder}
+          placeholderTextColor="#94A3B8"
+        />
+        <TouchableOpacity 
+          style={styles.addButton} 
+          onPress={handleAddItem}
+          disabled={!inputValue.trim()}
+        >
+          <Ionicons name="add" size={20} color="white" />
+        </TouchableOpacity>
+      </View>
+
+      {/* List of existing items */}
+      {items.length > 0 && (
+        <View style={styles.itemsList}>
+          {items.map((item, index) => (
+            <View key={index} style={styles.itemRow}>
+              <Text style={styles.itemText}>{item}</Text>
+              <TouchableOpacity 
+                style={styles.removeButton}
+                onPress={() => onRemoveItem(index)}
+              >
+                <Ionicons name="close" size={18} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+      
+      {items.length === 0 && (
+        <Text style={styles.emptyText}>No {label.toLowerCase()} added yet</Text>
+      )}
+    </View>
+  );
+};
+
 export default function EditProfile() {
   const { user, userRole, updateUser } = useAuthStore();
   const router = useRouter();
@@ -32,6 +89,9 @@ export default function EditProfile() {
     yearsOfExperience: '',
     consultationFee: '',
     specialization: '',
+    subSpecializations: [],
+    qualifications: [],
+    languagesSpoken: [],
   });
 
   useEffect(() => {
@@ -44,6 +104,9 @@ export default function EditProfile() {
         yearsOfExperience: user.yearsOfExperience?.toString() || '',
         consultationFee: user.consultationFee?.toString() || '',
         specialization: user.specialization || '',
+        subSpecializations: user.subSpecializations || [],
+        qualifications: user.qualifications || [],
+        languagesSpoken: user.languagesSpoken || [],
       });
     }
     
@@ -79,6 +142,9 @@ export default function EditProfile() {
           yearsOfExperience: latestUserData.yearsOfExperience?.toString() || '',
           consultationFee: latestUserData.consultationFee?.toString() || '',
           specialization: latestUserData.specialization || '',
+          subSpecializations: latestUserData.subSpecializations || [],
+          qualifications: latestUserData.qualifications || [],
+          languagesSpoken: latestUserData.languagesSpoken || [],
         });
         
         // Also update the stored user data with missing fields if needed
@@ -101,6 +167,21 @@ export default function EditProfile() {
     } catch (error) {
       console.error('Error fetching specializations:', error);
     }
+  };
+
+  // Array management functions
+  const handleAddToArray = (fieldName, value) => {
+    setFormData(prevData => ({
+      ...prevData,
+      [fieldName]: [...prevData[fieldName], value]
+    }));
+  };
+
+  const handleRemoveFromArray = (fieldName, index) => {
+    setFormData(prevData => ({
+      ...prevData,
+      [fieldName]: prevData[fieldName].filter((_, i) => i !== index)
+    }));
   };
 
   const handleUpdateProfile = async () => {
@@ -127,6 +208,10 @@ export default function EditProfile() {
         if (formData.specialization) {
           updateData.specialization = formData.specialization;
         }
+        // Add array fields
+        updateData.subSpecializations = formData.subSpecializations || [];
+        updateData.qualifications = formData.qualifications || [];
+        updateData.languagesSpoken = formData.languagesSpoken || [];
       }
 
       const endpoint = userRole === 'doctor' ? `/api/doctor/${user._id}` : `/api/patient/${user._id}`;
@@ -303,6 +388,33 @@ export default function EditProfile() {
                   keyboardType="number-pad"
                 />
               </View>
+
+              {/* Sub-Specializations Array Input */}
+              <ArrayInput
+                label="Sub-Specializations"
+                items={formData.subSpecializations}
+                onAddItem={(item) => handleAddToArray('subSpecializations', item)}
+                onRemoveItem={(index) => handleRemoveFromArray('subSpecializations', index)}
+                placeholder="Add a sub-specialization"
+              />
+
+              {/* Qualifications Array Input */}
+              <ArrayInput
+                label="Qualifications"
+                items={formData.qualifications}
+                onAddItem={(item) => handleAddToArray('qualifications', item)}
+                onRemoveItem={(index) => handleRemoveFromArray('qualifications', index)}
+                placeholder="Add a qualification (e.g., MBBS, MD)"
+              />
+
+              {/* Languages Spoken Array Input */}
+              <ArrayInput
+                label="Languages Spoken"
+                items={formData.languagesSpoken}
+                onAddItem={(item) => handleAddToArray('languagesSpoken', item)}
+                onRemoveItem={(index) => handleRemoveFromArray('languagesSpoken', index)}
+                placeholder="Add a language"
+              />
             </>
           )}
         </View>
@@ -555,5 +667,65 @@ const styles = StyleSheet.create({
   selectedOptionText: {
     color: '#2563EB',
     fontWeight: '600',
+  },
+  // Array Input Styles
+  arrayInputContainer: {
+    marginBottom: 24,
+  },
+  addItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  arrayTextInput: {
+    flex: 1,
+    marginRight: 8,
+    marginBottom: 0,
+  },
+  addButton: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonDisabled: {
+    backgroundColor: '#94A3B8',
+  },
+  itemsList: {
+    gap: 8,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  itemText: {
+    fontSize: 16,
+    color: '#374151',
+    flex: 1,
+  },
+  removeButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 16,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderStyle: 'dashed',
   },
 });
