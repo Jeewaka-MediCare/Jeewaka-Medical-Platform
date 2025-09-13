@@ -78,14 +78,19 @@ export default function BookSession() {
       <Stack.Screen
         options={{
           title: 'Book Appointment',
-          headerLeft: () => (
-            <TouchableOpacity 
-              onPress={() => router.back()}
-              style={styles.backButton}
-            >
-              <Ionicons name="arrow-back" size={24} color="#1E293B" />
-            </TouchableOpacity>
-          ),
+          headerShown: true,
+            headerStyle: {
+              backgroundColor: '#1E293B',
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 0,
+            },
+            headerTitleStyle: {
+              color: 'white',
+              fontSize: 20,
+              fontWeight: '600',
+            },
+            headerTintColor: 'white',
         }}
       />
       
@@ -186,7 +191,7 @@ export default function BookSession() {
           
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Consultation Fee</Text>
-            <Text style={styles.totalValue}>${session.consultationFee || session.fee || 0}</Text>
+            <Text style={styles.totalValue}>LKR{session.consultationFee || session.fee || 0}</Text>
           </View>
         </View>
       </ScrollView>
@@ -324,7 +329,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 16,
-    marginBottom: 80,
+    marginBottom: 120,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -369,7 +374,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 20,
     left: 0,
     right: 0,
     backgroundColor: 'white',

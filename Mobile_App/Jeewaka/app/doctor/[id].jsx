@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -6,7 +6,8 @@ import {
   Image, 
   ScrollView, 
   TouchableOpacity,
-  Alert
+  Alert,
+  Modal
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,15 +26,57 @@ export default function DoctorDetails() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('about');
+  const [showPastSessions, setShowPastSessions] = useState(false);
 
   // Parse fallback data if available
   const fallbackData = doctorData ? JSON.parse(doctorData) : null;
+  
+  console.log('DoctorDetails - Props received:', {
+    id,
+    hasDoctorData: !!doctorData,
+    fallbackDataDoctor: fallbackData?.doctor?.name
+  });
+
+  // Helper functions to categorize and sort sessions
+  const categorizeAndSortSessions = useMemo(() => {
+    if (!sessions || sessions.length === 0) {
+      return { upcomingSessions: [], pastSessions: [] };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of today
+
+    const upcoming = [];
+    const past = [];
+
+    sessions.forEach(session => {
+      const sessionDate = new Date(session.date);
+      sessionDate.setHours(0, 0, 0, 0); // Set to start of session date
+
+      if (sessionDate >= today) {
+        upcoming.push(session);
+      } else {
+        past.push(session);
+      }
+    });
+
+    // Sort upcoming sessions: nearest date first
+    upcoming.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    // Sort past sessions: most recent first
+    past.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    return { upcomingSessions: upcoming, pastSessions: past };
+  }, [sessions]);
+
+  const { upcomingSessions, pastSessions } = categorizeAndSortSessions;
   
   // Fetch doctor details
   useEffect(() => {
     const fetchDoctorDetails = async () => {
       // If we have fallback data, use it immediately to improve UX
       if (fallbackData && fallbackData.doctor) {
+        console.log('Using fallback data for doctor:', fallbackData.doctor.name);
         setDoctor(fallbackData.doctor);
         setRatingSummary(fallbackData.ratingSummary || null);
         setSessions(fallbackData.sessions || []);
@@ -41,9 +84,15 @@ export default function DoctorDetails() {
       }
       
       try {
+        console.log('Fetching doctor details for ID:', id);
         // Use the same endpoint as web app to get doctor with sessions and reviews
         const { data } = await api.get(`/api/doctorCard/${id}`);
-        console.log('Doctor details received:', data);
+        console.log('Doctor details received:', {
+          doctorName: data.doctor?.name,
+          sessionsCount: data.sessions?.length,
+          reviewsCount: data.reviews?.length,
+          ratingSummary: data.ratingSummary
+        });
         
         // Backend returns structured data with doctor, sessions, ratingSummary, and reviews
         setDoctor({
@@ -56,10 +105,15 @@ export default function DoctorDetails() {
         setSessions(data.sessions || []);
       } catch (error) {
         console.error('Error fetching doctor details:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
         
         // Try to use fallback data if available
         if (fallbackData && fallbackData.doctor) {
-          console.log('Using fallback data for doctor');
+          console.log('Using fallback data after error for doctor:', fallbackData.doctor.name);
           setDoctor(fallbackData.doctor);
           setRatingSummary(fallbackData.ratingSummary || null);
           setSessions(fallbackData.sessions || []);
@@ -83,7 +137,12 @@ export default function DoctorDetails() {
       }
     };
     
-    fetchDoctorDetails();
+    if (id) {
+      fetchDoctorDetails();
+    } else {
+      console.error('No doctor ID provided');
+      setLoading(false);
+    }
   }, [id]);
 
   const handleBookSession = (session) => {
@@ -109,6 +168,74 @@ export default function DoctorDetails() {
     });
   };
 
+  // Reusable SessionCard component
+  const SessionCard = ({ session, isPast = false }) => (
+    <View style={[styles.sessionCard, isPast && styles.pastSessionCard]}>
+      <View style={styles.sessionHeader}>
+        <Text style={[styles.sessionDate, isPast && styles.pastSessionDate]}>
+          {format(parseISO(session.date), 'MMM dd, yyyy')}
+        </Text>
+        <View style={[styles.sessionTypeBadge, isPast && styles.pastSessionTypeBadge]}>
+          <Text style={[styles.sessionTypeText, isPast && styles.pastSessionTypeText]}>
+            {session.type === 'in-person' ? 'In-person' : 
+             session.type === 'video' ? 'Video' : 
+             session.type === 'online' ? 'Online' : 'Unknown'}
+          </Text>
+        </View>
+      </View>
+      
+      <View style={styles.sessionDetails}>
+        <View style={styles.sessionDetail}>
+          <Ionicons name="time-outline" size={16} color={isPast ? "#9CA3AF" : "#64748B"} />
+          <Text style={[styles.sessionDetailText, isPast && styles.pastSessionDetailText]}>
+            {session.timeSlots && session.timeSlots.length > 0 
+              ? `${session.timeSlots[0].startTime} - ${session.timeSlots[session.timeSlots.length - 1].endTime}` 
+              : 'Time not specified'}
+          </Text>
+        </View>
+        
+        {Boolean(session.type === 'in-person' && session.hospital) && (
+          <View style={styles.sessionDetail}>
+            <Ionicons name="location-outline" size={16} color={isPast ? "#9CA3AF" : "#64748B"} />
+            <Text style={[styles.sessionDetailText, isPast && styles.pastSessionDetailText]} numberOfLines={1}>
+              {session.hospital.name}
+            </Text>
+          </View>
+        )}
+        
+        <View style={styles.sessionDetail}>
+          <Ionicons name="people-outline" size={16} color={isPast ? "#9CA3AF" : "#64748B"} />
+          <Text style={[styles.sessionDetailText, isPast && styles.pastSessionDetailText]}>
+            {session.timeSlots ? 
+              `${session.timeSlots.filter(slot => slot.status === 'available').length}/${session.timeSlots.length} slots ${isPast ? 'were' : 'available'}` :
+              'Slots info not available'}
+          </Text>
+        </View>
+      </View>
+      
+      {!isPast && (
+        <TouchableOpacity
+          style={[
+            styles.bookButton,
+            (!session.timeSlots || session.timeSlots.filter(slot => slot.status === 'available').length === 0) && styles.disabledButton
+          ]}
+          onPress={() => handleBookSession(session)}
+          disabled={!session.timeSlots || session.timeSlots.filter(slot => slot.status === 'available').length === 0}
+        >
+          <Text style={styles.bookButtonText}>
+            {(!session.timeSlots || session.timeSlots.filter(slot => slot.status === 'available').length === 0) ? 'Fully Booked' : 'Book Appointment'}
+          </Text>
+        </TouchableOpacity>
+      )}
+      
+      {isPast && (
+        <View style={styles.pastSessionFooter}>
+          <Text style={styles.pastSessionLabel}>Session Completed</Text>
+        </View>
+      )}
+    </View>
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -125,7 +252,12 @@ export default function DoctorDetails() {
     );
   }
 
-  console.log('Rendering doctor:', doctor?.name, 'Specialization:', doctor?.specialization);
+  console.log('Rendering doctor:', {
+    name: doctor?.name,
+    specialization: doctor?.specialization,
+    sessionsCount: sessions?.length,
+    reviewsCount: doctor?.reviews?.length
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -159,21 +291,23 @@ export default function DoctorDetails() {
           
           <View style={styles.heroOverlay}>
             <View style={styles.heroContent}>
-              <Text style={styles.doctorName}>{doctor?.name}</Text>
+              <Text style={styles.doctorName}>{doctor?.name || 'Unknown Doctor'}</Text>
               <Text style={styles.doctorSpecialty}>
-                {doctor?.specialization}
-                {doctor?.subSpecializations && doctor.subSpecializations.length > 0 && 
-                  <Text> • {doctor.subSpecializations[0]}</Text>
+                {doctor?.specialization || 'General Practice'}
+                {(doctor?.subSpecializations && doctor.subSpecializations.length > 0) 
+                  ? ` • ${doctor.subSpecializations[0]}` 
+                  : ''
                 }
               </Text>
               
               {/* Qualifications and Experience Badge */}
-              {(doctor?.qualifications?.length > 0 || doctor?.yearsOfExperience) && (
+              {Boolean((doctor?.qualifications?.length || 0) > 0 || (doctor?.yearsOfExperience || 0) > 0) && (
                 <View style={styles.credentialsBadge}>
                   <Text style={styles.credentialsText}>
                     {doctor?.qualifications?.length > 0 ? doctor.qualifications.join(', ') : 'General Practice'}
-                    {doctor?.yearsOfExperience && 
-                      <Text> • {doctor.yearsOfExperience}+ years experience</Text>
+                    {doctor?.yearsOfExperience 
+                      ? ` • ${doctor.yearsOfExperience}+ years experience`
+                      : ''
                     }
                   </Text>
                 </View>
@@ -221,7 +355,7 @@ export default function DoctorDetails() {
           {selectedTab === 'about' && (
             <View>
               {/* Doctor Bio */}
-              {doctor?.bio && doctor.bio.trim() && (
+              {Boolean(doctor?.bio && doctor.bio.trim() !== '') && (
                 <View style={styles.infoSection}>
                   <Text style={styles.sectionTitle}>About Doctor</Text>
                   <Text style={styles.bioText}>{doctor.bio}</Text>
@@ -233,7 +367,7 @@ export default function DoctorDetails() {
                 <Text style={styles.sectionTitle}>Qualifications</Text>
                 {doctor?.qualifications && doctor.qualifications.length > 0 ? (
                   <View style={styles.qualificationsContainer}>
-                    {doctor.qualifications.map((qualification, index) => (
+                    {doctor.qualifications.filter(qual => qual && qual.trim()).map((qualification, index) => (
                       <View key={index} style={styles.qualificationBadge}>
                         <MaterialCommunityIcons name="certificate" size={16} color="#2563EB" />
                         <Text style={styles.qualificationText}>{qualification}</Text>
@@ -271,7 +405,7 @@ export default function DoctorDetails() {
                     <Text style={styles.infoCardLabel}>Languages</Text>
                     <Text style={styles.infoCardValue}>
                       {doctor?.languagesSpoken && doctor.languagesSpoken.length > 0 
-                        ? doctor.languagesSpoken.join(', ') 
+                        ? doctor.languagesSpoken.filter(lang => lang && lang.trim()).join(', ') 
                         : 'English'}
                     </Text>
                   </View>
@@ -287,11 +421,11 @@ export default function DoctorDetails() {
               </View>
 
               {/* Specializations */}
-              {doctor?.subSpecializations && doctor.subSpecializations.length > 0 && (
+              {Boolean(doctor?.subSpecializations && doctor.subSpecializations.length > 0) && (
                 <View style={styles.infoSection}>
                   <Text style={styles.sectionTitle}>Sub-Specializations</Text>
                   <View style={styles.specializationsContainer}>
-                    {doctor.subSpecializations.map((specialization, index) => (
+                    {doctor.subSpecializations.filter(spec => spec && spec.trim()).map((specialization, index) => (
                       <View key={index} style={styles.specializationTag}>
                         <Text style={styles.specializationText}>{specialization}</Text>
                       </View>
@@ -305,14 +439,14 @@ export default function DoctorDetails() {
                 <Text style={styles.sectionTitle}>Contact Information</Text>
                 
                 <View style={styles.contactContainer}>
-                  {doctor?.phone && (
+                  {Boolean(doctor?.phone) && (
                     <View style={styles.contactItem}>
                       <MaterialCommunityIcons name="phone" size={18} color="#64748B" />
                       <Text style={styles.contactText}>{doctor.phone}</Text>
                     </View>
                   )}
                   
-                  {doctor?.email && (
+                  {Boolean(doctor?.email) && (
                     <View style={styles.contactItem}>
                       <MaterialCommunityIcons name="email" size={18} color="#64748B" />
                       <Text style={styles.contactText}>{doctor.email}</Text>
@@ -322,7 +456,7 @@ export default function DoctorDetails() {
               </View>
 
               {/* Legacy Education Section - Keep for backward compatibility */}
-              {doctor?.education && doctor.education.length > 0 && (
+              {Boolean(doctor?.education && doctor.education.length > 0) && (
                 <View style={styles.infoSection}>
                   <Text style={styles.sectionTitle}>Education</Text>
                   {doctor.education.map((edu, index) => (
@@ -340,7 +474,7 @@ export default function DoctorDetails() {
               )}
               
               {/* Legacy Experience Section - Keep for backward compatibility */}
-              {doctor?.experience && doctor.experience.length > 0 && (
+              {Boolean(doctor?.experience && doctor.experience.length > 0) && (
                 <View style={styles.infoSection}>
                   <Text style={styles.sectionTitle}>Work Experience</Text>
                   {doctor.experience.map((exp, index) => (
@@ -361,59 +495,22 @@ export default function DoctorDetails() {
           
           {selectedTab === 'sessions' && (
             <View style={styles.sessionsContainer}>
-              <Text style={styles.sectionTitle}>Available Sessions</Text>
-              {sessions && sessions.length > 0 ? (
-                sessions.map((session) => (
-                  <View key={session._id} style={styles.sessionCard}>
-                    <View style={styles.sessionHeader}>
-                      <Text style={styles.sessionDate}>
-                        {format(parseISO(session.date), 'MMM dd, yyyy')}
-                      </Text>
-                      <View style={styles.sessionTypeBadge}>
-                        <Text style={styles.sessionTypeText}>
-                          {session.sessionType === 'in-person' ? 'In-person' : 'Video'}
-                        </Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.sessionDetails}>
-                      <View style={styles.sessionDetail}>
-                        <Ionicons name="time-outline" size={16} color="#64748B" />
-                        <Text style={styles.sessionDetailText}>
-                          {session.startTime} ({session.slotDuration} mins)
-                        </Text>
-                      </View>
-                      
-                      {session.sessionType === 'in-person' && session.hospital && (
-                        <View style={styles.sessionDetail}>
-                          <Ionicons name="location-outline" size={16} color="#64748B" />
-                          <Text style={styles.sessionDetailText} numberOfLines={1}>
-                            {session.hospital.name}
-                          </Text>
-                        </View>
-                      )}
-                      
-                      <View style={styles.sessionDetail}>
-                        <Ionicons name="people-outline" size={16} color="#64748B" />
-                        <Text style={styles.sessionDetailText}>
-                          {session.availableSlots}/{session.totalSlots} slots available
-                        </Text>
-                      </View>
-                    </View>
-                    
-                    <TouchableOpacity
-                      style={[
-                        styles.bookButton,
-                        session.availableSlots === 0 && styles.disabledButton
-                      ]}
-                      onPress={() => handleBookSession(session)}
-                      disabled={session.availableSlots === 0}
-                    >
-                      <Text style={styles.bookButtonText}>
-                        {session.availableSlots === 0 ? 'Fully Booked' : 'Book Appointment'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+              <View style={styles.sessionHeaderRow}>
+                <Text style={styles.sectionTitle}>Available Sessions</Text>
+                {pastSessions.length > 0 && (
+                  <TouchableOpacity 
+                    style={styles.pastSessionsButton}
+                    onPress={() => setShowPastSessions(true)}
+                  >
+                    <Text style={styles.pastSessionsButtonText}>See Past Sessions</Text>
+                    <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              {Boolean(upcomingSessions && upcomingSessions.length > 0) ? (
+                upcomingSessions.map((session) => (
+                  <SessionCard key={session._id} session={session} />
                 ))
               ) : (
                 <Text style={styles.noDataText}>No upcoming sessions available</Text>
@@ -440,7 +537,7 @@ export default function DoctorDetails() {
                   </View>
                 </View>
                 
-                {ratingSummary && (
+                {ratingSummary && ratingSummary !== null && (
                   <View style={styles.ratingBreakdown}>
                     {[5, 4, 3, 2, 1].map((rating) => (
                       <View key={rating} style={styles.ratingRow}>
@@ -450,9 +547,8 @@ export default function DoctorDetails() {
                             style={[
                               styles.ratingBar,
                               { 
-                                width: `
-                                {ratingSummary[rating] ? 
-                                  (ratingSummary[rating] / doctor?.totalReviews * 100) : 0}%` 
+                                width: `${ratingSummary[rating] && doctor?.totalReviews > 0 ? 
+                                  (ratingSummary[rating] / doctor.totalReviews * 100) : 0}%` 
                               }
                             ]}
                           />
@@ -464,14 +560,12 @@ export default function DoctorDetails() {
                 )}
               </View>
               
-              {doctor?.reviews && doctor.reviews.length > 0 ? (
-                doctor.reviews.map((review) => (
-                  <View key={review._id} style={styles.reviewItem}>
+              {Boolean(doctor?.reviews && doctor.reviews.length > 0) ? (
+                doctor.reviews.map((review, index) => (
+                  <View key={index} style={styles.reviewItem}>
                     <View style={styles.reviewHeader}>
                       <Text style={styles.reviewerName}>{review.patientName || 'Anonymous'}</Text>
-                      <Text style={styles.reviewDate}>
-                        {format(parseISO(review.createdAt), 'MMM dd, yyyy')}
-                      </Text>
+                      <Text style={styles.reviewDate}>Recent</Text>
                     </View>
                     
                     <View style={styles.reviewStars}>
@@ -495,6 +589,43 @@ export default function DoctorDetails() {
           )}
         </View>
       </ScrollView>
+
+      {/* Past Sessions Modal */}
+      <Modal
+        visible={showPastSessions}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowPastSessions(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity 
+              onPress={() => setShowPastSessions(false)}
+              style={styles.modalCloseButton}
+            >
+              <Ionicons name="close" size={24} color="#64748B" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Past Sessions</Text>
+            <View style={styles.modalHeaderSpacer} />
+          </View>
+
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            {Boolean(pastSessions && pastSessions.length > 0) ? (
+              pastSessions.map((session) => (
+                <SessionCard key={session._id} session={session} isPast={true} />
+              ))
+            ) : (
+              <View style={styles.emptyStateContainer}>
+                <Ionicons name="calendar-outline" size={48} color="#CBD5E1" />
+                <Text style={styles.emptyStateTitle}>No Past Sessions</Text>
+                <Text style={styles.emptyStateText}>
+                  Dr. {doctor?.name || 'This doctor'} hasn't conducted any sessions yet.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -910,6 +1041,118 @@ const styles = StyleSheet.create({
   reviewText: {
     fontSize: 14,
     color: '#334155',
+    lineHeight: 20,
+  },
+  
+  // Session Header Row Styles
+  sessionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  pastSessionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  pastSessionsButtonText: {
+    color: '#2563EB',
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  
+  // Past Session Card Styles
+  pastSessionCard: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#CBD5E1',
+  },
+  pastSessionDate: {
+    color: '#64748B',
+  },
+  pastSessionTypeBadge: {
+    backgroundColor: '#64748B',
+  },
+  pastSessionTypeText: {
+    color: '#E2E8F0',
+  },
+  pastSessionDetailText: {
+    color: '#64748B',
+  },
+  pastSessionFooter: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  pastSessionLabel: {
+    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  modalCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1E293B',
+    textAlign: 'center',
+  },
+  modalHeaderSpacer: {
+    width: 40,
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  
+  // Empty State Styles
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
     lineHeight: 20,
   },
 });
