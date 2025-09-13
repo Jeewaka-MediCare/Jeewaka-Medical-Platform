@@ -7,6 +7,7 @@ import {
   Alert,
   TextInput,
   FlatList,
+  Dimensions,
 } from "react-native";
 import {
   MeetingProvider,
@@ -15,7 +16,8 @@ import {
   MediaStream,
   RTCView,
 } from "@videosdk.live/react-native-sdk";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { createMeeting, token } from "../../services/api";
 import useAuthStore from "../../store/authStore";
 
@@ -48,6 +50,37 @@ const Button = ({
   );
 };
 
+// Icon Button Component for Controls
+const IconButton = ({
+  onPress,
+  iconName,
+  backgroundColor,
+  isActive,
+}: {
+  onPress: () => void;
+  iconName: string;
+  backgroundColor: string;
+  isActive?: boolean;
+}) => {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        backgroundColor: isActive ? backgroundColor : "#666",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 16,
+        borderRadius: 50,
+        width: 60,
+        height: 60,
+        marginHorizontal: 8,
+      }}
+    >
+      <Ionicons name={iconName as any} size={24} color="white" />
+    </TouchableOpacity>
+  );
+};
+
 // Controls Component
 function ControlsContainer({
   join,
@@ -72,59 +105,71 @@ function ControlsContainer({
   return (
     <View
       style={{
-        padding: 24,
+        paddingVertical: 20,
+        paddingHorizontal: 16,
         backgroundColor: "#1C1C1C",
+        alignItems: "center",
       }}
     >
       {/* Only show controls if user has joined */}
       {hasJoined ? (
-        <>
-          {/* First row of controls */}
-          <View
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          {/* Camera toggle */}
+          <IconButton
+            onPress={() => {
+              toggleWebcam?.();
+            }}
+            iconName={localWebcamOn ? "videocam" : "videocam-off"}
+            backgroundColor="#1178F8"
+            isActive={localWebcamOn}
+          />
+
+          {/* Microphone toggle */}
+          <IconButton
+            onPress={() => {
+              toggleMic?.();
+            }}
+            iconName={localMicOn ? "mic" : "mic-off"}
+            backgroundColor="#1178F8"
+            isActive={localMicOn}
+          />
+
+          {/* Camera switch */}
+          <IconButton
+            onPress={() => {
+              switchCamera?.();
+            }}
+            iconName="camera-reverse"
+            backgroundColor="#FF9500"
+            isActive={true}
+          />
+
+          {/* Leave button - keeping as text button as requested */}
+          <TouchableOpacity
+            onPress={() => leave?.()}
             style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginBottom: 12,
+              backgroundColor: "#FF0000",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingHorizontal: 20,
+              paddingVertical: 18,
+              borderRadius: 30,
+              marginHorizontal: 8,
+              minWidth: 80,
             }}
           >
-            <Button
-              onPress={() => {
-                toggleWebcam?.();
-              }}
-              buttonText={localWebcamOn ? "Turn Off Cam" : "Turn On Cam"}
-              backgroundColor={"#1178F8"}
-            />
-            <Button
-              onPress={() => {
-                switchCamera?.();
-              }}
-              buttonText={`Switch to ${
-                isUsingFrontCamera ? "Back" : "Front"
-              } Camera`}
-              backgroundColor={"#FF9500"}
-            />
-          </View>
-          {/* Second row of controls */}
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-            }}
-          >
-            <Button
-              onPress={() => {
-                toggleMic?.();
-              }}
-              buttonText={localMicOn ? "Turn Off Mic" : "Turn On Mic"}
-              backgroundColor={"#1178F8"}
-            />
-            <Button
-              onPress={() => leave?.()}
-              buttonText={"Leave"}
-              backgroundColor={"#FF0000"}
-            />
-          </View>
-        </>
+            <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>
+              Leave
+            </Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <View style={{ flex: 1, alignItems: "center" }}>
           <Text style={{ color: "white", fontSize: 14 }}>
@@ -137,20 +182,59 @@ function ControlsContainer({
 }
 
 // Participant View Component (Enhanced version of example)
-function ParticipantView({ participantId }: { participantId: string }) {
+function ParticipantView({
+  participantId,
+  participantCount,
+}: {
+  participantId: string;
+  participantCount: number;
+}) {
   const { webcamStream, webcamOn, displayName, isLocal } =
     useParticipant(participantId);
 
+  // Get screen dimensions
+  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
+  // Calculate dynamic height based on screen size and participant count
+  const getVideoHeight = () => {
+    if (participantCount === 1) {
+      // Single participant - use most of the screen height (minus controls)
+      return screenHeight * 0.7;
+    } else if (participantCount === 2) {
+      // Two participants - split screen vertically
+      return screenHeight * 0.35;
+    } else {
+      // Multiple participants - grid view
+      return screenHeight * 0.25;
+    }
+  };
+
+  const getVideoWidth = () => {
+    if (participantCount <= 2) {
+      // Single column - use most of screen width with margins
+      return screenWidth - 32; // 16px margin on each side
+    } else {
+      // Grid view - two columns
+      return (screenWidth - 48) / 2; // Account for margins and spacing between columns
+    }
+  };
+
   return webcamOn && webcamStream ? (
-    <View style={{ flex: 1, margin: 8 }}>
+    <View
+      style={{
+        margin: 8,
+        width: getVideoWidth(),
+        height: getVideoHeight(),
+      }}
+    >
       <RTCView
         streamURL={new MediaStream([webcamStream.track]).toURL()}
         objectFit={"cover"}
         style={{
-          height: 300,
-          marginVertical: 8,
-          marginHorizontal: 8,
+          width: "100%",
+          height: "100%",
           borderRadius: 10,
+          backgroundColor: "#000",
         }}
       />
       {/* Participant name overlay */}
@@ -173,7 +257,8 @@ function ParticipantView({ participantId }: { participantId: string }) {
     <View
       style={{
         backgroundColor: "grey",
-        height: 300,
+        width: getVideoWidth(),
+        height: getVideoHeight(),
         justifyContent: "center",
         alignItems: "center",
         margin: 8,
@@ -199,11 +284,21 @@ function ParticipantList({ participants }: { participants: string[] }) {
     <FlatList
       data={participants}
       renderItem={({ item }) => {
-        return <ParticipantView participantId={item} />;
+        return (
+          <ParticipantView
+            participantId={item}
+            participantCount={participants.length}
+          />
+        );
       }}
       numColumns={participants.length > 2 ? 2 : 1}
       key={participants.length > 2 ? "grid" : "single"}
-      contentContainerStyle={{ flex: 1 }}
+      contentContainerStyle={{
+        flex: 1,
+        justifyContent: participants.length === 1 ? "center" : "flex-start",
+        alignItems: "center",
+        padding: 8,
+      }}
     />
   ) : (
     <View
@@ -638,19 +733,38 @@ export default function VideoConsultationPage() {
     return userRole === "doctor" ? "Doctor" : "Patient";
   };
 
-  return meetingId && typeof meetingId === "string" ? (
-    <MeetingProvider
-      config={{
-        meetingId,
-        micEnabled: false,
-        webcamEnabled: true,
-        name: getParticipantName(),
-      }}
-      token={token}
-    >
-      <MeetingView />
-    </MeetingProvider>
-  ) : (
-    <JoinScreen getMeetingId={getMeetingId} loading={loading} />
+  return (
+    <>
+      <Stack.Screen
+        options={{
+          title: "Video Consultation",
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: "#1E293B",
+          },
+          headerTitleStyle: {
+            color: "white",
+            fontSize: 20,
+            fontWeight: "600",
+          },
+          headerTintColor: "white",
+        }}
+      />
+      {meetingId && typeof meetingId === "string" ? (
+        <MeetingProvider
+          config={{
+            meetingId,
+            micEnabled: false,
+            webcamEnabled: true,
+            name: getParticipantName(),
+          }}
+          token={token}
+        >
+          <MeetingView />
+        </MeetingProvider>
+      ) : (
+        <JoinScreen getMeetingId={getMeetingId} loading={loading} />
+      )}
+    </>
   );
 }

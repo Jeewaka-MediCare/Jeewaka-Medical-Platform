@@ -57,7 +57,7 @@ export default function BookSession() {
           'Booking Successful',
           'Your appointment has been booked successfully!',
           [
-            { text: 'View My Appointments', onPress: () => router.push('/patient-dashboard') },
+            { text: 'View My Appointments', onPress: () => router.push('/(tabs)/appointments') },
             { text: 'OK', onPress: () => router.push('/') }
           ]
         );

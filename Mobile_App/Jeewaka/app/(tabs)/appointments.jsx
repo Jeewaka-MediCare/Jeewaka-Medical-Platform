@@ -356,7 +356,7 @@ export default function Appointments() {
                   <Text style={styles.actionButtonText}>View Doctor</Text>
                 </TouchableOpacity>
                 
-                {appointment.type === 'online' && (
+                {(appointment.type === 'online' || appointment.type === 'video') && (
                   <VideoCallButton
                     style={[styles.actionButton, styles.videoCallButton]}
                     title="Video Call"

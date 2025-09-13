@@ -120,7 +120,7 @@ export default function Home() {
       if (userRole === 'doctor') {
         router.push('/appointments');  // Changed from doctor-dashboard to appointments tab
       } else {
-        router.push('/patient-dashboard');  // Fixed: was /patient-profile
+        router.push('/(tabs)/appointments');  // Updated to use new appointments tab
       }
     } else {
       router.push('/login');

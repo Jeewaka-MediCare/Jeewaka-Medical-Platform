@@ -554,7 +554,7 @@ export default function DoctorDashboardContent() {
               </View>
               
               <View style={styles.cardActions}>
-                {appointment.session.sessionType === 'online' && (
+                {(appointment.session.sessionType === 'online' || appointment.session.sessionType === 'video') && (
                   <VideoCallButton
                     style={[styles.actionButton, styles.videoCallButton]}
                     title="Join Video Call"
