@@ -17,6 +17,7 @@ import useAuthStore from "../store/authStore";
 export function Navbar() {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
+  console.log(user);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -82,7 +83,7 @@ export function Navbar() {
                 <DropdownMenuLabel className="font-normal p-4">
                   <div className="flex flex-col space-y-2">
                     <p className="text-sm font-semibold leading-none text-slate-900">
-                      {user?.displayName || "Guest User"}
+                      {user?.name || "Guest User"}
                     </p>
                     <p className="text-xs leading-none text-slate-500">
                       {user?.email || "No email"}

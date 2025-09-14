@@ -1,5 +1,5 @@
 import express from 'express';
-import { createSession , getSessionById , getSessions , updateSession , deleteSession , addTimeSlot , updateTimeSlot , deleteTimeSlot , bookAppointment } from './sessionController.js';
+import { createSession , getSessionById , getSessions , updateSession , deleteSession , addTimeSlot , updateTimeSlot , deleteTimeSlot , bookAppointment  ,getSessionByDoctorId } from './sessionController.js';
 
 const sessionRouter  = express.Router();
 
@@ -9,6 +9,8 @@ sessionRouter.post('/',createSession);
 
 // Get all sessions
 sessionRouter.get('/', getSessions);
+// Get a  sessions by doctor id
+sessionRouter.get('/doctor/:doctorId', getSessionByDoctorId);
 
 // Get a single session by ID
 sessionRouter.get('/:sessionId', getSessionById);

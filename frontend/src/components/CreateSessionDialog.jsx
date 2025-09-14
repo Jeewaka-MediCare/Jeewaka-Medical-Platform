@@ -30,7 +30,8 @@ const mockHospitals = [
 ]
 
 export function CreateSessionDialog({ hospitals, onCreateSession }) {
-  const {user} = useAuthStore()
+  const user = useAuthStore((state) => state.user);
+  console.log("user from auth sotre:" , user)
 
   const [isOpen, setIsOpen] = useState(false)
   const [newSessionDate, setNewSessionDate] = useState("")
@@ -43,7 +44,8 @@ export function CreateSessionDialog({ hospitals, onCreateSession }) {
   const [meetingLink, setMeetingLink] = useState("")
 
   // Get logged-in user from localStorage or Zustand store
-  const loggedInUser = localStorage.getItem("userData") ? JSON.parse(localStorage.getItem("userData")) : user;
+  const loggedInUser =  user
+  console.log("logged in user: ", loggedInUser)
 
   if (!loggedInUser || !loggedInUser._id) {
     // Optionally, you can show a message or disable session creation
