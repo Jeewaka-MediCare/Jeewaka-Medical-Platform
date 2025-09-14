@@ -58,9 +58,7 @@ export default function DoctorSessionManager() {
     };
     const fetchSessions = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem("userData"));
-        if (!user || !user._id) throw new Error("User not found");
-        const response = await api.get(`/api/session/doctor/${user._id}`); // Adjust the endpoint as needed
+        const response = await api.get("/api/session"); // Adjust the endpoint as needed
         const data = response.data;
         console.log("Fetched sessions:", data);
         setSessions(data);
