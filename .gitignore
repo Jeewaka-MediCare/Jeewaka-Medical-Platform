@@ -49,16 +49,48 @@ BackEnd/uploads/
 BackEnd/temp/
 BackEnd/logs/
 
-# Mobile app builds
+# Mobile app builds and cache
 Mobile_App/android/app/release/
 Mobile_App/ios/build/
 Mobile_App/android/.gradle/
+Mobile_App/android/build/
+Mobile_App/android/.kotlin/
 Mobile_App/android/local.properties
 Mobile_App/android/app/google-services.json
 Mobile_App/ios/GoogleService-Info.plist
 Mobile_App/android/key.properties
 *.jks
 *.keystore
+
+# React Native / Expo specific
+Mobile_App/**/.expo/
+Mobile_App/**/expo-env.d.ts
+Mobile_App/**/web-build/
+Mobile_App/**/.metro-health-check*
+Mobile_App/**/*.orig.*
+Mobile_App/**/*.mobileprovision
+
+# React Native Android
+Mobile_App/**/android/.gradle/
+Mobile_App/**/android/build/
+Mobile_App/**/android/.kotlin/
+Mobile_App/**/android/app/build/
+Mobile_App/**/android/app/.cxx/
+Mobile_App/**/android/app/debug.keystore
+Mobile_App/**/android/gradle/
+Mobile_App/**/android/gradlew
+Mobile_App/**/android/gradlew.bat
+Mobile_App/**/android/local.properties
+
+# React Native iOS
+Mobile_App/**/ios/build/
+Mobile_App/**/ios/Pods/
+Mobile_App/**/ios/**/*.xcworkspace
+Mobile_App/**/ios/**/*.xcuserdata
+
+# Package lock files (optional - some teams prefer to track these)
+Mobile_App/**/package-lock.json
+Mobile_App/**/yarn.lock
 
 # Logs
 logs/
@@ -67,12 +99,17 @@ logs/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Mobile app editor settings
+Mobile_App/**/.vscode/
 
 # OS generated files
 .DS_Store
@@ -95,6 +132,31 @@ coverage/
 
 # ESLint cache
 .eslintcache
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Babel
+.babel-cache/
+
+# Metro bundler (React Native)
+.metro-health-check*
+metro-resolver-cache-*
+metro-bundler-cache-*
+metro-cache/
+
+# Android specific cache
+**/android/**/.cxx/
+**/android/**/build/
+**/android/**/.gradle/
+**/android/**/debug.keystore
+**/android/**/local.properties
+**/android/**/.externalNativeBuild/
+**/android/**/intermediates/
+**/android/**/outputs/
+**/android/**/tmp/
+**/android/**/generated/
 
 # Optional npm cache directory
 .npm
