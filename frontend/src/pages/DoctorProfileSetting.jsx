@@ -32,6 +32,7 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import api from "../services/api"
+import useAuthStore from "../store/authStore"
 
 // Predefined data to avoid typing conflicts
 const SPECIALIZATIONS = [
@@ -120,6 +121,7 @@ const getIncompleteFields = (data) => {
 }
 
 export default function DoctorProfileUpdate() {
+  
   const [formData, setFormData] = useState(initialData)
   const [originalData, setOriginalData] = useState(initialData)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -325,7 +327,7 @@ export default function DoctorProfileUpdate() {
                   <Avatar className="h-24 w-24 ring-4 ring-gray-200 shadow-lg">
                     <AvatarImage src={formData.profile || "/placeholder.svg"} alt={formData.name} />
                     <AvatarFallback className="bg-gray-800 text-white text-lg">
-                      {formData.name
+                      {formData?.name||"DR"
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
