@@ -77,9 +77,9 @@ export default function AppointmentsPage() {
   return (
     <main className="container mx-auto py-8 px-4">
       <div className="mb-6">
-        <Link to="/" className="inline-flex items-center text-primary hover:underline">
+        <Link to="/patient-dashboard" className="inline-flex items-center text-primary hover:underline">
           <ChevronLeft className="h-4 w-4 mr-1" />
-          Back to Doctors
+          Back to Dashboard
         </Link>
       </div>
 
