@@ -16,6 +16,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCheckout from "./pages/PaymentCheckout";
 import { Navbar } from "./components/navBar";
 import PatientLayout from "./Layout.jsx/patientLayout";
+import LandingPage from "./pages/LandingPage";
 
 function App() {
   useEffect(() => {
@@ -90,6 +91,7 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LoginPage />} />
+        <Route path="/landing" element={<LandingPage />} />
         <Route path="/sign-up" element={<SignupPage />} />
 
         {/* Doctor routes */}
