@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -25,12 +25,13 @@ import api from "../services/api.js"; // Import the API service
 
 // Import data and types
 import { mockSessions, mockHospitals } from "../data/mockData.js";
-import { useEffect } from "react";
 
 export default function DoctorSessionManager() {
   const [sessions, setSessions] = useState(mockSessions);
   const [selectedSession, setSelectedSession] = useState(null);
   const [hospitals, setHospitals] = useState([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [refresh, setRefresh] = useState(false);
 
   // Dialog states
   const [selectedPatientForReports, setSelectedPatientForReports] =
@@ -55,18 +56,19 @@ export default function DoctorSessionManager() {
     };
     const fetchSessions = async () => {
       try {
-        const response = await api.get("/api/session"); // Adjust the endpoint as needed
+        const user = JSON.parse(localStorage.getItem("userData"));
+        if (!user || !user._id) throw new Error("User not found");
+        const response = await api.get(`/api/session/doctor/${user._id}`); // Adjust the endpoint as needed
         const data = response.data;
 
         console.log("Fetched sessions:", data);
-        setSessions(data)
+        setSessions(data);
       } catch (error) {
         console.error("Error fetching sessions:", error);
       }
-      
     };
     fetchHospitals();
-      fetchSessions();
+    fetchSessions();
   }, []);
 
   const handleCreateSession = (newSession) => {
@@ -117,6 +119,24 @@ export default function DoctorSessionManager() {
   const handleAddNote = (patient) => {
     setCurrentPatientForAdd(patient);
     setIsAddNoteOpen(true);
+  };
+
+  const handleSelect = (id) => {
+    setSelectedSession(id);
+    setShowCreate(false);
+  };
+  const handleCreate = () => {
+    setShowCreate(true);
+    setSelectedSession(null);
+  };
+  const handleCreated = () => {
+    setShowCreate(false);
+    setRefresh((r) => !r);
+  };
+  const handleBack = () => {
+    setSelectedSession(null);
+    setShowCreate(false);
+    setRefresh((r) => !r);
   };
 
   return (
