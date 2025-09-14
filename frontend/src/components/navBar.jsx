@@ -93,15 +93,7 @@ export function Navbar() {
 
                 <DropdownMenuSeparator className="bg-green-100/50" />
 
-                <DropdownMenuItem
-                  asChild
-                  className="cursor-pointer hover:bg-green-50/80 focus:bg-green-50/80"
-                >
-                  <Link to="/profile" className="flex items-center p-3">
-                    <User className="mr-3 h-4 w-4 text-slate-600" />
-                    <span className="text-sm">Profile Settings</span>
-                  </Link>
-                </DropdownMenuItem>
+                
 
                 <DropdownMenuSeparator className="bg-green-100/50" />
 
