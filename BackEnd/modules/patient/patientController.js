@@ -1,4 +1,5 @@
 import Patient from "./patientModel.js";
+import Session from "../session/sessionModel.js";
 
 // Create a patient
 export const createPatient = async (req, res) => {
@@ -20,6 +21,50 @@ export const getAllPatients = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 }
+
+
+export const getPatientAppointments = async (req, res) => {
+  const { patientId } = req.params;
+
+  try {
+    // Find all sessions where at least one timeslot has this patient
+    const sessions = await Session.find({ "timeSlots.patientId": patientId })
+      .populate("doctorId", "name specialization")   // include doctor details
+      .populate("hospital", "name address")          // include hospital details
+      .lean();
+
+    if (!sessions || sessions.length === 0) {
+      return res.status(404).json({ message: "No appointments found for this patient" });
+    }
+
+    // Extract only the slots belonging to this patient
+    const appointments = sessions.flatMap(session =>
+      session.timeSlots
+        .filter(slot => slot.patientId?.toString() === patientId)
+        .map(slot => ({
+          sessionId: session._id,
+          doctor: session.doctorId,
+          hospital: session.hospital,
+          date: session.date,
+          meetingLink: session.meetingLink,
+          type: session.type,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          status: slot.status,
+          appointmentStatus: slot.appointmentStatus,
+          paymentAmount: slot.paymentAmount,
+          paymentCurrency: slot.paymentCurrency,
+          paymentDate: slot.paymentDate
+        }))
+    );
+
+    res.json(appointments);
+  } catch (error) {
+    console.error("Error fetching patient appointments:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 export const getPatientByUuid = async (req, res) => {
   const { uuid } = req.params;
   

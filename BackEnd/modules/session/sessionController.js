@@ -87,6 +87,15 @@ export const getSessionById = async (req, res) => {
   }
 };
 
+export const getSessionByDoctorId  = async (req, res) => {
+  try {
+    const sessions = await Session.find({ doctorId: req.params.doctorId });
+    res.json(sessions);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
 // Update a session
 export const updateSession = async (req, res) => {
   try {
