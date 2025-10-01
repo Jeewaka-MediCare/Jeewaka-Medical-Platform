@@ -5,12 +5,14 @@ import {
   updatePatient,
   deletePatient,
   getPatientByUuid,
-  getAllPatients
+  getAllPatients,
+  getPatientAppointments
 } from "./patientController.js";
 
 const patientRouter = express.Router();
 
 patientRouter.get("/", getAllPatients);
+patientRouter.get("/:patientId/appointments", getPatientAppointments);
 
 patientRouter.post("/", createPatient);
 

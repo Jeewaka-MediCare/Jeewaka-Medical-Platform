@@ -1,4 +1,9 @@
 import Doctor from './doctorModel.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
 
 
@@ -256,3 +261,360 @@ export const deleteDoctor = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// AI-powered doctor search endpoint
+export const aiSearchDoctors = async (req, res) => {
+  try {
+    const { query, page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc' } = req.body;
+
+    if (!query || query.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: "Search query is required"
+      });
+    }
+
+    let searchParameters = {};
+    let aiError = null;
+    let interpretedQuery = null;
+
+    try {
+      // Use AI to interpret the natural language query
+      const aiResponse = await interpretSearchQuery(query);
+      searchParameters = aiResponse.parameters;
+      interpretedQuery = aiResponse.interpretation;
+    } catch (error) {
+      console.error('AI interpretation failed:', error.message);
+      
+      // Check if it's a quota error
+      if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('Too Many Requests')) {
+        aiError = 'AI quota limit reached. Using smart keyword search instead.';
+      } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+        aiError = 'AI service temporarily unavailable. Using smart keyword search instead.';
+      } else {
+        aiError = 'AI interpretation failed, using smart keyword search instead.';
+      }
+      
+      // Fallback: try basic keyword matching
+      searchParameters = basicKeywordFallback(query);
+      interpretedQuery = `Smart keyword search for: "${query}"`;
+    }
+
+    // Add pagination and sorting parameters
+    const finalQuery = {
+      ...searchParameters,
+      page,
+      limit,
+      sortBy,
+      sortOrder
+    };
+
+    // Create a mock request object for the existing searchDoctors function
+    const mockReq = {
+      query: finalQuery
+    };
+
+    // Create a custom response handler
+    const mockRes = {
+      json: (data) => {
+        // Enhance the response with AI interpretation data
+        const enhancedResponse = {
+          ...data,
+          aiEnhancement: {
+            originalQuery: query,
+            interpretedQuery: interpretedQuery,
+            searchParameters: searchParameters,
+            aiError: aiError,
+            enhancedSearch: !aiError
+          }
+        };
+        return res.json(enhancedResponse);
+      },
+      status: (statusCode) => {
+        return {
+          json: (data) => res.status(statusCode).json(data)
+        };
+      }
+    };
+
+    // Call the existing searchDoctors function
+    await searchDoctors(mockReq, mockRes);
+
+  } catch (error) {
+    console.error('AI Search Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "AI search failed",
+      details: error.message
+    });
+  }
+};
+
+// AI interpretation function using Gemini
+async function interpretSearchQuery(userQuery) {
+  const prompt = `
+You are a medical search assistant helping patients find doctors. Convert the following natural language query into structured search parameters.
+
+Available database fields and their possible values:
+- name: doctor's name (string)
+- specialization: medical specialization (e.g., "Cardiology", "Oncology", "Pediatrics", "Dermatology", "Orthopedics", "Neurology", "Gynecology", "ENT", "Psychiatry")
+- subSpecialization: array of subspecializations (e.g., "Radiation Oncology", "Interventional Cardiology")
+- minExperience/maxExperience: years of experience (numbers)
+- language: languages spoken (e.g., "English", "Tamil", "Sinhala")
+- minFee/maxFee: consultation fee range (numbers)
+- gender: "Male", "Female", "Other"
+
+Common symptom to specialization mappings:
+- Heart problems, chest pain, heartache → Cardiology
+- Cancer, tumors → Oncology
+- Skin issues, rashes → Dermatology
+- Bone, joint pain → Orthopedics
+- Brain, nerve issues → Neurology
+- Women's health → Gynecology
+- Ear, nose, throat → ENT
+- Mental health, depression → Psychiatry
+- Children's health → Pediatrics
+- Nausea, bleeding, stomach issues → Internal Medicine or Gastroenterology
+
+Location mentions like "around Badulla", "near Colombo" should be noted but can't be filtered (not in database).
+
+User Query: "${userQuery}"
+
+Respond in JSON format:
+{
+  "parameters": {
+    // Only include parameters that can be determined from the query
+    // Use exact field names: name, specialization, subSpecialization, minExperience, maxExperience, language, minFee, maxFee, gender
+  },
+  "interpretation": "Human-readable explanation of what was understood",
+  "locationNote": "Any location mentions that couldn't be processed",
+  "confidence": "high|medium|low"
+}
+
+Examples:
+Query: "I need a female heart doctor"
+Response: {"parameters": {"specialization": "Cardiology", "gender": "Female"}, "interpretation": "Looking for a female cardiologist", "confidence": "high"}
+
+Query: "Tamil speaking oncologist with experience"
+Response: {"parameters": {"specialization": "Oncology", "language": "Tamil", "minExperience": 5}, "interpretation": "Looking for an experienced Tamil-speaking oncologist", "confidence": "high"}
+
+Query: "cheap consultation under 20 dollars"
+Response: {"parameters": {"maxFee": 20}, "interpretation": "Looking for doctors with consultation fees under $20", "confidence": "high"}
+`;
+
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text();
+
+  try {
+    // Handle markdown-wrapped JSON responses
+    let jsonText = text;
+    
+    // Remove markdown JSON code blocks if present
+    if (jsonText.includes('```json')) {
+      jsonText = jsonText.replace(/```json\s*/, '').replace(/\s*```$/, '');
+    } else if (jsonText.includes('```')) {
+      jsonText = jsonText.replace(/```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    // Trim whitespace
+    jsonText = jsonText.trim();
+    
+    const jsonResponse = JSON.parse(jsonText);
+    return jsonResponse;
+  } catch (parseError) {
+    console.error('Failed to parse AI response:', text);
+    throw new Error('Failed to parse AI response');
+  }
+}
+
+// Basic fallback when AI fails
+function basicKeywordFallback(query) {
+  const searchParams = {};
+  const lowerQuery = query.toLowerCase();
+
+  // Basic specialization mapping
+  const specializationMap = {
+    'heart': 'Cardiology',
+    'cardiology': 'Cardiology',
+    'cardiologist': 'Cardiology',
+    'cancer': 'Oncology',
+    'oncology': 'Oncology',
+    'oncologist': 'Oncology',
+    'skin': 'Dermatology',
+    'dermatology': 'Dermatology',
+    'bone': 'Orthopedics',
+    'joint': 'Orthopedics',
+    'orthopedic': 'Orthopedics',
+    'brain': 'Neurology',
+    'neuro': 'Neurology',
+    'mental': 'Psychiatry',
+    'psychiatry': 'Psychiatry',
+    'children': 'Pediatrics',
+    'pediatric': 'Pediatrics',
+    'women': 'Gynecology',
+    'gynecology': 'Gynecology'
+  };
+
+  // Check for specializations
+  for (const [keyword, specialization] of Object.entries(specializationMap)) {
+    if (lowerQuery.includes(keyword)) {
+      searchParams.specialization = specialization;
+      break;
+    }
+  }
+
+  // Check for gender
+  if (lowerQuery.includes('female') || lowerQuery.includes('woman')) {
+    searchParams.gender = 'Female';
+  } else if (lowerQuery.includes('male') || lowerQuery.includes('man')) {
+    searchParams.gender = 'Male';
+  }
+
+  // Check for languages
+  if (lowerQuery.includes('tamil')) {
+    searchParams.language = 'Tamil';
+  } else if (lowerQuery.includes('sinhala') || lowerQuery.includes('sinhalese')) {
+    searchParams.language = 'Sinhala';
+  } else if (lowerQuery.includes('english')) {
+    searchParams.language = 'English';
+  }
+
+  // Check for fee-related terms
+  if (lowerQuery.includes('cheap') || lowerQuery.includes('affordable')) {
+    searchParams.maxFee = 25;
+  } else if (lowerQuery.includes('expensive') || lowerQuery.includes('premium')) {
+    searchParams.minFee = 50;
+  }
+
+  // Extract numbers for potential fee limits
+  const numbers = query.match(/\d+/g);
+  if (numbers && (lowerQuery.includes('under') || lowerQuery.includes('below'))) {
+    searchParams.maxFee = parseInt(numbers[0]);
+  } else if (numbers && (lowerQuery.includes('above') || lowerQuery.includes('over'))) {
+    searchParams.minFee = parseInt(numbers[0]);
+  }
+
+  // Check for experience
+  if (lowerQuery.includes('experienced') || lowerQuery.includes('senior')) {
+    searchParams.minExperience = 5;
+  } else if (lowerQuery.includes('new') || lowerQuery.includes('junior')) {
+    searchParams.maxExperience = 3;
+  }
+
+  return searchParams;
+}
+
+// Get AI search suggestions (optional endpoint for autocomplete)
+export const getAISearchSuggestions = async (req, res) => {
+  try {
+    const { partialQuery } = req.query;
+
+    if (!partialQuery || partialQuery.length < 2) {
+      return res.json({
+        success: true,
+        data: {
+          suggestions: []
+        }
+      });
+    }
+
+    const prompt = `
+Based on the partial search query "${partialQuery}", suggest 3-5 complete search phrases that patients might be looking for when searching for doctors.
+
+Consider these categories:
+- Symptoms (heart pain, skin problems, etc.)
+- Specializations (cardiologist, oncologist, etc.)
+- Demographics (female doctor, experienced doctor, etc.)
+- Languages (Tamil speaking, English speaking, etc.)
+- Price ranges (affordable, under $30, etc.)
+
+Return only a JSON array of suggestion strings:
+["suggestion 1", "suggestion 2", "suggestion 3"]
+`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    try {
+      // Handle markdown-wrapped JSON responses
+      let jsonText = text;
+      
+      // Remove markdown JSON code blocks if present
+      if (jsonText.includes('```json')) {
+        jsonText = jsonText.replace(/```json\s*/, '').replace(/\s*```$/, '');
+      } else if (jsonText.includes('```')) {
+        jsonText = jsonText.replace(/```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      // Trim whitespace
+      jsonText = jsonText.trim();
+      
+      const suggestions = JSON.parse(jsonText);
+      res.json({
+        success: true,
+        data: {
+          suggestions: Array.isArray(suggestions) ? suggestions : []
+        }
+      });
+    } catch (parseError) {
+      res.json({
+        success: true,
+        data: {
+          suggestions: []
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('AI Suggestions Error:', error.message);
+    
+    // Provide fallback suggestions when AI is unavailable
+    const fallbackSuggestions = getFallbackSuggestions(partialQuery);
+    
+    res.json({
+      success: true,
+      data: {
+        suggestions: fallbackSuggestions
+      }
+    });
+  }
+};
+
+// Fallback suggestions when AI is unavailable
+function getFallbackSuggestions(partialQuery) {
+  const lowerQuery = partialQuery.toLowerCase();
+  
+  const commonSuggestions = [
+    "heart doctor",
+    "female doctor", 
+    "Tamil speaking doctor",
+    "cheap consultation under 30 dollars",
+    "experienced cardiologist",
+    "skin specialist",
+    "brain doctor with experience",
+    "children's doctor",
+    "women's health doctor",
+    "mental health specialist",
+    "bone doctor",
+    "cancer specialist",
+    "eye doctor",
+    "ENT specialist"
+  ];
+
+  // Filter suggestions based on partial query
+  const filtered = commonSuggestions.filter(suggestion => 
+    suggestion.toLowerCase().includes(lowerQuery) ||
+    lowerQuery.split(' ').some(word => 
+      word.length > 2 && suggestion.toLowerCase().includes(word)
+    )
+  );
+
+  // If no filtered matches, return general suggestions
+  if (filtered.length === 0) {
+    return commonSuggestions.slice(0, 5);
+  }
+
+  return filtered.slice(0, 5);
+}

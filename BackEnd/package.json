@@ -5,18 +5,29 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "test:ai": "node tests/test-runner.js",
+    "test:basic": "node tests/basic-ai-tests.js",
+    "test:complex": "node tests/complex-medical-scenarios.js",
+    "test:edge": "node tests/edge-cases-tests.js",
+    "test:performance": "node tests/performance-tests.js"
   },
   "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/aiplatform": "^5.7.0",
+    "@google-cloud/language": "^7.2.0",
+    "@google/generative-ai": "^0.24.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "firebase-admin": "^13.4.0",
+    "google-auth-library": "^10.3.1",
     "mongoose": "^8.16.4",
+    "node-fetch": "^3.3.2",
     "stripe": "^18.5.0"
   },
   "devDependencies": {

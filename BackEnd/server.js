@@ -13,6 +13,7 @@ import patientRouter from "./modules/patient/patientRoute.js";
 import adminRouter from "./modules/admin/adminRoutes.js";
 import adminVerificationRouter from "./modules/doctorCertificates/doctorVerificationRoutes.js";
 import paymentsRouter from "./modules/payments/paymentsRoutes.js";
+
 // Load environment variables
 dotenv.config();
 
@@ -44,6 +45,9 @@ app.use("/api/admin-verification", adminVerificationRouter);
 
 // Register payments routes
 app.use("/api/payments", paymentsRouter);
+
+// Register AI routes
+app.use("/api/ai", aiRouter);
 
 // Connect to MongoDB
 connectDB();

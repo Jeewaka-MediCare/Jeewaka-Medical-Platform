@@ -7,10 +7,16 @@ import {
   deleteDoctor,
   getDoctorByUuid,
   searchDoctors,
-  getFilterOptions
+  getFilterOptions,
+  aiSearchDoctors,
+  getAISearchSuggestions
 } from './doctorControllers.js';
 
 const doctorRoutes = express.Router();
+
+// AI-powered search routes
+doctorRoutes.post('/ai-search', aiSearchDoctors);
+doctorRoutes.get('/ai-suggestions', getAISearchSuggestions);
 
 // Search doctors with filters
 doctorRoutes.get('/search', searchDoctors);

@@ -23,6 +23,7 @@ export default function AppointmentDetails() {
 
       try {
         const res = await api.get(`/api/session/${sessionId}`)
+        console.log("appointment data:" , res.data)
         setSession(res.data)
         const s = res.data.timeSlots?.[slotIndex]
         setSlot(s || null)

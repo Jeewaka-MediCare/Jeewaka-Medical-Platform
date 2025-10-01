@@ -22,13 +22,15 @@ import { PatientHistoryDialog } from "../components/PatientHistoryDialog";
 // import { AddObservationDialog, AddPrescriptionDialog, AddNoteDialog } from "../components/AddMedicalDataDialogs"
 import { LocationTab } from "../components/LocationTab";
 import api from "../services/api.js"; // Import the API service
+import useAuthStore from "../store/authStore.js";
 
 // Import data and types
 import { mockSessions, mockHospitals } from "../data/mockData.js";
 import { useEffect } from "react";
 
 export default function DoctorSessionManager() {
-  const [sessions, setSessions] = useState(mockSessions);
+  const user = useAuthStore((state) => state.user);
+  const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [hospitals, setHospitals] = useState([]);
 
@@ -55,8 +57,9 @@ export default function DoctorSessionManager() {
     };
     const fetchSessions = async () => {
       try {
-        const response = await api.get("/api/session"); // Adjust the endpoint as needed
+        const response = await api.get(`/api/session/doctor/${ user._id}`); // Adjust the endpoint as needed
         const data = response.data;
+        console.log("Fetched sessions:", data);
 
         console.log("Fetched sessions:", data);
         setSessions(data)
@@ -66,7 +69,7 @@ export default function DoctorSessionManager() {
       
     };
     fetchHospitals();
-      fetchSessions();
+    fetchSessions();
   }, []);
 
   const handleCreateSession = (newSession) => {

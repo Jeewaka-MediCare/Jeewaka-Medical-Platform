@@ -4,13 +4,14 @@ import {
   getSessionById,
   getSessions,
   updateSession,
-  updateSessionMeetingId, // ------------------------new----------------------------
-  updateAppointmentMeetingId, // ------------------------new----------------------------
+  updateSessionMeetingId,
+  updateAppointmentMeetingId,
   deleteSession,
   addTimeSlot,
   updateTimeSlot,
   deleteTimeSlot,
   bookAppointment,
+  getSessionByDoctorId,
 } from "./sessionController.js";
 
 const sessionRouter = express.Router();
@@ -20,6 +21,8 @@ sessionRouter.post("/", createSession);
 
 // Get all sessions
 sessionRouter.get("/", getSessions);
+// Get a  sessions by doctor id
+sessionRouter.get("/doctor/:doctorId", getSessionByDoctorId);
 
 // Get a single session by ID
 sessionRouter.get("/:sessionId", getSessionById);
