@@ -46,9 +46,6 @@ app.use("/api/admin-verification", adminVerificationRouter);
 // Register payments routes
 app.use("/api/payments", paymentsRouter);
 
-// Register AI routes
-app.use("/api/ai", aiRouter);
-
 // Connect to MongoDB
 connectDB();
 

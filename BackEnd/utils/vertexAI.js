@@ -9,12 +9,13 @@ import { helpers } from '@google-cloud/aiplatform';
  * @param {string} model - Model name to use for embeddings
  * @param {string} task - Task type for embedding
  * @returns {Promise<number[]>} Array of embedding values
+ * This generates a 768-dimensional vector with the text-embedding-004 model    
  */
 export const generateVertexEmbedding = async (
     text, 
     project = process.env.GOOGLE_CLOUD_PROJECT_ID, 
     location = 'us-central1',
-    model = 'text-embedding-004',
+    model = 'text-embedding-004', // This model determines the dimensions
     task = 'RETRIEVAL_DOCUMENT'
 ) => {
     try {
