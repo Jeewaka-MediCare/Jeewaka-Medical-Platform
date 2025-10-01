@@ -14,14 +14,12 @@ export const createPatient = async (req, res) => {
 
 export const getAllPatients = async (req, res) => {
   try {
-
     const patients = await Patient.find();
     res.status(200).json(patients);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}
-
+};
 
 export const getPatientAppointments = async (req, res) => {
   const { patientId } = req.params;
@@ -29,19 +27,21 @@ export const getPatientAppointments = async (req, res) => {
   try {
     // Find all sessions where at least one timeslot has this patient
     const sessions = await Session.find({ "timeSlots.patientId": patientId })
-      .populate("doctorId", "name specialization")   // include doctor details
-      .populate("hospital", "name address")          // include hospital details
+      .populate("doctorId", "name specialization") // include doctor details
+      .populate("hospital", "name address") // include hospital details
       .lean();
 
     if (!sessions || sessions.length === 0) {
-      return res.status(404).json({ message: "No appointments found for this patient" });
+      return res
+        .status(404)
+        .json({ message: "No appointments found for this patient" });
     }
 
     // Extract only the slots belonging to this patient
-    const appointments = sessions.flatMap(session =>
+    const appointments = sessions.flatMap((session) =>
       session.timeSlots
-        .filter(slot => slot.patientId?.toString() === patientId)
-        .map(slot => ({
+        .filter((slot) => slot.patientId?.toString() === patientId)
+        .map((slot) => ({
           sessionId: session._id,
           doctor: session.doctorId,
           hospital: session.hospital,
@@ -54,7 +54,7 @@ export const getPatientAppointments = async (req, res) => {
           appointmentStatus: slot.appointmentStatus,
           paymentAmount: slot.paymentAmount,
           paymentCurrency: slot.paymentCurrency,
-          paymentDate: slot.paymentDate
+          paymentDate: slot.paymentDate,
         }))
     );
 
@@ -67,11 +67,10 @@ export const getPatientAppointments = async (req, res) => {
 
 export const getPatientByUuid = async (req, res) => {
   const { uuid } = req.params;
-  
+
   try {
-    const patient = await Patient.findOne({uuid}); // or just { uuid }
+    const patient = await Patient.findOne({ uuid }); // or just { uuid }
     res.status(200).json(patient);
-    
 
     // res.status(200).json(patient);
   } catch (error) {
@@ -90,7 +89,6 @@ export const getPatient = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 // ✅ Update a patient
 export const updatePatient = async (req, res) => {

@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import useAuthStore from '../../store/authStore';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isSameDay } from 'date-fns';
 
 export default function BookSession() {
   const { sessionId, doctorId, doctorName, sessionData } = useLocalSearchParams();
@@ -27,8 +27,36 @@ export default function BookSession() {
   // Use the actual time slots from the session (like web app)
   const timeSlots = session.timeSlots || [];
 
+  // Get enhanced slot status information
+  const getSlotStatus = (slot) => {
+    if (slot.status === 'booked') {
+      return { isAvailable: false, statusText: 'Booked', reason: 'booked' };
+    }
+    
+    if (slot.status === 'available') {
+      const sessionDateObj = parseISO(session.date);
+      const today = new Date();
+      
+      // Only check for passed slots on the current date
+      if (isSameDay(sessionDateObj, today)) {
+        const [hours, minutes] = slot.startTime.split(':').map(Number);
+        const slotDateTime = new Date(sessionDateObj);
+        slotDateTime.setHours(hours, minutes, 0, 0);
+        
+        if (today > slotDateTime) {
+          return { isAvailable: false, statusText: 'Time Passed', reason: 'timePassed' };
+        }
+      }
+      
+      return { isAvailable: true, statusText: 'Available', reason: 'available' };
+    }
+    
+    return { isAvailable: false, statusText: 'Unavailable', reason: 'unavailable' };
+  };
+
   const handleSlotSelect = (slot, index) => {
-    if (slot.status === 'booked' || slot.status === 'unavailable') return;
+    const slotStatus = getSlotStatus(slot);
+    if (!slotStatus.isAvailable) return;
     setSelectedSlot(slot);
     setSelectedSlotIndex(index);
   };
@@ -57,7 +85,7 @@ export default function BookSession() {
           'Booking Successful',
           'Your appointment has been booked successfully!',
           [
-            { text: 'View My Appointments', onPress: () => router.push('/patient-dashboard') },
+            { text: 'View My Appointments', onPress: () => router.push('/(tabs)/appointments') },
             { text: 'OK', onPress: () => router.push('/') }
           ]
         );
@@ -78,14 +106,19 @@ export default function BookSession() {
       <Stack.Screen
         options={{
           title: 'Book Appointment',
-          headerLeft: () => (
-            <TouchableOpacity 
-              onPress={() => router.back()}
-              style={styles.backButton}
-            >
-              <Ionicons name="arrow-back" size={24} color="#1E293B" />
-            </TouchableOpacity>
-          ),
+          headerShown: true,
+            headerStyle: {
+              backgroundColor: '#1E293B',
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 0,
+            },
+            headerTitleStyle: {
+              color: 'white',
+              fontSize: 20,
+              fontWeight: '600',
+            },
+            headerTintColor: 'white',
         }}
       />
       
@@ -98,7 +131,7 @@ export default function BookSession() {
           
           <View style={styles.sessionTypeBadge}>
             <Text style={styles.sessionTypeText}>
-              {session.type === 'in-person' ? 'In-Person' : 'Video Call'}
+              {session.type === 'in-person' ? 'In-Person' : 'Video'}
             </Text>
           </View>
           
@@ -120,33 +153,37 @@ export default function BookSession() {
             </View>
           ) : (
             <View style={styles.timeSlotsContainer}>
-              {timeSlots.map((slot, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.timeSlot,
-                  (slot.status === 'booked' || slot.status === 'unavailable') && styles.bookedSlot,
-                  selectedSlotIndex === index && styles.selectedSlot
-                ]}
-                onPress={() => handleSlotSelect(slot, index)}
-                disabled={slot.status === 'booked' || slot.status === 'unavailable'}
-              >
-                <Text
-                  style={[
-                    styles.timeSlotText,
-                    (slot.status === 'booked' || slot.status === 'unavailable') && styles.bookedSlotText,
-                    selectedSlotIndex === index && styles.selectedSlotText
-                  ]}
-                >
-                  {`${slot.startTime} - ${slot.endTime}`}
-                </Text>
-                {(slot.status === 'booked' || slot.status === 'unavailable') && (
-                  <Text style={styles.bookedText}>
-                    {slot.status === 'booked' ? 'Booked' : 'Unavailable'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-              ))}
+              {timeSlots.map((slot, index) => {
+                const slotStatus = getSlotStatus(slot);
+                
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.timeSlot,
+                      !slotStatus.isAvailable && styles.bookedSlot,
+                      selectedSlotIndex === index && styles.selectedSlot
+                    ]}
+                    onPress={() => handleSlotSelect(slot, index)}
+                    disabled={!slotStatus.isAvailable}
+                  >
+                    <Text
+                      style={[
+                        styles.timeSlotText,
+                        !slotStatus.isAvailable && styles.bookedSlotText,
+                        selectedSlotIndex === index && styles.selectedSlotText
+                      ]}
+                    >
+                      {`${slot.startTime} - ${slot.endTime}`}
+                    </Text>
+                    {!slotStatus.isAvailable && (
+                      <Text style={styles.bookedText}>
+                        {slotStatus.statusText}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
         </View>
@@ -178,7 +215,7 @@ export default function BookSession() {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Session Type</Text>
             <Text style={styles.summaryValue}>
-              {session.type === 'in-person' ? 'In-Person' : 'Video Call'}
+              {session.type === 'in-person' ? 'In-Person' : 'Video'}
             </Text>
           </View>
           
@@ -186,7 +223,7 @@ export default function BookSession() {
           
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Consultation Fee</Text>
-            <Text style={styles.totalValue}>${session.consultationFee || session.fee || 0}</Text>
+            <Text style={styles.totalValue}>LKR{session.consultationFee || session.fee || 0}</Text>
           </View>
         </View>
       </ScrollView>
@@ -324,7 +361,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 16,
-    marginBottom: 80,
+    marginBottom: 120,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -369,7 +406,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 20,
     left: 0,
     right: 0,
     backgroundColor: 'white',

@@ -16,6 +16,8 @@ import useAuthStore from '../../store/authStore';
 import { format, parseISO } from 'date-fns';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
+import VideoCallButton from '../../components/VideoCallButton';
+import DoctorDashboardContent from '../../components/DoctorDashboardContent';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
@@ -53,25 +55,24 @@ export default function Appointments() {
       // Transform session data into individual appointments
       const appointments = [];
       patientSessions.forEach(session => {
-        // Get only the time slots for this patient
-        const patientTimeSlots = session.timeSlots.filter(slot => 
-          slot.patientId && slot.patientId === user._id
-        );
-        
-        patientTimeSlots.forEach(slot => {
-          appointments.push({
-            _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
-            sessionId: session._id,
-            date: session.date,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            status: slot.status,
-            appointmentStatus: slot.appointmentStatus,
-            doctor: session.doctorId,
-            hospital: session.hospital,
-            meetingLink: session.meetingLink,
-            type: session.type
-          });
+        // Get all time slots and find ones for this patient
+        session.timeSlots.forEach((slot, originalSlotIndex) => {
+          if (slot.patientId && slot.patientId === user._id) {
+            appointments.push({
+              _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
+              sessionId: session._id,
+              slotIndex: originalSlotIndex, // Use original slot index for backend API calls
+              date: session.date,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              status: slot.status,
+              appointmentStatus: slot.appointmentStatus,
+              doctor: session.doctorId,
+              hospital: session.hospital,
+              meetingLink: session.meetingLink,
+              type: session.type
+            });
+          }
         });
       });
       
@@ -83,25 +84,27 @@ export default function Appointments() {
       
       const upcoming = appointments.filter(apt => {
         try {
-          // Extract just the date part from the ISO string and combine with time
+          // Extract just the date part from the ISO string and combine with end time
+          // Appointment is upcoming if it hasn't ended yet
           const dateOnly = apt.date.split('T')[0]; // Get '2025-02-08' from '2025-02-08T00:00:00.000Z'
-          const appointmentDate = parseISO(`${dateOnly}T${apt.startTime}`);
-          console.log(`Appointment: ${dateOnly}T${apt.startTime} -> ${appointmentDate.toISOString()}`);
-          return appointmentDate > now;
+          const appointmentEndDate = parseISO(`${dateOnly}T${apt.endTime}`);
+          console.log(`Appointment: ${dateOnly}T${apt.startTime}-${apt.endTime} -> End: ${appointmentEndDate.toISOString()}`);
+          return appointmentEndDate > now;
         } catch (error) {
-          console.error('Error parsing appointment date:', apt.date, apt.startTime, error);
+          console.error('Error parsing appointment date:', apt.date, apt.endTime, error);
           return false;
         }
       });
       
       const past = appointments.filter(apt => {
         try {
-          // Extract just the date part from the ISO string and combine with time
+          // Extract just the date part from the ISO string and combine with end time
+          // Appointment is past only when it has completely ended
           const dateOnly = apt.date.split('T')[0]; // Get '2025-02-08' from '2025-02-08T00:00:00.000Z'
-          const appointmentDate = parseISO(`${dateOnly}T${apt.startTime}`);
-          return appointmentDate <= now;
+          const appointmentEndDate = parseISO(`${dateOnly}T${apt.endTime}`);
+          return appointmentEndDate <= now;
         } catch (error) {
-          console.error('Error parsing appointment date:', apt.date, apt.startTime, error);
+          console.error('Error parsing appointment date:', apt.date, apt.endTime, error);
           return false;
         }
       });
@@ -110,8 +113,36 @@ export default function Appointments() {
       console.log('Upcoming appointments:', upcoming.length);
       console.log('Past appointments:', past.length);
       
-      setUpcomingAppointments(upcoming);
-      setPastAppointments(past);
+      // Sort upcoming appointments: soonest first (ascending by start time)
+      const sortedUpcoming = upcoming.sort((a, b) => {
+        try {
+          const dateOnlyA = a.date.split('T')[0];
+          const dateOnlyB = b.date.split('T')[0];
+          const startDateA = parseISO(`${dateOnlyA}T${a.startTime}`);
+          const startDateB = parseISO(`${dateOnlyB}T${b.startTime}`);
+          return startDateA.getTime() - startDateB.getTime();
+        } catch (error) {
+          console.error('Error sorting upcoming appointments:', error);
+          return 0;
+        }
+      });
+      
+      // Sort past appointments: most recent first (descending by end time)
+      const sortedPast = past.sort((a, b) => {
+        try {
+          const dateOnlyA = a.date.split('T')[0];
+          const dateOnlyB = b.date.split('T')[0];
+          const endDateA = parseISO(`${dateOnlyA}T${a.endTime}`);
+          const endDateB = parseISO(`${dateOnlyB}T${b.endTime}`);
+          return endDateB.getTime() - endDateA.getTime();
+        } catch (error) {
+          console.error('Error sorting past appointments:', error);
+          return 0;
+        }
+      });
+      
+      setUpcomingAppointments(sortedUpcoming);
+      setPastAppointments(sortedPast);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       Alert.alert('Error', 'Failed to load appointments');
@@ -137,6 +168,21 @@ export default function Appointments() {
   // Handle cancel appointment - temporarily disabled
   const handleCancelAppointment = async (appointmentId) => {
     Alert.alert('Coming Soon', 'Appointment cancellation feature will be available soon');
+  };
+
+  // Helper function to check if appointment is currently ongoing
+  const isAppointmentOngoing = (appointment) => {
+    try {
+      const now = new Date();
+      const dateOnly = appointment.date.split('T')[0];
+      const appointmentStartDate = parseISO(`${dateOnly}T${appointment.startTime}`);
+      const appointmentEndDate = parseISO(`${dateOnly}T${appointment.endTime}`);
+      
+      return now >= appointmentStartDate && now <= appointmentEndDate;
+    } catch (error) {
+      console.error('Error checking if appointment is ongoing:', error);
+      return false;
+    }
   };
 
   // Handle view doctor profile
@@ -180,31 +226,29 @@ export default function Appointments() {
     );
   }
 
-  // If user is doctor, redirect to doctor dashboard
+  // If user is doctor, show doctor dashboard directly in appointments tab
   if (!loading && user && userRole === 'doctor') {
     return (
       <SafeAreaView style={styles.container}>
         <Stack.Screen
           options={{
-            title: 'My Appointments',
+            title: 'Dashboard',
             headerShown: true,
+            headerStyle: {
+              backgroundColor: '#1E293B',
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 0,
+            },
+            headerTitleStyle: {
+              color: 'white',
+              fontSize: 20,
+              fontWeight: '600',
+            },
+            headerTintColor: 'white',
           }}
         />
-        
-        <View style={styles.content}>
-          <Ionicons name="medical-outline" size={80} color="#94A3B8" style={styles.icon} />
-          <Text style={styles.title}>Doctor Account</Text>
-          <Text style={styles.message}>
-            Please use the Doctor Dashboard to manage your appointments
-          </Text>
-          
-          <TouchableOpacity 
-            style={styles.loginButton} 
-            onPress={() => router.push('/doctor-dashboard')}
-          >
-            <Text style={styles.loginButtonText}>Go to Dashboard</Text>
-          </TouchableOpacity>
-        </View>
+        <DoctorDashboardContent />
       </SafeAreaView>
     );
   }
@@ -240,70 +284,99 @@ export default function Appointments() {
       }
     >
       {upcomingAppointments.length > 0 ? (
-        upcomingAppointments.map((appointment) => (
-          <View key={appointment._id} style={styles.appointmentCard}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.appointmentDate}>
-                {format(parseISO(appointment.date), 'EEE, MMM dd, yyyy')}
-              </Text>
-              
-              <View style={styles.badgeContainer}>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>Confirmed</Text>
+        upcomingAppointments.map((appointment) => {
+          const isOngoing = isAppointmentOngoing(appointment);
+          
+          return (
+            <View 
+              key={appointment._id} 
+              style={[
+                styles.appointmentCard,
+                isOngoing && styles.ongoingAppointmentCard
+              ]}
+            >
+              <View style={styles.cardHeader}>
+                <Text style={styles.appointmentDate}>
+                  {format(parseISO(appointment.date), 'EEE, MMM dd, yyyy')}
+                </Text>
+                
+                <View style={styles.badgeContainer}>
+                  {isOngoing ? (
+                    <View style={[styles.statusBadge, styles.ongoingBadge]}>
+                      <Text style={styles.statusText}>Ongoing</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.statusBadge}>
+                      <Text style={styles.statusText}>Confirmed</Text>
+                    </View>
+                  )}
                 </View>
               </View>
-            </View>
-            
-            <View style={styles.appointmentDetails}>
-              <View style={styles.detailRow}>
-                <Ionicons name="time-outline" size={18} color="#64748B" />
-                <Text style={styles.detailText}>
-                  {appointment.startTime} - {appointment.endTime}
-                </Text>
+              
+              <View style={styles.appointmentDetails}>
+                <View style={styles.detailRow}>
+                  <Ionicons name="time-outline" size={18} color="#64748B" />
+                  <Text style={styles.detailText}>
+                    {appointment.startTime} - {appointment.endTime}
+                  </Text>
+                  {isOngoing && (
+                    <Text style={styles.ongoingText}> • In Progress</Text>
+                  )}
+                </View>
+                <View style={styles.detailRow}>
+                  <Ionicons name="medical-outline" size={18} color="#64748B" />
+                  <Text style={styles.detailText}>
+                    {appointment.doctor?.specialization && appointment.doctor?.name
+                      ? `${appointment.doctor.specialization} - ${appointment.doctor.name}`
+                      : appointment.doctor?.name || 'Doctor'}
+                  </Text>
+                </View>
+                
+                <View style={styles.detailRow}>
+                  <Ionicons 
+                    name={appointment.type === 'in-person' ? 'location-outline' : 'videocam-outline'} 
+                    size={18} 
+                    color="#64748B" 
+                  />
+                  <Text style={styles.detailText}>
+                    {appointment.type === 'in-person' 
+                      ? (appointment.hospital?.name || 'Hospital') 
+                      : 'Video Consultation'
+                    }
+                  </Text>
+                </View>
               </View>
               
-              <View style={styles.detailRow}>
-                <Ionicons name="medical-outline" size={18} color="#64748B" />
-                <Text style={styles.detailText}>
-                  {appointment.doctor?.name || 'Doctor'}
-                </Text>
-              </View>
               
-              <View style={styles.detailRow}>
-                <Ionicons 
-                  name={appointment.type === 'in-person' ? 'location-outline' : 'videocam-outline'} 
-                  size={18} 
-                  color="#64748B" 
-                />
-                <Text style={styles.detailText}>
-                  {appointment.type === 'in-person' 
-                    ? (appointment.hospital?.name || 'Hospital') 
-                    : 'Video Consultation'
-                  }
-                </Text>
+              <View style={styles.cardActions}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => handleViewDoctor(appointment.doctor?._id || appointment.doctor)}
+                >
+                  <Text style={styles.actionButtonText}>View Doctor</Text>
+                </TouchableOpacity>
+                
+                {(appointment.type === 'online' || appointment.type === 'video') && (
+                  <VideoCallButton
+                    style={[styles.actionButton, styles.videoCallButton]}
+                    title="Video Call"
+                    sessionId={appointment.sessionId}
+                    slotIndex={appointment.slotIndex}
+                  />
+                )}
+                
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.cancelButton]}
+                  onPress={() => handleCancelAppointment(appointment._id)}
+                >
+                  <Text style={[styles.actionButtonText, styles.cancelButtonText]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
-            
-            
-            <View style={styles.cardActions}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => handleViewDoctor(appointment.doctor?._id || appointment.doctor)}
-              >
-                <Text style={styles.actionButtonText}>View Doctor</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.actionButton, styles.cancelButton]}
-                onPress={() => handleCancelAppointment(appointment._id)}
-              >
-                <Text style={[styles.actionButtonText, styles.cancelButtonText]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))
+          );
+        })
       ) : (
         <View style={styles.emptyState}>
           <Ionicons name="calendar-outline" size={64} color="#94A3B8" />
@@ -359,7 +432,9 @@ export default function Appointments() {
               <View style={styles.detailRow}>
                 <Ionicons name="medical-outline" size={18} color="#64748B" />
                 <Text style={styles.detailText}>
-                  {appointment.doctor?.name || 'Doctor'}
+                  {appointment.doctor?.specialization && appointment.doctor?.name
+                    ? `${appointment.doctor.specialization} - ${appointment.doctor.name}`
+                    : appointment.doctor?.name || 'Doctor'}
                 </Text>
               </View>
               
@@ -437,17 +512,18 @@ export default function Appointments() {
       <Stack.Screen
         options={{
           title: 'My Appointments',
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1E293B', // Dark header like in the image
+          },
+          headerTitleStyle: {
+            color: 'white',
+            fontSize: 20,
+            fontWeight: '600',
+          },
+          headerTintColor: 'white',
         }}
       />
-      
-      {user ? (
-        <View style={styles.profileCard}>
-          <View style={styles.profileInfo}>
-            <Text style={styles.welcomeText}>Welcome,</Text>
-            <Text style={styles.nameText}>{user.name}</Text>
-          </View>
-        </View>
-      ) : null}
       
       <TabView
         navigationState={{ index, routes }}
@@ -525,24 +601,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#64748B',
   },
-  profileCard: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  profileInfo: {
-    marginBottom: 8,
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  nameText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1E293B',
-  },
   tabView: {
     flex: 1,
   },
@@ -557,6 +615,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  ongoingAppointmentCard: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
+    borderWidth: 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -578,6 +641,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 16,
   },
+  ongoingBadge: {
+    backgroundColor: '#F59E0B',
+  },
   pastBadge: {
     backgroundColor: '#64748B',
   },
@@ -598,6 +664,12 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 15,
     color: '#334155',
+  },
+  ongoingText: {
+    fontSize: 12,
+    color: '#D97706',
+    fontWeight: '600',
+    marginLeft: 4,
   },
   cardActions: {
     flexDirection: 'row',
@@ -626,6 +698,9 @@ const styles = StyleSheet.create({
   },
   reviewButtonText: {
     color: '#10B981',
+  },
+  videoCallButton: {
+    backgroundColor: '#49bdeaff',
   },
   emptyState: {
     flex: 1,

@@ -9,6 +9,56 @@ export default function Profile() {
   const { user, userRole, logout, loading } = useAuthStore();
   const router = useRouter();
 
+  // Debug logging to understand user data structure
+  console.log('Profile Debug - User Role:', userRole);
+  console.log('Profile Debug - User Object:', JSON.stringify(user, null, 2));
+  console.log('Profile Debug - User Name:', user?.name);
+  console.log('Profile Debug - User Profile:', user?.profile);
+
+  // Get avatar initial with comprehensive fallback
+  const getAvatarInitial = () => {
+    console.log('getAvatarInitial called');
+    const nameOptions = [
+      user?.name,
+      user?.fullName, 
+      user?.firstName,
+      user?.email?.charAt(0)
+    ];
+    
+    console.log('Name options:', nameOptions);
+    
+    for (const nameOption of nameOptions) {
+      if (nameOption && typeof nameOption === 'string' && nameOption.trim()) {
+        const initial = nameOption.charAt(0).toUpperCase();
+        console.log('Found initial:', initial);
+        return initial;
+      }
+    }
+    
+    // Final fallback based on role
+    const fallback = userRole === 'doctor' ? 'D' : 'P';
+    console.log('Using fallback initial:', fallback);
+    return fallback;
+  };
+
+  // Get display name with comprehensive fallback
+  const getDisplayName = () => {
+    const nameOptions = [
+      user?.name,
+      user?.fullName,
+      user?.firstName,
+      user?.email
+    ];
+    
+    for (const nameOption of nameOptions) {
+      if (nameOption && typeof nameOption === 'string' && nameOption.trim()) {
+        return nameOption;
+      }
+    }
+    
+    return 'User';
+  };
+
   // When user logs out, redirect to home
   const handleLogout = async () => {
     await logout();
@@ -23,6 +73,18 @@ export default function Profile() {
           options={{
             title: 'My Profile',
             headerShown: true,
+            headerStyle: {
+              backgroundColor: '#1E293B',
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 0,
+            },
+            headerTitleStyle: {
+              color: 'white',
+              fontSize: 20,
+              fontWeight: '600',
+            },
+            headerTintColor: 'white',
           }}
         />
         
@@ -59,6 +121,18 @@ export default function Profile() {
           options={{
             title: 'My Profile',
             headerShown: true,
+            headerStyle: {
+              backgroundColor: '#1E293B',
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 0,
+            },
+            headerTitleStyle: {
+              color: 'white',
+              fontSize: 20,
+              fontWeight: '600',
+            },
+            headerTintColor: 'white',
           }}
         />
         
@@ -76,27 +150,39 @@ export default function Profile() {
         options={{
           title: 'My Profile',
           headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1E293B',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+          headerTitleStyle: {
+            color: 'white',
+            fontSize: 20,
+            fontWeight: '600',
+          },
+          headerTintColor: 'white',
         }}
       />
       
-      <View style={styles.profileHeader}>
-        <View style={styles.avatarContainer}>
-          {user.profile ? (
-            <Image 
-              source={{ uri: user.profile }} 
-              style={styles.avatar} 
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarText}>{user.name?.charAt(0) || 'U'}</Text>
+      {user ? (
+        <>
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>
+                  {user?.name?.charAt(0)?.toUpperCase() || 
+                   user?.email?.charAt(0)?.toUpperCase() || 
+                   (userRole === 'doctor' ? 'D' : 'P')}
+                </Text>
+              </View>
             </View>
-          )}
-        </View>
-        
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userRole}>{userRole === 'doctor' ? 'Doctor' : 'Patient'}</Text>
-      </View>
+            
+            <Text style={styles.userName}>
+              {user?.name || user?.email || 'User'}
+            </Text>
+            <Text style={styles.userRole}>{userRole === 'doctor' ? 'Doctor' : 'Patient'}</Text>
+          </View>
       
       <View style={styles.menuSection}>
         {userRole === 'patient' ? (
@@ -121,17 +207,8 @@ export default function Profile() {
             </TouchableOpacity>
           </>
         ) : (
-          // Doctor menu options
+          // Doctor menu options - removed dashboard link since it's now in appointments tab
           <>
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => router.push('/doctor-dashboard')}
-            >
-              <Ionicons name="calendar-outline" size={24} color="#1E293B" />
-              <Text style={styles.menuText}>Appointments & Sessions</Text>
-              <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
-            </TouchableOpacity>
-            
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => router.push('/edit-profile')}
@@ -163,15 +240,21 @@ export default function Profile() {
         </TouchableOpacity>
       </View>
       
-      <View style={styles.footer}>
-        <TouchableOpacity 
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
-          <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.footer}>
+            <TouchableOpacity 
+              style={styles.logoutButton}
+              onPress={handleLogout}
+            >
+              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+              <Text style={styles.logoutText}>Log Out</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : (
+        <View style={styles.content}>
+          <Text style={styles.title}>Loading user data...</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

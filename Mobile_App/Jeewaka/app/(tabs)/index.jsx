@@ -118,9 +118,9 @@ export default function Home() {
   const handleProfilePress = () => {
     if (user) {
       if (userRole === 'doctor') {
-        router.push('/doctor-dashboard');
+        router.push('/appointments');  // Changed from doctor-dashboard to appointments tab
       } else {
-        router.push('/patient-dashboard');  // Fixed: was /patient-profile
+        router.push('/(tabs)/appointments');  // Updated to use new appointments tab
       }
     } else {
       router.push('/login');

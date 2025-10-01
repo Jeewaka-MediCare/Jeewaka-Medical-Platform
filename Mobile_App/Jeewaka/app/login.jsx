@@ -5,6 +5,7 @@ import { auth } from '../config/firebase';
 import api from '../services/api';
 import useAuthStore from '../store/authStore';
 import { useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AntDesign } from '@expo/vector-icons';
 
@@ -77,12 +78,12 @@ export default function Login() {
         
         // Navigate based on user role
         if (role === 'doctor') {
-          router.replace('/doctor-dashboard');
+          router.replace('/(tabs)/appointments');  // Direct to My Appointments tab
         } else if (role === 'patient') {
-          router.replace('/');
+          router.replace('/(tabs)');  // Direct to Jeewaka tab
         } else if (role === 'admin') {
-          // Admin dashboard not implemented in mobile app yet, redirect to patient view
-          router.replace('/');
+          // Admin dashboard not implemented in mobile app yet, redirect to Jeewaka tab
+          router.replace('/(tabs)');
         }
       } else {
         throw new Error('Failed to retrieve user data');
@@ -99,6 +100,24 @@ export default function Login() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: 'Sign In',
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1E293B',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+          headerTitleStyle: {
+            color: 'white',
+            fontSize: 20,
+            fontWeight: '600',
+          },
+          headerTintColor: 'white',
+        }}
+      />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>Welcome Back</Text>
@@ -111,6 +130,7 @@ export default function Login() {
             <TextInput
               style={[styles.input, errors.email && styles.inputError]}
               placeholder="Enter your email"
+              placeholderTextColor="#94A3B8"
               value={formData.email}
               onChangeText={(text) => setFormData({ ...formData, email: text })}
               autoCapitalize="none"
@@ -124,6 +144,7 @@ export default function Login() {
             <TextInput
               style={[styles.input, errors.password && styles.inputError]}
               placeholder="Enter your password"
+              placeholderTextColor="#94A3B8"
               value={formData.password}
               onChangeText={(text) => setFormData({ ...formData, password: text })}
               secureTextEntry
@@ -202,6 +223,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    color: '#1E293B', // Added text color for visibility
   },
   inputError: {
     borderColor: '#EF4444',
