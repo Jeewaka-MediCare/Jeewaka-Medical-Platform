@@ -15,7 +15,7 @@ import {
 const doctorRoutes = express.Router();
 
 // AI-powered search routes
-doctorRoutes.post('/ai-search', aiSearchDoctors);
+doctorRoutes.get('/ai-search', aiSearchDoctors);
 doctorRoutes.get('/ai-suggestions', getAISearchSuggestions);
 
 // Search doctors with filters

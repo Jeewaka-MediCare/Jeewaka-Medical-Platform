@@ -1,818 +1,136 @@
-import { DoctorCardList } from "@/components/doctor-card-list"
-import { SearchFilters } from "@/components/search-filters"
-import { useEffect, useState } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, Brain, Lightbulb } from "lucide-react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import api from "../services/api.js"
-
-
-
-// Sample data for demonstration
-// const sampleDoctors = [
-//   {
-//     id: "doc123",
-//     name: "Dr. Jane Doe",
-//     specialization: "Cardiologist",
-//     profile: "/placeholder.svg?height=400&width=400",
-//     consultationFee: 2500,
-//     avgRating: 4.7,
-//     totalReviews: 15,
-//     education: [
-//       { degree: "MD", institution: "Harvard Medical School", year: 2010 },
-//       { degree: "MBBS", institution: "Johns Hopkins University", year: 2005 },
-//     ],
-//   },
-//   {
-//     id: "doc124",
-//     name: "Dr. John Smith",
-//     specialization: "Neurologist",
-//     profile: "/placeholder.svg?height=400&width=400",
-//     consultationFee: 3000,
-//     avgRating: 4.5,
-//     totalReviews: 23,
-//     education: [
-//       { degree: "MD", institution: "Stanford University", year: 2008 },
-//       { degree: "PhD", institution: "Yale University", year: 2012 },
-//     ],
-//   },
-//   {
-//     id: "doc125",
-//     name: "Dr. Sarah Johnson",
-//     specialization: "Pediatrician",
-//     profile: "/placeholder.svg?height=400&width=400",
-//     consultationFee: 2000,
-//     avgRating: 4.9,
-//     totalReviews: 42,
-//     education: [
-//       { degree: "MD", institution: "University of California", year: 2011 },
-//       { degree: "MBBS", institution: "Columbia University", year: 2007 },
-//     ],
-//   },
-//   {
-//     id: "doc126",
-//     name: "Dr. Michael Chen",
-//     specialization: "Dermatologist",
-//     profile: "/placeholder.svg?height=400&width=400",
-//     consultationFee: 2800,
-//     avgRating: 4.6,
-//     totalReviews: 31,
-//     education: [
-//       { degree: "MD", institution: "University of Chicago", year: 2009 },
-//       { degree: "PhD", institution: "Northwestern University", year: 2013 },
-//     ],
-//   },
-//   {
-//     id: "doc127",
-//     name: "Dr. Emily Wilson",
-//     specialization: "Psychiatrist",
-//     profile: "/placeholder.svg?height=400&width=400",
-//     consultationFee: 3200,
-//     avgRating: 4.8,
-//     totalReviews: 27,
-//     education: [
-//       { degree: "MD", institution: "Duke University", year: 2010 },
-//       { degree: "MSc", institution: "University of Pennsylvania", year: 2007 },
-//     ],
-//   },
-//   {
-//     id: "doc128",
-//     name: "Dr. Robert Lee",
-//     specialization: "Orthopedic Surgeon",
-//     profile: "/placeholder.svg?height=400&width=400",
-//     consultationFee: 3500,
-//     avgRating: 4.4,
-//     totalReviews: 19,
-//     education: [
-//       { degree: "MD", institution: "Mayo Medical School", year: 2006 },
-//       { degree: "MBBS", institution: "Washington University", year: 2001 },
-//     ],
-//   },
-//   {
-//     id: "doc129",
-//     name: "Dr. Lisa Martinez",
-//     specialization: "Gynecologist",
-//     profile: "/placeholder.svg?height=400&width=400",
-//     consultationFee: 2700,
-//     avgRating: 4.9,
-//     totalReviews: 38,
-//     education: [
-//       { degree: "MD", institution: "UCLA Medical School", year: 2008 },
-//       { degree: "MBBS", institution: "University of Michigan", year: 2003 },
-//     ],
-//   },
-//   {
-//     id: "doc130",
-//     name: "Dr. David Kim",
-//     specialization: "Cardiologist",
-//     profile: "/placeholder.svg?height=400&width=400",
-//     consultationFee: 2900,
-//     avgRating: 4.3,
-//     totalReviews: 21,
-//     education: [
-//       { degree: "MD", institution: "Cornell University", year: 2009 },
-//       { degree: "PhD", institution: "University of Toronto", year: 2014 },
-//     ],
-//   },
-// ]
+import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import api from "../services/api.js";
+import { DoctorCardList } from "@/components/doctor-card-list";
 
 export default function PatientDashBoard() {
-  const [doctors, setDoctors] = useState([])
-  const [filteredDoctors, setFilteredDoctors] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const[defaultDoctors,setDefaultDoctors]=useState([]);
+  const [initialDoctors, setInitialDoctors] = useState([]);
+  const [filteredDoctors, setFilteredDoctors] = useState([]);
   
-  // AI Search states
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiSearchQuery, setAiSearchQuery] = useState("")
-  const [aiSuggestions, setAiSuggestions] = useState([])
-  const [aiInterpretation, setAiInterpretation] = useState(null)
-  const [aiError, setAiError] = useState(null)
-  const [currentSearchMode, setCurrentSearchMode] = useState("traditional") // "traditional" or "ai"
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  
-  const [filterOptions, setFilterOptions] = useState({
-    specializations: [],
-    subSpecializations: [],
-    languages: [],
-    experienceRange: { minExperience: 0, maxExperience: 0 },
-    feeRange: { minFee: 0, maxFee: 0 },
-    genders: []
-  })
-  
-  // Search and filter states
-  const [searchQuery, setSearchQuery] = useState("")
-  const [activeFilters, setActiveFilters] = useState({
-    specialization: "all",
-    subSpecialization: "all",
-    minExperience: "all",
-    maxExperience: "",
-    language: "all",
-    minFee: "",
-    maxFee: "",
-    gender: "all"
-  })
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalDoctors: 0,
-    hasNext: false,
-    hasPrev: false,
-    limit: 12
-  })
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState(""); // AI or symptom query
+  const [nameSearch, setNameSearch] = useState(""); // Name search
+  const [sortField, setSortField] = useState("");
+  const [sortDirection, setSortDirection] = useState("desc");
 
-  // Fetch filter options on component mount
+  // Fetch all doctors initially
   useEffect(() => {
-    const fetchFilterOptions = async () => {
+    const fetchDoctors = async () => {
       try {
-        const response = await api.get("/api/doctor/filter-options")
-        if (response.data.success) {
-          setFilterOptions(response.data.data)
+        const response = await api.get("/api/doctorCard");
+        if (response.data) {
+          setInitialDoctors(response.data);
+          setFilteredDoctors(response.data);
+          setDefaultDoctors(response.data);
         }
       } catch (error) {
-        console.error("Failed to fetch filter options:", error)
+        console.error("Error fetching doctors:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-    fetchFilterOptions()
-  }, [])
+    };
+    fetchDoctors();
+  }, []);
 
-  // Fetch doctors based on search and filters
-  const searchDoctors = async (page = 1) => {
-    setLoading(true)
+  // AI search
+  const searchAI = async (query) => {
+    if (!query) return;
+    setLoading(true);
     try {
-      const params = new URLSearchParams()
-      
-      if (searchQuery.trim()) params.append('name', searchQuery.trim())
-      
-      Object.entries(activeFilters).forEach(([key, value]) => {
-        if (value && value !== 'all') params.append(key, value)
-      })
-      
-      params.append('page', page.toString())
-      params.append('limit', pagination.limit.toString())
-      params.append('sortBy', 'name')
-      params.append('sortOrder', 'asc')
-
-      const response = await api.get(`/api/doctor/search?${params}`)
-      
-      if (response.data.success) {
-        setFilteredDoctors(response.data.data.doctors)
-        setPagination(response.data.data.pagination)
+      const response = await api.get("/api/doctor/ai-search", { params: { query } });
+      if (response.data && response.data.doctorCards) {
+        setInitialDoctors(response.data.doctorCards);
+        setFilteredDoctors(response.data.doctorCards);
       }
     } catch (error) {
-      console.error("Search failed:", error)
-      // Fallback to doctorCard endpoint if search fails
-      const fallbackResponse = await api.get("/api/doctorCard")
-      setFilteredDoctors(fallbackResponse.data)
+      console.error("AI Search Error:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  // Handle clicking outside to close suggestions
+  // Sort function
+  const sortDoctors = (field) => {
+    let direction = "desc";
+    if (sortField === field && sortDirection === "desc") direction = "asc";
+    setSortField(field);
+    setSortDirection(direction);
+
+    const sorted = [...filteredDoctors].sort((a, b) => {
+      let aValue, bValue;
+      switch (field) {
+        case "experience":
+          aValue = a.doctor.yearsOfExperience;
+          bValue = b.doctor.yearsOfExperience;
+          break;
+        case "rating":
+          aValue = a.ratingSummary.avgRating;
+          bValue = b.ratingSummary.avgRating;
+          break;
+        case "fee":
+          aValue = a.doctor.consultationFee;
+          bValue = b.doctor.consultationFee;
+          break;
+        default:
+          aValue = 0; bValue = 0;
+      }
+      return direction === "asc" ? aValue - bValue : bValue - aValue;
+    });
+    setFilteredDoctors(sorted);
+  };
+
+  // Filter by name dynamically
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showSuggestions && !event.target.closest('.ai-search-container')) {
-        setShowSuggestions(false)
-      }
-    }
+    const filtered = initialDoctors.filter((d) =>
+      d.doctor.name.toLowerCase().includes(nameSearch.toLowerCase())
+    );
+    setFilteredDoctors(filtered);
+  }, [nameSearch, initialDoctors]);
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showSuggestions])
+  // Clear search
+  const clearSearch = () => {
+    setQuery("");
+    setNameSearch("");
+    setFilteredDoctors(defaultDoctors);
+  };
 
-  // Initial fetch
-  useEffect(() => {
-    searchDoctors()
-  }, [])
-
-  // Handle search
-  const handleSearch = (e) => {
-    e.preventDefault()
-    searchDoctors(1)
-  }
-
-  // Handle filter changes
-  const handleFilterChange = (key, value) => {
-    setActiveFilters(prev => ({
-      ...prev,
-      [key]: value
-    }))
-  }
-
-  // Apply filters
-  const applyFilters = () => {
-    searchDoctors(1)
-  }
-
-  // Clear all filters
-  const clearFilters = () => {
-    setSearchQuery("")
-    setAiSearchQuery("")
-    setAiInterpretation(null)
-    setAiError(null)
-    setAiSuggestions([])
-    setShowSuggestions(false)
-    setActiveFilters({
-      specialization: "all",
-      subSpecialization: "all",
-      minExperience: "all",
-      maxExperience: "",
-      language: "all",
-      minFee: "",
-      maxFee: "",
-      gender: "all"
-    })
-    // Fetch all doctors based on current mode
-    if (currentSearchMode === "ai") {
-      setCurrentSearchMode("traditional")
-    }
-    searchDoctors(1)
-  }
-
-  // Get active filter count
-  const getActiveFilterCount = () => {
-    const filterCount = Object.values(activeFilters).filter(value => value !== "" && value !== "all").length
-    const searchCount = currentSearchMode === "traditional" ? (searchQuery ? 1 : 0) : (aiSearchQuery ? 1 : 0)
-    return filterCount + searchCount
-  }
-
-  // Handle pagination
-  const handlePageChange = (newPage) => {
-    if (currentSearchMode === "ai") {
-      aiSearchDoctors(newPage)
-    } else {
-      searchDoctors(newPage)
-    }
-  }
-
-  // AI Search functionality
-  const aiSearchDoctors = async (page = 1) => {
-    if (!aiSearchQuery.trim()) return
-    
-    setAiLoading(true)
-    setCurrentSearchMode("ai")
-    setAiError(null) // Clear previous errors
-    try {
-      const response = await api.post("/api/doctor/ai-search", {
-        query: aiSearchQuery.trim(),
-        page,
-        limit: pagination.limit,
-        sortBy: 'name',
-        sortOrder: 'asc'
-      })
-      
-      if (response.data.success) {
-        setFilteredDoctors(response.data.data.doctors)
-        setPagination(response.data.data.pagination)
-        
-        // Store AI interpretation for display
-        if (response.data.aiEnhancement) {
-          setAiInterpretation({
-            query: response.data.aiEnhancement.interpretedQuery,
-            parameters: response.data.aiEnhancement.searchParameters,
-            confidence: response.data.aiEnhancement.confidence || 'medium'
-          })
-          
-          // Show AI error if any
-          if (response.data.aiEnhancement.aiError) {
-            setAiError(response.data.aiEnhancement.aiError)
-          }
-        }
-      }
-    } catch (error) {
-      console.error("AI search failed:", error)
-      setAiError("Search failed. Please try again or use traditional search.")
-      // Fallback to traditional search
-      setCurrentSearchMode("traditional")
-      setSearchQuery(aiSearchQuery)
-      searchDoctors(page)
-    } finally {
-      setAiLoading(false)
-      setShowSuggestions(false)
-    }
-  }
-
-  // Handle AI search
-  const handleAiSearch = (e) => {
-    e.preventDefault()
-    aiSearchDoctors(1)
-  }
-
-  // Get AI suggestions as user types
-  const getAiSuggestions = async (query) => {
-    if (query.length < 2) {
-      setAiSuggestions([])
-      setShowSuggestions(false)
-      return
-    }
-
-    try {
-      const response = await api.get(`/api/doctor/ai-suggestions?partialQuery=${encodeURIComponent(query)}`)
-      if (response.data.success && response.data.data.suggestions) {
-        setAiSuggestions(response.data.data.suggestions)
-        setShowSuggestions(true)
-      }
-    } catch (error) {
-      console.error("Failed to get AI suggestions:", error)
-      setAiSuggestions([])
-      setShowSuggestions(false)
-    }
-  }
-
-  // Handle AI query change with debounced suggestions
-  const handleAiQueryChange = (value) => {
-    setAiSearchQuery(value)
-    
-    // Clear previous timeout
-    if (window.aiSuggestionsTimeout) {
-      clearTimeout(window.aiSuggestionsTimeout)
-    }
-    
-    // Debounce suggestions
-    window.aiSuggestionsTimeout = setTimeout(() => {
-      getAiSuggestions(value)
-    }, 300)
-  }
-
-  // Select suggestion
-  const selectSuggestion = (suggestion) => {
-    setAiSearchQuery(suggestion)
-    setShowSuggestions(false)
-    // Auto-trigger search when suggestion is selected
-    setTimeout(() => {
-      const fakeEvent = { preventDefault: () => {} }
-      handleAiSearch(fakeEvent)
-    }, 100)
-  }
-
-  // Clear AI search and return to traditional
-  const clearAiSearch = () => {
-    setAiSearchQuery("")
-    setAiInterpretation(null)
-    setAiError(null)
-    setAiSuggestions([])
-    setShowSuggestions(false)
-    setCurrentSearchMode("traditional")
-    searchDoctors(1) // Reset to traditional search
-  }
   return (
     <main className="container mx-auto py-8 px-4">
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold mb-2 text-primary">Find Your Doctor</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Browse our extensive network of qualified healthcare professionals and book your appointment today. 
-          Use our new AI-powered search to find doctors using natural language!
-        </p>
+      <h1 className="text-3xl font-bold mb-6 text-center">Find Your Doctor</h1>
+
+      {/* Search Inputs */}
+      <div className="flex gap-2 mb-4">
+        <Input
+          type="text"
+          placeholder="Input symptoms or query..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <Button onClick={() => searchAI(query)}>AI Search</Button>
+
+        <Input
+          type="text"
+          placeholder="Search by doctor name..."
+          value={nameSearch}
+          onChange={(e) => setNameSearch(e.target.value)}
+        />
+        <Button onClick={clearSearch}>Clear</Button>
       </div>
 
-      {/* Search and Filter Section */}
-      <div className="mb-8 space-y-4">
-        {/* Search Mode Tabs */}
-        <Tabs value={currentSearchMode} onValueChange={setCurrentSearchMode} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="traditional" className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              Traditional Search
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              AI-Powered Search
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Traditional Search Tab */}
-          <TabsContent value="traditional" className="space-y-4">
-            {/* Traditional Search Bar */}
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search doctors by name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Searching..." : "Search"}
-              </Button>
-            </form>
-          </TabsContent>
-
-          {/* AI Search Tab */}
-          <TabsContent value="ai" className="space-y-4">
-            {/* AI Search Bar */}
-            <form onSubmit={handleAiSearch} className="space-y-4">
-              <div className="relative ai-search-container">
-                <div className="relative flex-1">
-                  <Brain className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Try: 'I need a female heart doctor' or 'Tamil speaking oncologist with experience'"
-                    value={aiSearchQuery}
-                    onChange={(e) => handleAiQueryChange(e.target.value)}
-                    className="pl-10 pr-12"
-                  />
-                  {aiSearchQuery && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearAiSearch}
-                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-
-                {/* AI Suggestions Dropdown */}
-                {showSuggestions && aiSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-y-auto">
-                    {aiSuggestions.map((suggestion, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => selectSuggestion(suggestion)}
-                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-b-0"
-                      >
-                        <Lightbulb className="h-4 w-4 text-yellow-500 flex-shrink-0" />
-                        <span className="text-sm">{suggestion}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <Button type="submit" disabled={aiLoading || !aiSearchQuery.trim()} className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  {aiLoading ? "AI Processing..." : "AI Search"}
-                </Button>
-              </div>
-            </form>
-
-            {/* AI Interpretation Display */}
-            {aiInterpretation && (
-              <Alert className="border-blue-200 bg-blue-50">
-                <Brain className="h-4 w-4" />
-                <AlertDescription>
-                  <div className="space-y-2">
-                    <div className="font-medium text-blue-800">AI Understanding:</div>
-                    <div className="text-blue-700">{aiInterpretation.query}</div>
-                    {aiInterpretation.parameters && Object.keys(aiInterpretation.parameters).length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {Object.entries(aiInterpretation.parameters).map(([key, value]) => (
-                          <Badge key={key} variant="secondary" className="text-xs">
-                            {key}: {value}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* AI Error Display */}
-            {aiError && (
-              <Alert className="border-yellow-200 bg-yellow-50">
-                <Lightbulb className="h-4 w-4" />
-                <AlertDescription>
-                  <div className="space-y-1">
-                    <div className="font-medium text-yellow-800">AI Notice:</div>
-                    <div className="text-yellow-700">{aiError}</div>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-          </TabsContent>
-        </Tabs>
-
-        {/* Filter Controls - Only show for traditional search */}
-        {currentSearchMode === "traditional" && (
-          <div className="flex flex-wrap gap-2 items-center justify-between">
-            <div className="flex flex-wrap gap-2">
-              {/* Specialization Filter */}
-              <Select value={activeFilters.specialization} onValueChange={(value) => handleFilterChange('specialization', value === 'all' ? '' : value)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Specialization" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Specializations</SelectItem>
-                  {filterOptions.specializations.map((spec) => (
-                    <SelectItem key={spec} value={spec}>{spec}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Language Filter */}
-              <Select value={activeFilters.language} onValueChange={(value) => handleFilterChange('language', value === 'all' ? '' : value)}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Languages</SelectItem>
-                  {filterOptions.languages.map((lang) => (
-                    <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Experience Filter */}
-              <Select value={activeFilters.minExperience} onValueChange={(value) => handleFilterChange('minExperience', value === 'all' ? '' : value)}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Experience" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Any Experience</SelectItem>
-                  <SelectItem value="5">5+ years</SelectItem>
-                  <SelectItem value="10">10+ years</SelectItem>
-                  <SelectItem value="15">15+ years</SelectItem>
-                  <SelectItem value="20">20+ years</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Advanced Filters Toggle */}
-              <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="outline" size="default">
-                    <Filter className="h-4 w-4 mr-2" />
-                    More Filters
-                    {getActiveFilterCount() > 0 && (
-                      <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                        {getActiveFilterCount()}
-                      </Badge>
-                    )}
-                    {showAdvancedFilters ? 
-                      <ChevronUp className="h-4 w-4 ml-2" /> : 
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    }
-                  </Button>
-                </CollapsibleTrigger>
-              </Collapsible>
-            </div>
-
-            {/* Apply/Clear Buttons */}
-            <div className="flex gap-2">
-              <Button onClick={applyFilters} size="sm">
-                Apply
-              </Button>
-              {getActiveFilterCount() > 0 && (
-                <Button variant="outline" size="sm" onClick={clearFilters}>
-                  <X className="h-4 w-4 mr-1" />
-                  Clear ({getActiveFilterCount()})
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Advanced Filters Card - Collapsible - Only for traditional search */}
-        {currentSearchMode === "traditional" && (
-          <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
-            <CollapsibleContent>
-              <Card className="mt-4">
-                <CardHeader>
-                  <CardTitle className="text-lg">Advanced Filters</CardTitle>
-                </CardHeader>
-                <CardContent className="py-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Sub-specialization */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold block">Sub-specialization</label>
-                      <Select value={activeFilters.subSpecialization} onValueChange={(value) => handleFilterChange('subSpecialization', value === 'all' ? '' : value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select sub-specialization" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Sub-specializations</SelectItem>
-                          {filterOptions.subSpecializations.map((subSpec) => (
-                            <SelectItem key={subSpec} value={subSpec}>{subSpec}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Gender */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold block">Gender</label>
-                      <Select value={activeFilters.gender} onValueChange={(value) => handleFilterChange('gender', value === 'all' ? '' : value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Any Gender</SelectItem>
-                          {filterOptions.genders.map((gender) => (
-                            <SelectItem key={gender} value={gender}>{gender}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Experience Range */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold block">Experience Range</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Input
-                            type="number"
-                            placeholder="Min years"
-                            value={activeFilters.minExperience === 'all' ? '' : activeFilters.minExperience}
-                            onChange={(e) => handleFilterChange('minExperience', e.target.value)}
-                            min={filterOptions.experienceRange.minExperience}
-                            max={filterOptions.experienceRange.maxExperience}
-                          />
-                        </div>
-                        <div>
-                          <Input
-                            type="number"
-                            placeholder="Max years"
-                            value={activeFilters.maxExperience}
-                            onChange={(e) => handleFilterChange('maxExperience', e.target.value)}
-                            min={filterOptions.experienceRange.minExperience}
-                            max={filterOptions.experienceRange.maxExperience}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Fee Range */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold block">Consultation Fee Range</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Input
-                            type="number"
-                            placeholder="Min fee"
-                            value={activeFilters.minFee}
-                            onChange={(e) => handleFilterChange('minFee', e.target.value)}
-                            min={filterOptions.feeRange.minFee}
-                            max={filterOptions.feeRange.maxFee}
-                          />
-                        </div>
-                        <div>
-                          <Input
-                            type="number"
-                            placeholder="Max fee"
-                            value={activeFilters.maxFee}
-                            onChange={(e) => handleFilterChange('maxFee', e.target.value)}
-                            min={filterOptions.feeRange.minFee}
-                            max={filterOptions.feeRange.maxFee}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 pt-4 justify-end">
-                    <Button onClick={applyFilters}>
-                      Apply Filters
-                    </Button>
-                    <Button variant="outline" onClick={clearFilters}>
-                      <X className="h-4 w-4 mr-2" />
-                      Clear All
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-
-        {/* Active Filters Display */}
-        {getActiveFilterCount() > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {/* Traditional search query */}
-            {currentSearchMode === "traditional" && searchQuery && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                Search: {searchQuery}
-                <X 
-                  className="h-3 w-3 cursor-pointer" 
-                  onClick={() => setSearchQuery("")}
-                />
-              </Badge>
-            )}
-            
-            {/* AI search query */}
-            {currentSearchMode === "ai" && aiSearchQuery && (
-              <Badge variant="secondary" className="flex items-center gap-1 bg-blue-100 text-blue-800">
-                <Sparkles className="h-3 w-3" />
-                AI Search: {aiSearchQuery}
-                <X 
-                  className="h-3 w-3 cursor-pointer" 
-                  onClick={clearAiSearch}
-                />
-              </Badge>
-            )}
-            
-            {/* Filter badges */}
-            {Object.entries(activeFilters).map(([key, value]) => 
-              value && value !== "all" && (
-                <Badge key={key} variant="secondary" className="flex items-center gap-1">
-                  {key}: {value}
-                  <X 
-                    className="h-3 w-3 cursor-pointer" 
-                    onClick={() => handleFilterChange(key, "all")}
-                  />
-                </Badge>
-              )
-            )}
-          </div>
-        )}
-
-        {/* Results Summary */}
-        <div className="text-sm text-muted-foreground flex items-center gap-2">
-          {loading || aiLoading ? (
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-              {currentSearchMode === "ai" ? "AI Processing..." : "Searching..."}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              {currentSearchMode === "ai" && (
-                <Sparkles className="h-4 w-4 text-blue-500" />
-              )}
-              <span>
-                Found {pagination.totalDoctors} doctor{pagination.totalDoctors !== 1 ? 's' : ''} 
-                {currentSearchMode === "ai" ? " using AI search" : ""}
-              </span>
-            </div>
-          )}
-        </div>
+      {/* Sorting Buttons */}
+      <div className="flex gap-2 mb-4">
+        <Button onClick={() => sortDoctors("experience")}>Sort by Experience</Button>
+        <Button onClick={() => sortDoctors("rating")}>Sort by Rating</Button>
+        <Button onClick={() => sortDoctors("fee")}>Sort by Consultation Fee</Button>
       </div>
 
       {/* Doctor Cards */}
-      <DoctorCardList 
-        initialDoctors={filteredDoctors} 
+      <DoctorCardList
+        initialDoctors={filteredDoctors}
         loading={loading}
-        pagination={pagination}
-        onPageChange={handlePageChange}
       />
     </main>
-  )
+  );
 }
