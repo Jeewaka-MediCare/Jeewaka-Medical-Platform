@@ -163,7 +163,8 @@ export default function DoctorDetails() {
       params: { 
         doctorId: doctor._id,
         doctorName: doctor.name,
-        sessionData: JSON.stringify(session)
+        sessionData: JSON.stringify(session),
+        doctorConsultationFee: doctor.consultationFee || 0
       }
     });
   };
