@@ -11,6 +11,7 @@ import { register } from "@videosdk.live/react-native-sdk";
 import { registerRootComponent } from "expo";
 import { useEffect } from "react";
 import { initStripe } from "@stripe/stripe-react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import useAuthStore from "../store/authStore";
@@ -57,35 +58,40 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="register" options={{ headerShown: false }} />
-        <Stack.Screen name="doctor/[id]" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="book-session/[sessionId]"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="payment-checkout"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="payment-success" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="video-consultation/[meetingId]"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="video-consultation/appointment/[sessionId]/[slotIndex]"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen name="doctor/[id]" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="book-session/[sessionId]"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="payment-checkout"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="payment-success"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="video-consultation/[meetingId]"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="video-consultation/appointment/[sessionId]/[slotIndex]"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
