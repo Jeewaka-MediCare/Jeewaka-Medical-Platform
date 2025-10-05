@@ -466,8 +466,8 @@ export default function Appointments() {
                 onPress={() => router.push({
                   pathname: '/write-review',
                   params: {
-                    doctorId: appointment.doctor._id,
-                    doctorName: appointment.doctor.name,
+                    doctorId: appointment.doctor?._id || appointment.doctor,
+                    doctorName: appointment.doctor?.name || 'Doctor',
                     appointmentId: appointment._id
                   }
                 })}

@@ -43,6 +43,9 @@ app.use("/api/admin", adminRouter);
 //admin verification routes
 app.use("/api/admin-verification", adminVerificationRouter);
 
+// Register rating/review routes
+app.use("/api/ratings", ratingRouter);
+
 // Register payments routes
 app.use("/api/payments", paymentsRouter);
 

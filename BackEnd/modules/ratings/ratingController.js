@@ -1,4 +1,5 @@
 import Rating from "./ratingModel.js";
+import mongoose from "mongoose";
 
 
 // Create or update a review
@@ -17,7 +18,7 @@ export const createOrUpdateReview = async (req, res) => {
     }
 
     // Create new review
-    const newReview = await Review.create({
+    const newReview = await Rating.create({
       doctor: doctorId,
       patient: patientId,
       rating,

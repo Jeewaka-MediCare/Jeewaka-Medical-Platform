@@ -101,7 +101,7 @@ export const getDoctorCardById = async (req, res) => {
     // Individual reviews with patient name
     const reviews = await Rating.find({ doctor: doctorId })
       .populate('patient', 'name') // Get patient name
-      .select('rating comment patient')
+      .select('rating comment patient createdAt')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -116,9 +116,10 @@ export const getDoctorCardById = async (req, res) => {
         totalReviews
       },
       reviews: reviews.map(r => ({
-        patientName: r.patient?.name || 'Anonymous',
+        patient: { name: r.patient?.name || 'Anonymous' },
         rating: r.rating,
-        comment: r.comment
+        comment: r.comment,
+        createdAt: r.createdAt
       }))
     };
 

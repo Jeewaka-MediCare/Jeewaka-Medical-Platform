@@ -37,20 +37,23 @@ export const DoctorList = ({ doctors, loading, error }) => {
     <FlatList
       data={doctors}
       keyExtractor={(item) => item._id.toString()}
-      renderItem={({ item }) => (
-        <DoctorCard
-          id={item._id}
-          name={item.name}
-          specialization={item.specialization}
-          profile={item.profile} // Backend uses 'profile' not 'profilePicture'
-          consultationFee={item.consultationFee || 0}
-          avgRating={item.avgRating || 0}
-          totalReviews={item.totalReviews || 0}
-          doctor={item}
-          ratingSummary={item.ratingSummary}
-          sessions={item.sessions}
-        />
-      )}
+      renderItem={({ item }) => {
+        console.log(`DoctorList rendering ${item.name}: avgRating=${item.avgRating}, totalReviews=${item.totalReviews}`);
+        return (
+          <DoctorCard
+            id={item._id}
+            name={item.name}
+            specialization={item.specialization}
+            profile={item.profile} // Backend uses 'profile' not 'profilePicture'
+            consultationFee={item.consultationFee || 0}
+            avgRating={item.avgRating || item.ratingSummary?.avgRating || 0}
+            totalReviews={item.totalReviews || item.ratingSummary?.totalReviews || 0}
+            doctor={item}
+            ratingSummary={item.ratingSummary}
+            sessions={item.sessions}
+          />
+        );
+      }}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.listContainer}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
