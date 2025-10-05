@@ -1,9 +1,9 @@
 // controller: doctorCardController.js
 
-import Doctor from '../doctor/doctorModel.js';
-import Session from '../session/sessionModel.js';
-import Rating from '../ratings/ratingModel.js';
-import mongoose from 'mongoose';
+import Doctor from "../doctor/doctorModel.js";
+import Session from "../session/sessionModel.js";
+import Rating from "../ratings/ratingModel.js";
+import mongoose from "mongoose";
 
 export const getAllDoctorCards = async (req, res) => {
   try {
@@ -12,7 +12,7 @@ export const getAllDoctorCards = async (req, res) => {
     const doctorCards = await Promise.all(
       doctors.map(async (doctor) => {
         const sessions = await Session.find({ doctorId: doctor._id })
-          .populate('hospital', 'name location')
+          .populate("hospital", "name location")
           .lean();
 
         // Get average rating and total reviews
@@ -20,8 +20,8 @@ export const getAllDoctorCards = async (req, res) => {
           { $match: { doctor: new mongoose.Types.ObjectId(doctor._id) } },
           {
             $group: {
-              _id: '$doctor',
-              avgRating: { $avg: '$rating' },
+              _id: "$doctor",
+              avgRating: { $avg: "$rating" },
               totalReviews: { $sum: 1 },
             },
           },
@@ -29,18 +29,19 @@ export const getAllDoctorCards = async (req, res) => {
 
         // Get all ratings with comments and patient info
         const ratingsWithComments = await Rating.find({ doctor: doctor._id })
-          .populate('patient', 'name') // if you want to show who made the comment
-          .select('rating comment createdAt patient')
+          .populate("patient", "name") // if you want to show who made the comment
+          .select("rating comment createdAt patient")
           .sort({ createdAt: -1 }) // newest first
           .lean();
 
         const avgRating = ratingStats.length > 0 ? ratingStats[0].avgRating : 0;
-        const totalReviews = ratingStats.length > 0 ? ratingStats[0].totalReviews : 0;
+        const totalReviews =
+          ratingStats.length > 0 ? ratingStats[0].totalReviews : 0;
 
         // Ensure sessions have a safe hospital object when population fails
-        const safeSessions = sessions.map(s => ({
+        const safeSessions = sessions.map((s) => ({
           ...s,
-          hospital: s.hospital || { name: 'Unknown hospital', location: '' }
+          hospital: s.hospital || { name: "Unknown hospital", location: "" },
         }));
 
         return {
@@ -62,28 +63,27 @@ export const getAllDoctorCards = async (req, res) => {
   }
 };
 
-
 export const getDoctorCardById = async (req, res) => {
   try {
     const { doctorId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(doctorId)) {
-      return res.status(400).json({ message: 'Invalid doctor ID' });
+      return res.status(400).json({ message: "Invalid doctor ID" });
     }
 
     const doctor = await Doctor.findById(doctorId).lean();
     if (!doctor) {
-      return res.status(404).json({ message: 'Doctor not found' });
+      return res.status(404).json({ message: "Doctor not found" });
     }
 
     let sessions = await Session.find({ doctorId: doctor._id })
-      .populate('hospital', 'name location')
+      .populate("hospital", "name location")
       .lean();
 
     // Fallback for any sessions where populate returned null
-    sessions = sessions.map(s => ({
+    sessions = sessions.map((s) => ({
       ...s,
-      hospital: s.hospital || { name: 'Unknown hospital', location: '' }
+      hospital: s.hospital || { name: "Unknown hospital", location: "" },
     }));
 
     // Rating summary
@@ -91,8 +91,8 @@ export const getDoctorCardById = async (req, res) => {
       { $match: { doctor: new mongoose.Types.ObjectId(doctorId) } },
       {
         $group: {
-          _id: '$doctor',
-          avgRating: { $avg: '$rating' },
+          _id: "$doctor",
+          avgRating: { $avg: "$rating" },
           totalReviews: { $sum: 1 },
         },
       },
@@ -100,27 +100,28 @@ export const getDoctorCardById = async (req, res) => {
 
     // Individual reviews with patient name
     const reviews = await Rating.find({ doctor: doctorId })
-      .populate('patient', 'name') // Get patient name
-      .select('rating comment patient createdAt')
+      .populate("patient", "name") // Get patient name
+      .select("rating comment patient createdAt")
       .sort({ createdAt: -1 })
       .lean();
 
     const avgRating = ratingStats.length > 0 ? ratingStats[0].avgRating : 0;
-    const totalReviews = ratingStats.length > 0 ? ratingStats[0].totalReviews : 0;
+    const totalReviews =
+      ratingStats.length > 0 ? ratingStats[0].totalReviews : 0;
 
     const doctorCard = {
       doctor,
       sessions,
       ratingSummary: {
         avgRating: parseFloat(avgRating.toFixed(1)),
-        totalReviews
+        totalReviews,
       },
-      reviews: reviews.map(r => ({
-        patient: { name: r.patient?.name || 'Anonymous' },
+      reviews: reviews.map((r) => ({
+        patient: { name: r.patient?.name || "Anonymous" },
         rating: r.rating,
         comment: r.comment,
-        createdAt: r.createdAt
-      }))
+        createdAt: r.createdAt,
+      })),
     };
 
     res.status(200).json(doctorCard);
@@ -129,4 +130,3 @@ export const getDoctorCardById = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
-
