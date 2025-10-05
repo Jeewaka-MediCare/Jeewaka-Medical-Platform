@@ -11,7 +11,9 @@
     "test:basic": "node tests/basic-ai-tests.js",
     "test:complex": "node tests/complex-medical-scenarios.js",
     "test:edge": "node tests/edge-cases-tests.js",
-    "test:performance": "node tests/performance-tests.js"
+    "test:performance": "node tests/performance-tests.js",
+    "seed:doctors": "node seeder/doctor-seeder.js",
+    "doctor-seed": "node test/doctor-seeder-test.js"
   },
   "type": "module",
   "keywords": [],

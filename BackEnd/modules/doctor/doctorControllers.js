@@ -1,5 +1,11 @@
 import Doctor from './doctorModel.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { generateVertexEmbedding } from '../../utils/vertexAI.js';
+
+import Session from '../session/sessionModel.js';
+import Rating from '../ratings/ratingModel.js';
+import mongoose from 'mongoose';
+
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -265,88 +271,93 @@ export const deleteDoctor = async (req, res) => {
 // AI-powered doctor search endpoint
 export const aiSearchDoctors = async (req, res) => {
   try {
-    const { query, page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc' } = req.body;
-
-    if (!query || query.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        error: "Search query is required"
-      });
+    const searchQuery = req.query.query;
+    if (!searchQuery) {
+      return res.status(400).json({ success: false, message: "Query is required" });
     }
 
-    let searchParameters = {};
-    let aiError = null;
-    let interpretedQuery = null;
+    console.log("AI Search Query:", searchQuery);
 
-    try {
-      // Use AI to interpret the natural language query
-      const aiResponse = await interpretSearchQuery(query);
-      searchParameters = aiResponse.parameters;
-      interpretedQuery = aiResponse.interpretation;
-    } catch (error) {
-      console.error('AI interpretation failed:', error.message);
-      
-      // Check if it's a quota error
-      if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('Too Many Requests')) {
-        aiError = 'AI quota limit reached. Using smart keyword search instead.';
-      } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
-        aiError = 'AI service temporarily unavailable. Using smart keyword search instead.';
-      } else {
-        aiError = 'AI interpretation failed, using smart keyword search instead.';
-      }
-      
-      // Fallback: try basic keyword matching
-      searchParameters = basicKeywordFallback(query);
-      interpretedQuery = `Smart keyword search for: "${query}"`;
-    }
+    // 1. Generate embedding for the query
+    const queryEmbedding = await generateVertexEmbedding(searchQuery);
+    console.log("Query Embedding:", queryEmbedding);
 
-    // Add pagination and sorting parameters
-    const finalQuery = {
-      ...searchParameters,
-      page,
-      limit,
-      sortBy,
-      sortOrder
-    };
-
-    // Create a mock request object for the existing searchDoctors function
-    const mockReq = {
-      query: finalQuery
-    };
-
-    // Create a custom response handler
-    const mockRes = {
-      json: (data) => {
-        // Enhance the response with AI interpretation data
-        const enhancedResponse = {
-          ...data,
-          aiEnhancement: {
-            originalQuery: query,
-            interpretedQuery: interpretedQuery,
-            searchParameters: searchParameters,
-            aiError: aiError,
-            enhancedSearch: !aiError
-          }
-        };
-        return res.json(enhancedResponse);
+    // 2. Run MongoDB vector search
+    const matchedDoctors = await Doctor.aggregate([
+      {
+        $vectorSearch: {
+          index: "doctor_index",       // your Atlas vector index
+          path: "embedding",
+          queryVector: queryEmbedding,
+          numCandidates: 50,
+          limit: 10
+        }
       },
-      status: (statusCode) => {
-        return {
-          json: (data) => res.status(statusCode).json(data)
-        };
+      {
+        $project: {
+          name: 1,
+          specialization: 1,
+          subSpecializations: 1,
+          qualifications: 1,
+          yearsOfExperience: 1,
+          consultationFee: 1,
+          bio: 1,
+          score: { $meta: "vectorSearchScore" }
+        }
       }
-    };
+    ]);
 
-    // Call the existing searchDoctors function
-    await searchDoctors(mockReq, mockRes);
+    // 3. For each matched doctor, fetch sessions, ratings, etc.
+    const doctorCards = await Promise.all(
+      matchedDoctors.map(async (doc) => {
+        const sessions = await Session.find({ doctorId: doc._id })
+          .populate('hospital', 'name location')
+          .lean();
 
+        const ratingStats = await Rating.aggregate([
+          { $match: { doctor: new mongoose.Types.ObjectId(doc._id) } },
+          {
+            $group: {
+              _id: '$doctor',
+              avgRating: { $avg: '$rating' },
+              totalReviews: { $sum: 1 },
+            },
+          },
+        ]);
+
+        const ratingsWithComments = await Rating.find({ doctor: doc._id })
+          .populate('patient', 'name')
+          .select('rating comment createdAt patient')
+          .sort({ createdAt: -1 })
+          .lean();
+
+        const avgRating = ratingStats.length > 0 ? ratingStats[0].avgRating : 0;
+        const totalReviews = ratingStats.length > 0 ? ratingStats[0].totalReviews : 0;
+
+        const safeSessions = sessions.map(s => ({
+          ...s,
+          hospital: s.hospital || { name: 'Unknown hospital', location: '' }
+        }));
+
+        return {
+          doctor: doc,
+          sessions: safeSessions,
+          ratingSummary: {
+            avgRating: parseFloat(avgRating.toFixed(1)),
+            totalReviews,
+            allRatings: ratingsWithComments,
+          },
+        };
+      })
+    );
+    console.log("AI Matched Doctors Count:", doctorCards.length);
+    console.log("doctrsare",doctorCards)
+
+    res.status(200).json({ success: true, query: searchQuery, doctorCards });
+    
   } catch (error) {
-    console.error('AI Search Error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "AI search failed",
-      details: error.message
-    });
+    console.error("AI Doctor Cards Error:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
