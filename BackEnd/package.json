@@ -23,6 +23,7 @@
     "@google-cloud/aiplatform": "^5.7.0",
     "@google-cloud/language": "^7.2.0",
     "@google/generative-ai": "^0.24.1",
+    "aws-sdk": "^2.1692.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
