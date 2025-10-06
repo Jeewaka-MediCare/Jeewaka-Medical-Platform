@@ -17,12 +17,19 @@ export const DoctorCard = ({
 }) => {
   const router = useRouter();
   
+  // Debug logging
+  console.log(`DoctorCard ${name}: avgRating=${avgRating}, totalReviews=${totalReviews}, ratingSummary=`, ratingSummary);
+  
   // Extract additional data from doctor object
   const yearsOfExperience = doctor?.yearsOfExperience || 0;
   const qualifications = doctor?.qualifications || [];
   const subSpecializations = doctor?.subSpecializations || [];
   const languagesSpoken = doctor?.languagesSpoken || [];
   const bio = doctor?.bio || '';
+  
+  // Get the actual rating values with fallbacks
+  const displayRating = avgRating || ratingSummary?.avgRating || 0;
+  const displayReviews = totalReviews || ratingSummary?.totalReviews || 0;
   
   const handlePress = () => {
     router.push({
@@ -73,8 +80,12 @@ export const DoctorCard = ({
           
           <View style={styles.ratingContainer}>
             <AntDesign name="star" size={14} color="#FFD700" />
-            <Text style={styles.ratingText}>{avgRating?.toFixed(1) || '0.0'}</Text>
-            <Text style={styles.reviewsText}>({totalReviews || 0})</Text>
+            <Text style={styles.ratingText}>
+              {displayRating.toFixed(1)}
+            </Text>
+            <Text style={styles.reviewsText}>
+              ({displayReviews})
+            </Text>
           </View>
         </View>
 

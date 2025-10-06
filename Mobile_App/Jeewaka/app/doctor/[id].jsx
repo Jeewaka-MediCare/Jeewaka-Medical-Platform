@@ -85,21 +85,31 @@ export default function DoctorDetails() {
       
       try {
         console.log('Fetching doctor details for ID:', id);
-        // Use the same endpoint as web app to get doctor with sessions and reviews
+        // Use the same endpoint as web app to get doctor with sessions
         const { data } = await api.get(`/api/doctorCard/${id}`);
         console.log('Doctor details received:', {
           doctorName: data.doctor?.name,
           sessionsCount: data.sessions?.length,
-          reviewsCount: data.reviews?.length,
           ratingSummary: data.ratingSummary
         });
         
-        // Backend returns structured data with doctor, sessions, ratingSummary, and reviews
+        // Fetch reviews separately from the ratings API
+        let reviews = [];
+        try {
+          const reviewsResponse = await api.get(`/api/ratings/doctor/${id}`);
+          reviews = reviewsResponse.data || [];
+          console.log('Reviews fetched separately:', reviews.length);
+        } catch (reviewError) {
+          console.error('Error fetching reviews:', reviewError);
+          // Continue without reviews if fetching fails
+        }
+        
+        // Backend returns structured data with doctor, sessions, and ratingSummary
         setDoctor({
           ...data.doctor,
           avgRating: data.ratingSummary?.avgRating || 0,
           totalReviews: data.ratingSummary?.totalReviews || 0,
-          reviews: data.reviews || []
+          reviews: reviews
         });
         setRatingSummary(data.ratingSummary || null);
         setSessions(data.sessions || []);
@@ -163,7 +173,8 @@ export default function DoctorDetails() {
       params: { 
         doctorId: doctor._id,
         doctorName: doctor.name,
-        sessionData: JSON.stringify(session)
+        sessionData: JSON.stringify(session),
+        doctorConsultationFee: doctor.consultationFee || 0
       }
     });
   };
@@ -616,25 +627,26 @@ export default function DoctorDetails() {
                   </View>
                 </View>
                 
-                {ratingSummary && ratingSummary !== null && (
+                {doctor?.reviews && doctor.reviews.length > 0 && (
                   <View style={styles.ratingBreakdown}>
-                    {[5, 4, 3, 2, 1].map((rating) => (
-                      <View key={rating} style={styles.ratingRow}>
-                        <Text style={styles.ratingLabel}>{rating} Star</Text>
-                        <View style={styles.ratingBarContainer}>
-                          <View 
-                            style={[
-                              styles.ratingBar,
-                              { 
-                                width: `${ratingSummary[rating] && doctor?.totalReviews > 0 ? 
-                                  (ratingSummary[rating] / doctor.totalReviews * 100) : 0}%` 
-                              }
-                            ]}
-                          />
+                    {[5, 4, 3, 2, 1].map((rating) => {
+                      const count = doctor.reviews.filter(review => review.rating === rating).length;
+                      const percentage = doctor.totalReviews > 0 ? (count / doctor.totalReviews * 100) : 0;
+                      return (
+                        <View key={rating} style={styles.ratingRow}>
+                          <Text style={styles.ratingLabel}>{rating} Star</Text>
+                          <View style={styles.ratingBarContainer}>
+                            <View 
+                              style={[
+                                styles.ratingBar,
+                                { width: `${percentage}%` }
+                              ]}
+                            />
+                          </View>
+                          <Text style={styles.ratingCount}>{count}</Text>
                         </View>
-                        <Text style={styles.ratingCount}>{ratingSummary[rating] || 0}</Text>
-                      </View>
-                    ))}
+                      );
+                    })}
                   </View>
                 )}
               </View>
@@ -643,8 +655,10 @@ export default function DoctorDetails() {
                 doctor.reviews.map((review, index) => (
                   <View key={index} style={styles.reviewItem}>
                     <View style={styles.reviewHeader}>
-                      <Text style={styles.reviewerName}>{review.patientName || 'Anonymous'}</Text>
-                      <Text style={styles.reviewDate}>Recent</Text>
+                      <Text style={styles.reviewerName}>{review.patient?.name || 'Anonymous'}</Text>
+                      <Text style={styles.reviewDate}>
+                        {review.createdAt ? format(parseISO(review.createdAt), 'MMM dd, yyyy') : 'Recent'}
+                      </Text>
                     </View>
                     
                     <View style={styles.reviewStars}>

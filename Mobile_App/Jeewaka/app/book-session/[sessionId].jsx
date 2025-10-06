@@ -15,7 +15,7 @@ import useAuthStore from '../../store/authStore';
 import { format, parseISO, isSameDay } from 'date-fns';
 
 export default function BookSession() {
-  const { sessionId, doctorId, doctorName, sessionData } = useLocalSearchParams();
+  const { sessionId, doctorId, doctorName, sessionData, doctorConsultationFee } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
   
@@ -66,35 +66,41 @@ export default function BookSession() {
       Alert.alert('Select Time Slot', 'Please select a time slot to continue');
       return;
     }
+
+    if (!user) {
+      Alert.alert('Authentication Required', 'Please log in to book an appointment');
+      return;
+    }
     
     setLoading(true);
     
     try {
-      // Use existing backend route to update the time slot
-      const updateData = {
-        patientId: user._id,
-        status: 'booked',
-        appointmentStatus: 'upcoming'
-      };
-
-      const { data } = await api.put(`/api/session/${sessionId}/timeslot/${selectedSlotIndex}`, updateData);
+      // Get consultation fee from doctor (passed as parameter)
+      const consultationFee = parseFloat(doctorConsultationFee) || 0;
       
-      if (data.success) {
-        // Show success message for all bookings
-        Alert.alert(
-          'Booking Successful',
-          'Your appointment has been booked successfully!',
-          [
-            { text: 'View My Appointments', onPress: () => router.push('/(tabs)/appointments') },
-            { text: 'OK', onPress: () => router.push('/') }
-          ]
-        );
+      if (consultationFee <= 0) {
+        Alert.alert('Payment Error', 'Consultation fee not available. Please try again.');
+        setLoading(false);
+        return;
       }
+
+      // Navigate to payment checkout with all required data
+      router.push({
+        pathname: '/payment-checkout',
+        params: {
+          sessionId: sessionId,
+          slotIndex: selectedSlotIndex,
+          doctorName: doctorName,
+          sessionData: JSON.stringify(session),
+          amount: consultationFee,
+          patientId: user._id || user.uid || user.id
+        }
+      });
     } catch (error) {
-      console.error('Booking error:', error);
+      console.error('Booking preparation error:', error);
       Alert.alert(
-        'Booking Failed', 
-        error.response?.data?.message || 'Failed to book appointment. Please try again.'
+        'Booking Error', 
+        'Failed to prepare booking. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -223,7 +229,7 @@ export default function BookSession() {
           
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Consultation Fee</Text>
-            <Text style={styles.totalValue}>LKR{session.consultationFee || session.fee || 0}</Text>
+            <Text style={styles.totalValue}>LKR{parseFloat(doctorConsultationFee) || 0}</Text>
           </View>
         </View>
       </ScrollView>
@@ -235,7 +241,7 @@ export default function BookSession() {
           disabled={!selectedSlot || loading}
         >
           <Text style={styles.confirmButtonText}>
-            {loading ? 'Booking...' : 'Confirm Booking'}
+            {loading ? 'Preparing Payment...' : 'Proceed to Payment'}
           </Text>
         </TouchableOpacity>
       </View>

@@ -1,23 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, RefreshControl } from 'react-native';
+import { View, StyleSheet, Text, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { SearchFilters } from '../../components/SearchFilters';
+import EnhancedSearchFilters from '../../components/EnhancedSearchFilters';
 import { DoctorList } from '../../components/DoctorList';
-import api from '../../services/api';
+import DoctorSearchService from '../../services/doctorSearchService';
 import useAuthStore from '../../store/authStore';
 import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 import { debugNetworkInfo } from '../../services/networkTest';
+import UserDropdown from '../../components/UserSidebar';
 
 export default function Home() {
-  const { user, userRole, loading: authLoading } = useAuthStore();
+  const { user, userRole, loading: authLoading, logout } = useAuthStore();
   const router = useRouter();
   
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchType, setSearchType] = useState('normal'); // Track if using AI search
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   
   const [filters, setFilters] = useState({
     query: '',
@@ -27,72 +29,64 @@ export default function Home() {
     minRating: undefined,
   });
 
-  // Fetch doctors
+  // Fetch doctors using normal search
   const fetchDoctors = async (searchFilters = {}) => {
     setLoading(true);
     setError(null);
+    setSearchType('normal');
     
     try {
+      let result;
+      
       // Check if we have any search filters
-      const hasFilters = searchFilters.query || searchFilters.specialization || 
-                        searchFilters.minFee || searchFilters.maxFee || searchFilters.minRating;
+      const hasFilters = Object.values(searchFilters).some(value => 
+        value !== undefined && value !== '' && value !== null
+      );
       
-      let url = hasFilters ? '/api/doctor/search' : '/api/doctor';
-      
-      // Add query parameters based on filters
       if (hasFilters) {
-        const queryParams = [];
-        if (searchFilters.query) queryParams.push(`name=${encodeURIComponent(searchFilters.query)}`); // Changed from 'query' to 'name'
-        if (searchFilters.specialization) queryParams.push(`specialization=${encodeURIComponent(searchFilters.specialization)}`);
-        if (searchFilters.minFee) queryParams.push(`minFee=${searchFilters.minFee}`);
-        if (searchFilters.maxFee) queryParams.push(`maxFee=${searchFilters.maxFee}`);
-        if (searchFilters.minRating) queryParams.push(`minRating=${searchFilters.minRating}`);
-        
-        if (queryParams.length > 0) {
-          url = `${url}?${queryParams.join('&')}`;
-        }
-      }
-      
-      const response = await api.get(url);
-      console.log('API Response Status:', response.status);
-      console.log('Full API Response:', response);
-      console.log('Response Data:', response.data);
-      console.log('Response Data Type:', typeof response.data);
-      
-      // Handle different response structures
-      let doctorsData;
-      if (hasFilters) {
-        // /api/doctor/search returns { success, data: { doctors, pagination } }
-        doctorsData = response.data?.data?.doctors || [];
+        // Use search endpoint for filtered results
+        result = await DoctorSearchService.searchDoctors(searchFilters);
+        setDoctors(result.doctors);
       } else {
-        // /api/doctor returns doctors array directly
-        doctorsData = response.data || [];
+        // Get all doctors
+        result = await DoctorSearchService.getAllDoctors();
+        setDoctors(result.doctors);
       }
       
-      console.log('Doctors data received:', doctorsData);
-      console.log('Doctors count:', doctorsData.length || 0);
-      
-      // Add default rating and review data for now
-      const doctors = doctorsData.map(doctor => ({
-        ...doctor,
-        ratingSummary: {
-          avgRating: 0,
-          totalReviews: 0
-        },
-        sessions: [],
-        avgRating: 0,
-        totalReviews: 0
-      }));
-      
-      setDoctors(doctors);
+      console.log(`Loaded ${result.doctors.length} doctors`);
     } catch (err) {
       console.error('Error fetching doctors:', err);
-      console.error('Error response:', err.response?.data);
       setError('Failed to load doctors. Please try again.');
-      console.error(err);
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  // Handle AI search
+  const handleAISearch = async (aiSearchResult) => {
+    setLoading(true);
+    setError(null);
+    setSearchType('ai');
+    
+    try {
+      // Transform AI search results to match expected format
+      const transformedDoctors = aiSearchResult.doctorCards.map(card => ({
+        ...card.doctor,
+        avgRating: card.ratingSummary.avgRating,
+        totalReviews: card.ratingSummary.totalReviews,
+        ratingSummary: card.ratingSummary,
+        sessions: card.sessions,
+        aiScore: card.doctor.score // Keep AI relevance score
+      }));
+      
+      setDoctors(transformedDoctors);
+      console.log(`AI Search found ${transformedDoctors.length} doctors for query: "${aiSearchResult.query}"`);
+    } catch (err) {
+      console.error('Error processing AI search results:', err);
+      setError('Failed to process AI search results. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,17 +108,24 @@ export default function Home() {
     fetchDoctors(filters);
   };
 
-  // Navigate to profile/login based on auth state
-  const handleProfilePress = () => {
-    if (user) {
-      if (userRole === 'doctor') {
-        router.push('/appointments');  // Changed from doctor-dashboard to appointments tab
-      } else {
-        router.push('/(tabs)/appointments');  // Updated to use new appointments tab
-      }
-    } else {
-      router.push('/login');
-    }
+  // Toggle sidebar visibility
+  const handleMenuPress = () => {
+    setSidebarVisible(true);
+  };
+
+  const handleCloseSidebar = () => {
+    setSidebarVisible(false);
+  };
+
+  const handleLogin = () => {
+    setSidebarVisible(false);
+    router.push('/login');
+  };
+
+  const handleLogout = async () => {
+    setSidebarVisible(false);
+    await logout();
+    router.push('/login');
   };
 
   return (
@@ -132,27 +133,43 @@ export default function Home() {
       <Stack.Screen
         options={{
           title: 'Jeewaka',
+          headerShown: true,
           headerStyle: {
-            backgroundColor: '#2563EB',
+            backgroundColor: '#1E293B',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
           },
-          headerTintColor: '#fff',
           headerTitleStyle: {
-            fontWeight: 'bold',
+            color: 'white',
+            fontSize: 20,
+            fontWeight: '600',
           },
+          headerTintColor: 'white',
           headerRight: () => (
-            <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
-              <Ionicons name="person-circle" size={28} color="#fff" />
+            <TouchableOpacity onPress={handleMenuPress} style={styles.profileButton}>
+              <Ionicons name="menu" size={28} color="#fff" />
             </TouchableOpacity>
           ),
         }}
       />
       
       <View style={styles.content}>
-        <SearchFilters onSearch={handleSearch} />
+        <EnhancedSearchFilters 
+          onSearch={handleSearch} 
+          onAISearch={handleAISearch}
+        />
         
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Find Doctors</Text>
-          <Text style={styles.subtitle}>Book appointments with top specialists</Text>
+          <Text style={styles.title}>
+            {searchType === 'ai' ? 'AI Search Results' : 'Find Doctors'}
+          </Text>
+          <Text style={styles.subtitle}>
+            {searchType === 'ai' 
+              ? 'Results based on your symptoms and needs' 
+              : 'Book appointments with top specialists'
+            }
+          </Text>
         </View>
         
         <DoctorList 
@@ -168,6 +185,13 @@ export default function Home() {
           }
         />
       </View>
+      
+      <UserDropdown
+        visible={sidebarVisible}
+        onClose={handleCloseSidebar}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+      />
     </SafeAreaView>
   );
 }

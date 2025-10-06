@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "extra": {
-      "BACKEND_URL": "http://10.183.221.57:5000",
+      "BACKEND_URL": "http://172.18.74.57:5000",
       "router": {},
       "eas": {
         "projectId": "9419cffd-cf19-4e12-9d2f-8160315f211c"
