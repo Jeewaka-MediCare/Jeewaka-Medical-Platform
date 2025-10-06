@@ -44,10 +44,44 @@ export class DoctorSearchService {
           ? `/api/doctor/search?${queryParams.join("&")}`
           : "/api/doctor/search";
       const response = await api.get(url);
+      const doctors = response.data?.data?.doctors || [];
+
+      // Fetch rating data for each doctor in search results
+      const doctorsWithRatings = await Promise.all(
+        doctors.map(async (doctor) => {
+          try {
+            const ratingResponse = await api.get(
+              `/api/ratings/doctor/${doctor._id}/average`
+            );
+            return {
+              ...doctor,
+              avgRating: ratingResponse.data.avgRating || 0,
+              totalReviews: ratingResponse.data.totalReviews || 0,
+              ratingSummary: {
+                avgRating: ratingResponse.data.avgRating || 0,
+                totalReviews: ratingResponse.data.totalReviews || 0,
+              },
+              sessions: [],
+            };
+          } catch (error) {
+            console.error(
+              `Error fetching rating for doctor ${doctor._id}:`,
+              error
+            );
+            return {
+              ...doctor,
+              avgRating: 0,
+              totalReviews: 0,
+              ratingSummary: { avgRating: 0, totalReviews: 0 },
+              sessions: [],
+            };
+          }
+        })
+      );
 
       return {
         success: true,
-        doctors: response.data?.data?.doctors || [],
+        doctors: doctorsWithRatings,
         pagination: response.data?.data?.pagination || null,
         filters: response.data?.data?.filters || null,
       };
