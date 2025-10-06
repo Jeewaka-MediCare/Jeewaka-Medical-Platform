@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: '#F1F5F9',
     borderRadius: 8,
-    padding: 2,
+    padding: 3,
   },
   searchTypeButton: {
     flex: 1,
@@ -444,17 +444,19 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     marginBottom: 8,
   },
   searchButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#2563EB',
-    paddingVertical: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 20,
     borderRadius: 8,
     marginRight: 8,
+    minWidth: 100,
   },
   aiSearchButton: {
     backgroundColor: '#7C3AED',
@@ -471,9 +473,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#2563EB',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 8,
+    minWidth: 90,
   },
   filterToggleText: {
     color: '#2563EB',
@@ -484,6 +487,7 @@ const styles = StyleSheet.create({
   filtersContainer: {
     backgroundColor: '#F8FAFC',
     padding: 16,
+    paddingVertical: 8,
     borderRadius: 8,
     marginTop: 8,
   },
@@ -550,11 +554,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    paddingVertical: 8,
   },
   clearFiltersButton: {
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#D1D5DB',
+    paddingVertical: 8,
   },
   clearFiltersText: {
     color: '#6B7280',
