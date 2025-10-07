@@ -1,13 +1,18 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../store/authStore';
+import api from '../../services/api';
+import ImagePickerComponent from '../../components/ImagePicker';
 
 export default function Profile() {
   const { user, userRole, logout, loading } = useAuthStore();
   const router = useRouter();
+  const [profileImageModalVisible, setProfileImageModalVisible] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [userProfile, setUserProfile] = useState(user);
 
   // Debug logging to understand user data structure
   console.log('Profile Debug - User Role:', userRole);
@@ -65,6 +70,150 @@ export default function Profile() {
     router.push('/');
   };
 
+  // Image picker functions
+  const showImageOptions = () => {
+    setProfileImageModalVisible(true);
+  };
+
+  const handleImageSelected = async (imageResult) => {
+  console.log('handleImageSelected called with:', imageResult);
+  
+  if (!imageResult || imageResult === null) {
+    // Handle image removal
+    console.log('Removing image...');
+    await removeImage();
+    return;
+  }
+
+  // Handle image upload
+  console.log('Uploading image...');
+  await uploadImage(imageResult);
+};
+
+  // Replace the uploadImage function with this corrected version:
+
+  const uploadImage = async (imageAsset) => {
+    setUploading(true);
+    try {
+      console.log('Image asset received:', imageAsset);
+      
+      // Handle both URL and base64 image formats
+      let imageData;
+      if (imageAsset.uri && imageAsset.uri.startsWith('data:image/')) {
+        // If it's already a data URL
+        imageData = imageAsset.uri;
+      } else if (imageAsset.base64) {
+        // If we have base64 data, create data URL
+        imageData = `data:image/jpeg;base64,${imageAsset.base64}`;
+      } else if (imageAsset.uri) {
+        // If it's just a URI (for URL input)
+        imageData = imageAsset.uri;
+      } else {
+        throw new Error('Invalid image format');
+      }
+
+      // Validate image size (optional but recommended)
+      if (imageData.startsWith('data:image/')) {
+        const sizeInBytes = (imageData.length * (3/4));
+        const sizeInMB = sizeInBytes / (1024 * 1024);
+        console.log('Image size:', sizeInMB.toFixed(2), 'MB');
+        
+        if (sizeInMB > 5) {
+          Alert.alert(
+            "Image Too Large", 
+            `Image size is ${sizeInMB.toFixed(2)}MB. Please use an image smaller than 5MB.`
+          );
+          return;
+        }
+      }
+
+      console.log('Uploading image data (first 50 chars):', imageData.substring(0, 50));
+      
+      const updateData = { profile: imageData };
+      const endpoint = userRole === 'doctor' 
+        ? `/api/doctor/${user._id}` 
+        : `/api/patient/${user._id}`;
+
+      console.log('API Request:', 'PUT', endpoint);
+      const response = await api.put(endpoint, updateData);
+      
+      console.log('API Response:', response.data);
+
+      // Check for successful response - be more flexible with response structure
+      if (response.data && (response.data.success !== false)) {
+        Alert.alert('Success', 'Profile image updated successfully!');
+        
+        // Update local state
+        const updatedProfile = { ...userProfile, profile: imageData };
+        setUserProfile(updatedProfile);
+        
+        // Close modal
+        setProfileImageModalVisible(false);
+      } else {
+        throw new Error(response.data?.message || 'Failed to update profile image');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      
+      let errorMessage = 'Failed to update profile image. Please try again.';
+      if (error.response?.status === 413) {
+        errorMessage = 'Image is too large. Please use a smaller image.';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid image format. Please try a different image.';
+      }
+      
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = async () => {
+  setUploading(true);
+  try {
+    console.log('Removing profile image for user:', user._id);
+    
+    // Send null or empty string to remove the image
+    const updateData = { profile: null };
+    const endpoint = userRole === 'doctor' 
+      ? `/api/doctor/${user._id}` 
+      : `/api/patient/${user._id}`;
+
+    console.log('API Request:', 'PUT', endpoint, updateData);
+    const response = await api.put(endpoint, updateData);
+    
+    console.log('Remove API Response:', response.data);
+
+    // Check for successful response
+    if (response.data && (response.data.success !== false)) {
+      Alert.alert('Success', 'Profile image removed successfully!');
+      
+      // Update local state - remove the profile image
+      const updatedProfile = { ...userProfile, profile: null };
+      setUserProfile(updatedProfile);
+      
+      // Close modal
+      setProfileImageModalVisible(false);
+    } else {
+      throw new Error(response.data?.message || 'Failed to remove profile image');
+    }
+  } catch (error) {
+    console.error('Remove error:', error);
+    console.error('Remove error details:', error.response?.data || error.message);
+    
+    let errorMessage = 'Failed to remove profile image. Please try again.';
+    if (error.response?.status === 404) {
+      errorMessage = 'User not found. Please try logging in again.';
+    } else if (error.response?.status === 400) {
+      errorMessage = 'Invalid request. Please try again.';
+    }
+    
+    Alert.alert('Error', errorMessage);
+  } finally {
+    setUploading(false);
+  }
+};
   // If not logged in, show login prompt
   if (!loading && !user) {
     return (
@@ -168,18 +317,33 @@ export default function Profile() {
       {user ? (
         <>
           <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>
-                  {user?.name?.charAt(0)?.toUpperCase() || 
-                   user?.email?.charAt(0)?.toUpperCase() || 
-                   (userRole === 'doctor' ? 'D' : 'P')}
-                </Text>
+            <TouchableOpacity 
+              style={styles.avatarContainer}
+              onPress={showImageOptions}
+              activeOpacity={0.7}
+            >
+              {userProfile?.profile ? (
+                <Image 
+                  source={{ uri: userProfile.profile }}
+                  style={styles.profileImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarText}>
+                    {userProfile?.name?.charAt(0)?.toUpperCase() || 
+                     userProfile?.email?.charAt(0)?.toUpperCase() || 
+                     (userRole === 'doctor' ? 'D' : 'P')}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.cameraIconContainer}>
+                <Ionicons name="camera" size={16} color="white" />
               </View>
-            </View>
+            </TouchableOpacity>
             
             <Text style={styles.userName}>
-              {user?.name || user?.email || 'User'}
+              {userProfile?.name || userProfile?.email || 'User'}
             </Text>
             <Text style={styles.userRole}>{userRole === 'doctor' ? 'Doctor' : 'Patient'}</Text>
           </View>
@@ -255,6 +419,16 @@ export default function Profile() {
           <Text style={styles.title}>Loading user data...</Text>
         </View>
       )}
+
+      {/* Profile Image Picker */}
+      <ImagePickerComponent
+        visible={profileImageModalVisible}
+        onClose={() => setProfileImageModalVisible(false)}
+        onImageSelected={handleImageSelected}
+        currentImage={userProfile?.profile}
+        uploading={uploading}
+        title="Update Profile Image"
+      />
     </SafeAreaView>
   );
 }
@@ -399,5 +573,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
     marginLeft: 8,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  cameraIconContainer: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#2563EB',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
   },
 });

@@ -12,7 +12,7 @@ const getBaseUrl = () => {
   }
 
   // Always use your specific backend server
-  return "http://10.183.221.57:5000";
+  return "http://172.18.74.57:5000";
 };
 
 const api = axios.create({
