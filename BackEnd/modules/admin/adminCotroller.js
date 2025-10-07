@@ -1,70 +1,95 @@
-import Admin from "./adminModel.js";
 
-export const createAdmin = async (req, res) => {
+import admin from "../../config/fireBaseAdmin.js";
+
+
+export const getAdminUsers = async (req, res) => {
   try {
-    const admin = new Admin(req.body);
-    await admin.save();
-    res.status(201).json({ message: "Admin created successfully" });
+    const adminUsers = [];
+    let nextPageToken;
+
+    // Firebase lists users in batches of 1000
+    do {
+      const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+
+      listUsersResult.users.forEach((userRecord) => {
+        const claims = userRecord.customClaims || {};
+        if (claims.role === "admin") {
+          adminUsers.push({
+            uid: userRecord.uid,
+            email: userRecord.email,
+            displayName: userRecord.displayName || null,
+            role: claims.role,
+          });
+        }
+        
+      });
+
+      nextPageToken = listUsersResult.pageToken;
+    } while (nextPageToken);
+
+    return res.status(200).json({
+      count: adminUsers.length,
+      admins: adminUsers,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error creating admin", error });
+    console.error("❌ Error fetching admin users:", error);
+    return res
+      .status(500)
+      .json({ error: error?.message || "Internal server error" });
   }
+};
 
-}
 
-export const getAdmins = async (req, res) => {
+
+// ✅ Add Admin Role
+export const addAdminRole = async (req, res) => {
   try {
-    const admins = await Admin.find();
-    res.status(200).json(admins);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching admins", error });
-  }
-}
-
-export const getAdminById = async (req, res) => {
-  try {
-    const admin = await Admin.findById(req.params.id);
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
+    const { uid } = req.body;
+    if (!uid) {
+      return res.status(400).json({ error: "User ID (uid) is required" });
     }
-    res.status(200).json(admin);
+
+    // Get current custom claims
+    const user = await admin.auth().getUser(uid);
+    const currentClaims = user.customClaims || {};
+
+    // Set or update the role
+    await admin.auth().setCustomUserClaims(uid, {
+      ...currentClaims,
+      role: "admin",
+    });
+
+    console.log(`✅ Admin role added for user ${uid}`);
+    return res.status(200).json({ message: "Admin role added successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Error fetching admin", error });
+    console.error("❌ Error adding admin role:", error);
+    return res.status(500).json({ error: error?.message || "Internal server error" });
   }
-}
+};
 
-export const getAdminByUid = async (req, res) => {
+// ✅ Remove Admin Role
+export const removeAdminRole = async (req, res) => {
   try {
-    const admin = await Admin.findOne({ uuid: req.params.uuid });
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
+    const { uid } = req.body;
+    if (!uid) {
+      return res.status(400).json({ error: "User ID (uid) is required" });
     }
-    res.status(200).json(admin);
+
+    const user = await admin.auth().getUser(uid);
+    const currentClaims = user.customClaims || {};
+
+    // Remove the admin role if it exists
+    const updatedClaims = { ...currentClaims };
+    if (updatedClaims.role === "admin") {
+      delete updatedClaims.role;
+    }
+
+    await admin.auth().setCustomUserClaims(uid, updatedClaims);
+
+    console.log(`🟡 Admin role removed for user ${uid}`);
+    return res.status(200).json({ message: "Admin role removed successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Error fetching admin", error });
+    console.error("❌ Error removing admin role:", error);
+    return res.status(500).json({ error: error?.message || "Internal server error" });
   }
-}
-
-export const updateAdmin = async (req, res) => {
-  try {
-    const admin = await Admin.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }                     
-    res.status(200).json({ message: "Admin updated successfully", admin });
-  } catch (error) { 
-    res.status(500).json({ message: "Error updating admin", error });
-    }
-}
-
-export const deleteAdmin = async (req, res) => {
-  try {
-    const admin = await Admin.findByIdAndDelete(req.params.id);
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
-    res.status(200).json({ message: "Admin deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting admin", error });
-  }
-}
-
+};

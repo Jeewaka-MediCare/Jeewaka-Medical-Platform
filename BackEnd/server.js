@@ -14,6 +14,7 @@ import adminRouter from "./modules/admin/adminRoutes.js";
 import adminVerificationRouter from "./modules/doctorCertificates/doctorVerificationRoutes.js";
 import paymentsRouter from "./modules/payments/paymentsRoutes.js";
 
+
 // Load environment variables
 dotenv.config();
 

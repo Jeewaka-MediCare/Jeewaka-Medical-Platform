@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { format, isAfter } from "date-fns"
 
 export default function AppointmentCard({ appointment }) {
+  console.log("Appointment Data:", appointment)
   // Determine status based on current date/time
   const now = new Date()
   const appointmentDateTime = appointment.date

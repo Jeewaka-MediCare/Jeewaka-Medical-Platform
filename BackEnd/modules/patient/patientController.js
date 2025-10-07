@@ -1,5 +1,6 @@
 import Patient from "./patientModel.js";
 import Session from "../session/sessionModel.js";
+import Doctor from "../doctor/doctorModel.js";
 
 // Create a patient
 export const createPatient = async (req, res) => {
@@ -23,19 +24,27 @@ export const getAllPatients = async (req, res) => {
 
 export const getPatientAppointments = async (req, res) => {
   const { patientId } = req.params;
+  console.log("Fetching appointments for patientId:", patientId);
 
   try {
     // Find all sessions where at least one timeslot has this patient
-    const sessions = await Session.find({ "timeSlots.patientId": patientId })
-      .populate("doctorId", "name specialization") // include doctor details
-      .populate("hospital", "name address") // include hospital details
-      .lean();
+    // const sessions = await Session.find({ "timeSlots.patientId": patientId })
+    //   .populate("doctorId", "name specialization") // include doctor details
+    //   .populate("hospital", "name address") // include hospital details
+    //   .lean();
+    const sessions = await Session.find({ "_id": '687e83310b4a56d306c626f7' })
+    console.log("Sessions retrieved:", sessions);
+    const docotr = await Doctor.findById('687c8a2f5b9997e7b8128e35');
+    console.log("Doctor retrieved:",docotr)
+  
+
 
     if (!sessions || sessions.length === 0) {
       return res
         .status(404)
         .json({ message: "No appointments found for this patient" });
     }
+    console.log("Sessions found for patient:", sessions);
 
     // Extract only the slots belonging to this patient
     const appointments = sessions.flatMap((session) =>

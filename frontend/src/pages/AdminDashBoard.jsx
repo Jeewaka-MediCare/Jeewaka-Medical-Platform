@@ -20,9 +20,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { CheckCircle, XCircle, Edit, Trash2, Plus, Eye, FileText, Users, Building2, UserCheck, X } from "lucide-react"
 import api from "../services/api"
-import { AddAdminDialog
-  
- } from "../components/add-admin-dialog"
+import { AddAdminDialog} from "../components/add-admin-dialog"
+import AddAdminButton from "../components/AddAdminButton"
 export default function AdminDashboard() {
   const [selectedDoctor, setSelectedDoctor] = useState(null)
   const [verificationComment, setVerificationComment] = useState("")
@@ -71,7 +70,7 @@ export default function AdminDashboard() {
     const getAdmins = async () => {
       const res = await api.get('/api/admin')
       console.log(res.data)
-      setMockAdmins(res.data)
+      setMockAdmins(res.data.admins)
   
     }
     getAdmins()
@@ -355,6 +354,7 @@ export default function AdminDashboard() {
                           <Button variant="destructive" size="sm" onClick={() => handleDeleteDoctor(doctor._id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
+                          <AddAdminButton uid ={doctor.uuid}/>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -421,6 +421,7 @@ export default function AdminDashboard() {
                           <Button variant="destructive" size="sm" onClick={() => handleDeletePatient(patient._id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
+                          <AddAdminButton uid ={patient.uuid}/>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -513,19 +514,18 @@ export default function AdminDashboard() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead>Created</TableHead>
+                
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {mockAdmins.map((admin) => (
                     <TableRow key={admin._id}>
-                      <TableCell className="font-medium">{admin.name}</TableCell>
+                      <TableCell className="font-medium">{admin.displayName||"admin"}</TableCell>
                       <TableCell>{admin.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={admin.role === "Super Admin" ? "default" : "secondary"}>{admin.role}</Badge>
-                      </TableCell>
-                      <TableCell>{new Date(admin.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>{admin.role}</TableCell>
+                      
+                      
                       <TableCell>
                         <div className="flex gap-2">
                           <Button
@@ -533,7 +533,7 @@ export default function AdminDashboard() {
                             size="sm"
                             onClick={() => {
                               // TODO: Navigate to edit admin page
-                              console.log(`Editing admin ${admin._id}`)
+                              console.log(`Editing admin ${admin.uid}`)
                             }}
                           >
                             <Edit className="h-3 w-3" />
@@ -541,8 +541,8 @@ export default function AdminDashboard() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleDeleteAdmin(admin._id)}
-                            disabled={admin.role === "Super Admin"}
+                            onClick={() => handleDeleteAdmin(admin.uid)}
+                            
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>

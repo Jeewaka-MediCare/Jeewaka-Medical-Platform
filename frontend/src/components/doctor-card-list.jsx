@@ -12,6 +12,7 @@ export function DoctorCardList({
   onPageChange = null 
 }) {
   const [doctors, setDoctors] = useState(initialDoctors || [])
+  console.log("DoctorCardList doctors:", initialDoctors)
 
   // Update doctors when initialDoctors changes
   useEffect(() => {
