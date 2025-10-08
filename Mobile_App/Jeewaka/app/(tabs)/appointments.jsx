@@ -17,7 +17,7 @@ import { format, parseISO } from 'date-fns';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
 import VideoCallButton from '../../components/VideoCallButton';
-import DoctorDashboardContent from '../../components/DoctorDashboardContent';
+import DoctorSessionContent from '../../components/DoctorSessionContent';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
@@ -232,7 +232,7 @@ export default function Appointments() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen
           options={{
-            title: 'Dashboard',
+            title: 'My Sessions',
             headerShown: true,
             headerStyle: {
               backgroundColor: '#1E293B',
@@ -248,7 +248,7 @@ export default function Appointments() {
             headerTintColor: 'white',
           }}
         />
-        <DoctorDashboardContent />
+        <DoctorSessionContent />
       </SafeAreaView>
     );
   }

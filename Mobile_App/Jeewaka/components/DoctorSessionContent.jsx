@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import useAuthStore from '../store/authStore';
 import { format, parseISO, addDays } from 'date-fns';
+import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
 import { TextInput, GestureHandlerRootView } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -23,9 +24,15 @@ import { useRouter } from 'expo-router';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
-export default function DoctorDashboardContent() {
+export default function DoctorSessionContent() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  
+  const [tabIndex, setTabIndex] = useState(0);
+  const [routes] = useState([
+    { key: 'upcoming', title: 'Upcoming' },
+    { key: 'past', title: 'Past' },
+  ]);
   
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -218,6 +225,79 @@ export default function DoctorDashboardContent() {
     return [...futureSessions, ...pastSessions];
   }, [sessions, getSessionEndDateTime]);
 
+  // Separate upcoming and past sessions with proper sorting
+  const upcomingSessions = useMemo(() => {
+    const now = new Date();
+    
+    // Get future sessions
+    const futureSessions = [];
+    
+    sessions.forEach((session) => {
+      const sessionEndTime = getSessionEndDateTime(session);
+      
+      if (sessionEndTime && sessionEndTime >= now) {
+        futureSessions.push(session);
+      }
+    });
+    
+    // Sort future sessions: earliest first
+    futureSessions.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const firstSlotA = a.timeSlots?.[0];
+      if (firstSlotA?.startTime) {
+        const [hours, minutes] = firstSlotA.startTime.split(':');
+        dateA.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      
+      const dateB = new Date(b.date);
+      const firstSlotB = b.timeSlots?.[0];
+      if (firstSlotB?.startTime) {
+        const [hours, minutes] = firstSlotB.startTime.split(':');
+        dateB.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      
+      return dateA - dateB;
+    });
+    
+    return futureSessions;
+  }, [sessions, getSessionEndDateTime]);
+
+  const pastSessions = useMemo(() => {
+    const now = new Date();
+    
+    // Get past sessions
+    const pastSessionsList = [];
+    
+    sessions.forEach((session) => {
+      const sessionEndTime = getSessionEndDateTime(session);
+      
+      if (sessionEndTime && sessionEndTime < now) {
+        pastSessionsList.push(session);
+      }
+    });
+    
+    // Sort past sessions: most recent first  
+    pastSessionsList.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const firstSlotA = a.timeSlots?.[0];
+      if (firstSlotA?.startTime) {
+        const [hours, minutes] = firstSlotA.startTime.split(':');
+        dateA.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      
+      const dateB = new Date(b.date);
+      const firstSlotB = b.timeSlots?.[0];
+      if (firstSlotB?.startTime) {
+        const [hours, minutes] = firstSlotB.startTime.split(':');
+        dateB.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      
+      return dateB - dateA; // Reverse order for past sessions
+    });
+    
+    return pastSessionsList;
+  }, [sessions, getSessionEndDateTime]);
+
   // Helper function to get booked slots count
   const getBookedSlotsCount = useCallback((session) => {
     return session.timeSlots?.filter(slot => slot.patientId).length || 0;
@@ -247,6 +327,186 @@ export default function DoctorDashboardContent() {
       ]
     );
   }, [fetchSessions]);
+
+  // Render session card
+  const renderSessionCard = useCallback((session) => {
+    const bookedSlots = getBookedSlotsCount(session);
+    const totalSlots = session.timeSlots?.length || 0;
+    const isPast = isSessionPast(session);
+    const canCancel = !isPast && bookedSlots === 0; // Only show cancel if NOT past AND no bookings
+    const hasBookings = bookedSlots > 0; // Check if session has any bookings
+
+    return (
+      <TouchableOpacity 
+        key={session._id} 
+        style={[
+          styles.sessionCard, 
+          isPast && styles.pastSessionCard,
+          hasBookings && styles.clickableSessionCard
+        ]}
+        onPress={() => handleSessionPress(session)}
+        disabled={!hasBookings}
+        activeOpacity={hasBookings ? 0.7 : 1}
+      >
+        <View style={styles.cardHeader}>
+          <Text style={[styles.sessionDate, isPast && styles.pastSessionText]}>
+            {format(parseISO(session.date), 'EEE, MMM dd, yyyy')}
+          </Text>
+          <View style={styles.badgeContainer}>
+            {isPast && (
+              <View style={[styles.statusBadge, { backgroundColor: '#64748B' }]}>
+                <Text style={styles.statusText}>Past</Text>
+              </View>
+            )}
+            <View style={styles.sessionStats}>
+              <Text style={styles.sessionStatsText}>
+                {bookedSlots}/{totalSlots} booked
+              </Text>
+            </View>
+          </View>
+        </View>
+        
+        <View style={styles.sessionDetails}>
+          <View style={styles.detailRow}>
+            <Ionicons name="time-outline" size={18} color="#64748B" />
+            <Text style={styles.detailText}>
+              {session.timeSlots?.[0]?.startTime} - {session.timeSlots?.[session.timeSlots.length - 1]?.endTime}
+            </Text>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <Ionicons 
+              name={session.type === 'in-person' ? 'location-outline' : 'videocam-outline'} 
+              size={18} 
+              color="#64748B" 
+            />
+            <Text style={styles.detailText}>
+              {session.type === 'in-person' 
+                ? (session.hospital?.name || 'Hospital') 
+                : 'Video Consultation'
+              }
+            </Text>
+          </View>
+
+          {/* Display individual slot times */}
+          <View style={styles.detailRow}>
+            <Ionicons name="calendar-outline" size={18} color="#64748B" />
+            <View style={styles.slotTimesContainer}>
+              <Text style={styles.detailText}>
+                Available slots: 
+              </Text>
+              <View style={styles.slotTimesWrapper}>
+                {session.timeSlots?.map((slot, index) => (
+                  <View 
+                    key={index} 
+                    style={[
+                      styles.slotTimeChip,
+                      slot.patientId && styles.bookedSlotChip
+                    ]}
+                  >
+                    <Text style={[
+                      styles.slotTimeText,
+                      slot.patientId && styles.bookedSlotText
+                    ]}>
+                      {slot.startTime}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Action buttons */}
+        {canCancel && (
+          <View style={styles.cardActionsRight}>
+            <TouchableOpacity 
+              style={[styles.smallCancelButton]}
+              onPress={() => handleCancelSession(session._id)}
+            >
+              <Text style={styles.smallCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {/* Add visual indicator if session has bookings */}
+        {hasBookings && (
+          <View style={styles.clickableIndicator}>
+            <Ionicons name="chevron-forward" size={20} color="#2563EB" />
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  }, [getBookedSlotsCount, isSessionPast, handleSessionPress, handleCancelSession]);
+
+  // Upcoming Sessions Scene
+  const UpcomingSessionsScene = useCallback(() => (
+    <View style={styles.scene}>
+      <View style={styles.createSessionHeader}>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Ionicons name="add" size={20} color="white" />
+          <Text style={styles.createButtonText}>Create Session</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <ScrollView 
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {upcomingSessions.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="calendar-outline" size={60} color="#94A3B8" />
+            <Text style={styles.emptyTitle}>No Upcoming Sessions</Text>
+            <Text style={styles.emptyMessage}>Create your first session to start accepting appointments</Text>
+          </View>
+        ) : (
+          upcomingSessions.map(renderSessionCard)
+        )}
+      </ScrollView>
+    </View>
+  ), [upcomingSessions, refreshing, onRefresh, modalVisible, renderSessionCard]);
+
+  // Past Sessions Scene
+  const PastSessionsScene = useCallback(() => (
+    <ScrollView 
+      style={styles.scene}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      {pastSessions.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="calendar-outline" size={60} color="#94A3B8" />
+          <Text style={styles.emptyTitle}>No Past Sessions</Text>
+          <Text style={styles.emptyMessage}>Your completed sessions will appear here</Text>
+        </View>
+      ) : (
+        pastSessions.map(renderSessionCard)
+      )}
+    </ScrollView>
+  ), [pastSessions, refreshing, onRefresh, renderSessionCard]);
+
+  const renderScene = ({ route }) => {
+    switch (route.key) {
+      case 'upcoming':
+        return UpcomingSessionsScene();
+      case 'past':
+        return PastSessionsScene();
+      default:
+        return null;
+    }
+  };
+
+  const renderTabBar = useCallback(props => (
+    <TabBar
+      {...props}
+      indicatorStyle={{ backgroundColor: '#2563EB' }}
+      style={{ backgroundColor: 'white', elevation: 0, shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}
+      labelStyle={{ color: '#1E293B', fontWeight: '500', textTransform: 'none' }}
+      activeColor="#2563EB"
+      inactiveColor="#64748B"
+    />
+  ), []);
 
   // Handle session creation
   const handleCreateSession = useCallback(async () => {
@@ -440,137 +700,13 @@ export default function DoctorDashboardContent() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.scene}>
-        <View style={styles.createSessionHeader}>
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => setModalVisible(true)}
-          >
-            <Ionicons name="add" size={20} color="white" />
-            <Text style={styles.createButtonText}>Create Session</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <ScrollView 
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        >
-          {sortedSessions.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={60} color="#94A3B8" />
-              <Text style={styles.emptyTitle}>No Sessions</Text>
-              <Text style={styles.emptyMessage}>Create your first session to start accepting appointments</Text>
-            </View>
-          ) : (
-            sortedSessions.map((session) => {
-              const bookedSlots = getBookedSlotsCount(session);
-              const totalSlots = session.timeSlots?.length || 0;
-              const isPast = isSessionPast(session);
-              const canCancel = !isPast && bookedSlots === 0; // Only show cancel if NOT past AND no bookings
-              const hasBookings = bookedSlots > 0; // Check if session has any bookings
-
-              return (
-                <TouchableOpacity 
-                  key={session._id} 
-                  style={[
-                    styles.sessionCard, 
-                    isPast && styles.pastSessionCard,
-                    hasBookings && styles.clickableSessionCard
-                  ]}
-                  onPress={() => handleSessionPress(session)}
-                  disabled={!hasBookings}
-                  activeOpacity={hasBookings ? 0.7 : 1}
-                >
-                  <View style={styles.cardHeader}>
-                    <Text style={[styles.sessionDate, isPast && styles.pastSessionText]}>
-                      {format(parseISO(session.date), 'EEE, MMM dd, yyyy')}
-                    </Text>
-                    <View style={styles.badgeContainer}>
-                      {isPast && (
-                        <View style={[styles.statusBadge, { backgroundColor: '#64748B' }]}>
-                          <Text style={styles.statusText}>Past</Text>
-                        </View>
-                      )}
-                      <View style={styles.sessionStats}>
-                        <Text style={styles.sessionStatsText}>
-                          {bookedSlots}/{totalSlots} booked
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  
-                  <View style={styles.sessionDetails}>
-                    <View style={styles.detailRow}>
-                      <Ionicons name="time-outline" size={18} color="#64748B" />
-                      <Text style={styles.detailText}>
-                        {session.timeSlots?.[0]?.startTime} - {session.timeSlots?.[session.timeSlots.length - 1]?.endTime}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.detailRow}>
-                      <Ionicons 
-                        name={session.type === 'in-person' ? 'location-outline' : 'videocam-outline'} 
-                        size={18} 
-                        color="#64748B" 
-                      />
-                      <Text style={styles.detailText}>
-                        {session.type === 'in-person' 
-                          ? (session.hospital?.name || 'Hospital') 
-                          : 'Video Consultation'
-                        }
-                      </Text>
-                    </View>
-
-                    {/* Display individual slot times */}
-                    <View style={styles.detailRow}>
-                      <Ionicons name="calendar-outline" size={18} color="#64748B" />
-                      <View style={styles.slotTimesContainer}>
-                        <Text style={styles.detailText}>
-                          Available slots: 
-                        </Text>
-                        <View style={styles.slotTimesWrapper}>
-                          {session.timeSlots?.map((slot, index) => (
-                            <View 
-                              key={index} 
-                              style={[
-                                styles.slotTimeChip,
-                                slot.patientId && styles.bookedSlotChip
-                              ]}
-                            >
-                              <Text style={[
-                                styles.slotTimeText,
-                                slot.patientId && styles.bookedSlotText
-                              ]}>
-                                {slot.startTime}
-                              </Text>
-                            </View>
-                          ))}
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Action buttons */}
-                  {canCancel && (
-                    <View style={styles.cardActionsRight}>
-                      <TouchableOpacity 
-                        style={[styles.smallCancelButton]}
-                        onPress={() => handleCancelSession(session._id)}
-                      >
-                        <Text style={styles.smallCancelText}>Cancel</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  
-                  {/* Add visual indicator if session has bookings */}
-                  {hasBookings && (
-                    <View style={styles.clickableIndicator}>
-                      <Ionicons name="chevron-forward" size={20} color="#2563EB" />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })
-          )}
-        </ScrollView>
+        <TabView
+          navigationState={{ index: tabIndex, routes }}
+          renderScene={renderScene}
+          renderTabBar={renderTabBar}
+          onIndexChange={setTabIndex}
+          initialLayout={{ width: Dimensions.get('window').width }}
+        />
       </View>
       
       {/* Session Creation Modal - Moved outside TabView */}

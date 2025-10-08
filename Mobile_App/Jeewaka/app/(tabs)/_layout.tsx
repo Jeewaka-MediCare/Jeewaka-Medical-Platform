@@ -49,7 +49,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="appointments"
           options={{
-            title: "My Appointments",
+            title: userRole === 'doctor' ? "My Sessions" : "My Appointments",
             tabBarIcon: ({ color }) => (
               <Ionicons name="calendar" size={24} color={color} />
             ),
