@@ -55,11 +55,16 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
     setPaymentError(null)
 
     try {
+      console.log('=== PAYMENT DEBUG INFO ===');
       console.log('Doctor data:', doctor);
       console.log('Consultation fee:', doctor.consultationFee);
       console.log('Session data:', session);
       console.log('Time slot data:', timeSlot);
-      console.log('User data:', user);
+      console.log('User data (full):', user);
+      console.log('User._id:', user?._id);
+      console.log('User.uid:', user?.uid);
+      console.log('User.uuid:', user?.uuid);
+      console.log('========================');
 
       // Validate consultation fee
       const consultationFee = doctor.consultationFee || 100; // Default to $1.00 if not set
@@ -70,6 +75,12 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
   // Validate user authentication
   // Prefer backend patient _id when available (stored after login merge), fall back to Firebase uid
   const patientId = user?._id || user?.uid || user?.id || 'guest-user';
+      console.log('Patient ID resolution:', {
+        '_id': user?._id,
+        'uid': user?.uid,
+        'id': user?.id,
+        'selected_patientId': patientId
+      });
       if (!patientId || patientId === 'guest-user') {
         throw new Error('Please log in to proceed with payment.');
       }
@@ -79,15 +90,31 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
         slot.startTime === timeSlot.startTime && slot.endTime === timeSlot.endTime
       ) : 0;
 
-      console.log('Calculated slotIndex:', slotIndex);
+      console.log('Slot index calculation:', {
+        hasTimeSlots: !!session.timeSlots,
+        timeSlotsCount: session.timeSlots?.length,
+        lookingFor: { start: timeSlot.startTime, end: timeSlot.endTime },
+        calculatedIndex: slotIndex
+      });
+
+      // Validate slotIndex
+      if (slotIndex === -1) {
+        throw new Error('Could not find the selected time slot in the session. Please try again.');
+      }
+
+      // Validate sessionId
+      const sessionId = session._id || session.id;
+      if (!sessionId) {
+        throw new Error('Session ID is missing. Please try booking again.');
+      }
 
       const paymentData = {
         amount: consultationFee,
         currency: 'usd',
         metadata: {
-          sessionId: session._id || session.id, // Use id if _id is not available
+          sessionId: sessionId,
           slotIndex: slotIndex,
-          patientId: patientId,
+          // Note: patientId will be determined by backend from authenticated user
           doctorName: doctor.name,
           appointmentDate: `${formatDate(session.date)} at ${timeSlot.startTime} - ${timeSlot.endTime}`
         }
@@ -97,8 +124,7 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
 
       const bookingData = {
         slotIndex: timeSlot.index || 0,
-        // Use backend patient id if available, otherwise fallback to firebase uid
-        patientId: user?._id || user?.uid || user?.id || 'guest-user',
+        // Backend will determine patientId from authenticated Firebase UID
         paymentIntentId: '' // Will be filled after payment
       }
 
@@ -106,7 +132,14 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
       // If successful, Stripe will redirect to success page
     } catch (error) {
       console.error('Payment error:', error)
-      setPaymentError(error.response?.data?.error || error.message || 'Payment failed. Please try again.')
+      const errorMessage = error.response?.data?.error || error.message || 'Payment failed. Please try again.';
+      
+      // Special handling for patient ID errors
+      if (errorMessage.includes('Invalid patientId') || errorMessage.includes('no matching patient')) {
+        setPaymentError('Your account is not properly set up. Please log out and log in again, or contact support if the issue persists.');
+      } else {
+        setPaymentError(errorMessage);
+      }
     } finally {
       setIsProcessing(false)
     }
@@ -134,10 +167,10 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
 
     try {
       // Call onConfirm directly without payment processing
+      // Backend will determine patientId from authenticated Firebase UID
       onConfirm({
         sessionId: session._id,
         slotIndex: timeSlot.index || 0,
-        patientId: user?.uid || user?.id || 'guest-user',
         paymentIntentId: null, // No payment for free booking
         isFreeBooking: true
       })
@@ -313,7 +346,10 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
               'Book Now (Free)'
             )}
           </Button>
-          <Button onClick={handleConfirmBooking} className="bg-blue-600 hover:bg-blue-700">
+          <Button 
+            onClick={handleConfirmBooking} 
+            className="bg-blue-600 hover:bg-blue-700"
+          >
             Proceed to Payment
           </Button>
         </DialogFooter>

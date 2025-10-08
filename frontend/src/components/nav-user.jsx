@@ -42,10 +42,22 @@ export function NavUser({ user }) {
 
   const handleLogout = async () => {
     try {
-      await logout(); // Clear Firebase + Zustand state + localStorage
-      navigate("/"); // ⬅️ Redirect to login route
+      console.log('🔐 NavUser - Starting logout process');
+      
+      // Clear auth state and logout from Firebase
+      await logout();
+      
+      // Small delay to ensure logout completes before navigation
+      setTimeout(() => {
+        navigate("/");
+        console.log('🔐 NavUser - Redirected to home page');
+      }, 100);
+      
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("🔐 NavUser - Logout failed:", error);
+      
+      // Even if logout fails, still try to navigate away from protected routes
+      navigate("/");
     }
   };
 

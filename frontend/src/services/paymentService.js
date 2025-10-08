@@ -13,13 +13,26 @@ export const paymentService = {
   // Create payment intent
   createPaymentIntent: async (paymentData) => {
     try {
-      console.log('Sending payment data:', paymentData);
+      console.log('💳 PaymentService - Sending payment data:', paymentData);
       const response = await api.post('/api/payments/create-intent', paymentData);
+      console.log('💳 PaymentService - Payment intent created:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error creating payment intent:', error);
-      console.error('Error response:', error.response?.data);
-      throw error;
+      console.error('💳 PaymentService - Error creating payment intent:', error);
+      console.error('💳 PaymentService - Error status:', error.response?.status);
+      console.error('💳 PaymentService - Error data:', error.response?.data);
+      console.error('💳 PaymentService - Error message:', error.message);
+      
+      // Re-throw with more context
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message;
+      const errorDetails = error.response?.data?.debug || null;
+      
+      const enhancedError = new Error(errorMessage);
+      enhancedError.status = error.response?.status;
+      enhancedError.details = errorDetails;
+      enhancedError.originalError = error;
+      
+      throw enhancedError;
     }
   },
 

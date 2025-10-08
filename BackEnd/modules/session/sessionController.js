@@ -230,7 +230,15 @@ export const deleteTimeSlot = async (req, res) => {
 export const bookAppointment = async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const { slotIndex, patientId, paymentIntentId } = req.body;
+    const { slotIndex, paymentIntentId } = req.body;
+    
+    // Get patientId from authenticated user (req.user set by authMiddleware)
+    const firebaseUid = req.user?.uid;
+    
+    if (!firebaseUid) {
+      console.error("bookAppointment - No authenticated user");
+      return res.status(401).json({ error: "Authentication required" });
+    }
 
     if (!stripe) {
       return res.status(500).json({
@@ -248,7 +256,7 @@ export const bookAppointment = async (req, res) => {
       console.error("bookAppointment - Missing paymentIntentId", {
         sessionId,
         slotIndex,
-        patientId,
+        firebaseUid,
         paymentIntentId,
       });
       return res.status(400).json({ error: "Payment intent ID is required" });
@@ -268,37 +276,25 @@ export const bookAppointment = async (req, res) => {
     // Normalize slot index to integer for consistent usage
     const slotIdx = parseInt(slotIndex, 10);
 
-    if (!patientId) {
-      console.error("bookAppointment - Missing patientId", { patientId });
-      return res.status(400).json({ error: "patientId is required" });
+    // Look up patient by Firebase UID
+    console.log("bookAppointment - Looking up patient by Firebase UID", { firebaseUid });
+    const patient = await Patient.findOne({ uuid: firebaseUid });
+    
+    if (!patient) {
+      console.error("bookAppointment - No patient found for Firebase UID", { firebaseUid });
+      return res.status(404).json({ 
+        error: "Patient profile not found",
+        message: "Your account is not properly set up. Please complete your profile or contact support."
+      });
     }
-
-    // Resolve patientId: accept either backend ObjectId or frontend UUID (firebase uid stored as Patient.uuid)
-    let resolvedPatientId = patientId;
-    try {
-      if (!mongoose.Types.ObjectId.isValid(patientId)) {
-        // Try to find by uuid field
-        const patientDoc = await Patient.findOne({ uuid: patientId });
-        if (!patientDoc) {
-          console.error(
-            "bookAppointment - No patient found for provided id/uuid",
-            { patientId }
-          );
-          return res
-            .status(400)
-            .json({ error: "Invalid patientId: no matching patient found" });
-        }
-        resolvedPatientId = patientDoc._id;
-        console.log("bookAppointment - Resolved patientId to _id", {
-          resolvedPatientId,
-        });
-      }
-    } catch (resolveErr) {
-      console.error("bookAppointment - Error resolving patientId:", resolveErr);
-      return res
-        .status(500)
-        .json({ error: "Internal error resolving patientId" });
-    }
+    
+    const resolvedPatientId = patient._id;
+    console.log("bookAppointment - Patient resolved", {
+      firebaseUid,
+      patientMongoId: resolvedPatientId.toString(),
+      patientName: patient.name,
+      patientEmail: patient.email
+    });
 
     // Verify payment status with Stripe (handle Stripe errors explicitly)
     let paymentIntent;
@@ -382,7 +378,7 @@ export const bookAppointment = async (req, res) => {
     // Update the time slot with booking details
     // Use the resolvedPatientId (may be an ObjectId) so Mongoose doesn't try to cast a Firebase uid string
     console.log("bookAppointment - Assigning patientId to slot", {
-      originalPatientId: patientId,
+      firebaseUid: req.user.uid,
       resolvedPatientId,
     });
     slot.patientId = resolvedPatientId;

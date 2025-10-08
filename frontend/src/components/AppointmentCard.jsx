@@ -1,11 +1,18 @@
+import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Calendar, Clock, MapPin, Globe } from "lucide-react"
+import { Calendar, Clock, MapPin, Globe, FileText } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { format, isAfter } from "date-fns"
+import MedicalRecordsModal from "./MedicalRecordsModal"
+import useAuthStore from "../store/authStore"
 
 export default function AppointmentCard({ appointment }) {
   console.log("Appointment Data:", appointment)
+  const { userRole } = useAuthStore()
+  const isDoctor = userRole === 'doctor'
+  const [isMedicalRecordsOpen, setIsMedicalRecordsOpen] = useState(false)
   // Determine status based on current date/time
   const now = new Date()
   const appointmentDateTime = appointment.date
@@ -75,9 +82,31 @@ export default function AppointmentCard({ appointment }) {
                 Join Session
               </a>
             )}
+            
+            {/* Medical Records Button - Doctor Only */}
+            {isDoctor && appointment.patient && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsMedicalRecordsOpen(true)}
+                className="w-full md:w-auto"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Medical Records
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>
+
+      {/* Medical Records Modal */}
+      {isDoctor && appointment.patient && (
+        <MedicalRecordsModal
+          isOpen={isMedicalRecordsOpen}
+          onClose={() => setIsMedicalRecordsOpen(false)}
+          patientId={appointment.patient._id || appointment.patient.id}
+        />
+      )}
     </Card>
   )
 }

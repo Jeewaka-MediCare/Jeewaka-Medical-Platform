@@ -1,75 +1,128 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { auth } from '../components/firebase';
-import { signOut } from 'firebase/auth';
+import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
+import api from '../services/api';
 
-// Utility function to log localStorage state
-export const logLocalStorageState = (context) => {
-  console.log(`🔐 ${context} - localStorage state:`, {
-    userData: localStorage.getItem('userData'),
-    userRole: localStorage.getItem('userRole'),
-    parsedUserData: localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : null,
-    parsedUserRole: localStorage.getItem('userRole')
-  });
-};
+const useAuthStore = create(
+  persist(
+    (set, get) => ({
+      user: null,
+      userRole: null,
+      loading: false,
+      isHydrated: false,
 
-// Utility function to check authentication state
-export const checkAuthState = (context) => {
-  const userData = localStorage.getItem('userData');
-  const userRole = localStorage.getItem('userRole');
-  const isAuthenticated = !!(userData && userRole);
+      // Centralized login method - SINGLE source of truth
+      login: async (email, password) => {
+        console.log('AuthStore - Login attempt');
+        set({ loading: true });
+        
+        try {
+          const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+          const idTokenResult = await user.getIdTokenResult();
+          const role = idTokenResult.claims.role || "patient";
 
-  console.log(`🔐 ${context} - Auth state check:`, {
-    hasUserData: !!userData,
-    hasUserRole: !!userRole,
-    isAuthenticated: isAuthenticated,
-    userData: userData ? JSON.parse(userData) : null,
-    userRole: userRole
-  });
+          let mergedUserData = { ...user, role };
+          
+          // Fetch backend profile data
+          try {
+            let res;
+            if (role === "doctor") {
+              console.log('Fetching doctor profile for uid:', user.uid);
+              res = await api.get(`/api/doctor/uuid/${user.uid}`);
+              mergedUserData = { ...user, ...res.data, role: "doctor" };
+              console.log('Doctor profile loaded:', res.data._id);
+            } else if (role === "patient") {
+              console.log('Fetching patient profile for uid:', user.uid);
+              res = await api.get(`/api/patient/uuid/${user.uid}`);
+              mergedUserData = { ...user, ...res.data, role: "patient" };
+              console.log('Patient profile loaded:', res.data._id);
+            } else if (role === "admin") {
+              console.log('Fetching admin profile for uid:', user.uid);
+              res = await api.get(`/api/admin/uuid/${user.uid}`);
+              mergedUserData = { ...user, ...res.data, role: "admin" };
+              console.log('Admin profile loaded:', res.data._id);
+            }
+          } catch (apiError) {
+            console.error('AuthStore - API call failed:', {
+              message: apiError.message,
+              status: apiError.response?.status,
+              data: apiError.response?.data,
+              url: apiError.config?.url
+            });
+            console.warn('⚠️ Using Firebase data only - backend profile not loaded');
+            mergedUserData = {
+              ...user,
+              name: user.displayName || user.email || "Unknown",
+              email: user.email,
+              role
+            };
+          }
 
-  return isAuthenticated;
-};
+          // Single state update - Zustand persist handles localStorage automatically
+          set({ user: mergedUserData, userRole: role, loading: false });
+          
+          return { success: true, user: mergedUserData, role };
+          
+        } catch (error) {
+          set({ loading: false });
+          return { success: false, error: error.message };
+        }
+      },
 
-const useAuthStore = create((set) => ({
-  user: null,
-  userRole: null,
-  loading: true,
-  setUser: (user) => {
-    console.log('🔐 AuthStore - setUser called:', user);
-    logLocalStorageState('AuthStore before setUser');
-    set({ user });
-    if (user) {
-      localStorage.setItem('userData', JSON.stringify(user));
-      logLocalStorageState('AuthStore after setUser');
-    } else {
-      localStorage.removeItem('userData');
-      console.log('🔐 AuthStore - localStorage after removing userData');
+      // Centralized logout
+      logout: async () => {
+        console.log('AuthStore - Starting logout process');
+        try {
+          // Clear state first to prevent any race conditions
+          set({ user: null, userRole: null, loading: false });
+          
+          // Then sign out from Firebase
+          await signOut(auth);
+          
+          console.log('AuthStore - Logout completed successfully');
+          // Zustand persist automatically clears localStorage
+        } catch (error) {
+          console.error('AuthStore - Logout error:', error);
+          // Even if Firebase signOut fails, clear local state
+          set({ user: null, userRole: null, loading: false });
+        }
+      },
+
+      // Token validation
+      validateSession: () => {
+        const { user } = get();
+        if (!user?.stsTokenManager?.expirationTime) return false;
+        return Date.now() < user.stsTokenManager.expirationTime;
+      },
+
+      // Initialize on app start
+      initializeAuth: () => {
+        const { user, userRole } = get();
+        if (user && userRole) {
+          const isValid = get().validateSession();
+          if (!isValid) {
+            set({ user: null, userRole: null });
+          }
+        }
+        set({ loading: false });
+      }
+    }),
+    {
+      name: 'jeewaka-auth',
+      partialize: (state) => ({
+        user: state.user,
+        userRole: state.userRole,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.isHydrated = true;
+          state.initializeAuth();
+        }
+      },
     }
-  },
-  setUserRole: (userRole) => {
-    console.log('🔐 AuthStore - setUserRole called:', userRole);
-    logLocalStorageState('AuthStore before setUserRole');
-    set({ userRole });
-    if (userRole) {
-      localStorage.setItem('userRole', userRole);
-      logLocalStorageState('AuthStore after setUserRole');
-    } else {
-      localStorage.removeItem('userRole');
-      console.log('🔐 AuthStore - localStorage after removing userRole');
-    }
-  },
-  setLoading: (loading) => {
-    console.log('🔐 AuthStore - setLoading called:', loading);
-    set({ loading });
-  },
-  logout: async () => {
-    console.log('🔐 AuthStore - logout called');
-    logLocalStorageState('AuthStore before logout');
-    await signOut(auth);
-    localStorage.removeItem('userData');
-    localStorage.removeItem('userRole');
-    set({ user: null, userRole: null });
-    logLocalStorageState('AuthStore after logout');
-  },
-}));
+  )
+);
 
 export default useAuthStore; 

@@ -19,11 +19,21 @@ try {
 export const createPaymentIntent = async (req, res) => {
   try {
     console.log('🔐 PaymentController - createPaymentIntent called');
+    console.log('🔐 PaymentController - Authenticated user:', req.user);
     console.log('🔐 PaymentController - Request body:', JSON.stringify(req.body, null, 2));
 
     if (!stripe) {
       return res.status(500).json({
         error: 'Stripe not configured. Please set STRIPE_SECRET_KEY in .env file with your sandbox secret key from https://dashboard.stripe.com/test/apikeys'
+      });
+    }
+
+    // Verify user is authenticated
+    if (!req.user || !req.user.uid) {
+      console.log('🔐 PaymentController - No authenticated user found');
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'You must be logged in to create a payment' 
       });
     }
 
@@ -39,35 +49,67 @@ export const createPaymentIntent = async (req, res) => {
       return res.status(400).json({ error: 'Amount is required and must be greater than 0' });
     }
 
+    // SECURITY: Look up patient by authenticated user's Firebase UID
+    // Do NOT trust patientId from request body
+    console.log('🔐 PaymentController - Looking up patient by Firebase UID:', req.user.uid);
+    const patient = await Patient.findOne({ uuid: req.user.uid });
+    
+    if (!patient) {
+      console.log('🔐 PaymentController - Patient not found for Firebase UID:', req.user.uid);
+      return res.status(400).json({ 
+        error: 'Patient profile not found',
+        message: 'Your account is not properly set up. Please complete your profile or contact support.',
+        debug: {
+          firebaseUid: req.user.uid,
+          suggestion: 'Log out and log in again to refresh your session'
+        }
+      });
+    }
+
+    console.log('🔐 PaymentController - Patient found:', {
+      mongoId: patient._id.toString(),
+      firebaseUid: patient.uuid,
+      name: patient.name,
+      email: patient.email
+    });
+
     // Validate required metadata for webhook processing
     console.log('🔐 PaymentController - Validating metadata fields:');
     console.log('🔐 PaymentController - sessionId:', metadata.sessionId, 'Type:', typeof metadata.sessionId);
     console.log('🔐 PaymentController - slotIndex:', metadata.slotIndex, 'Type:', typeof metadata.slotIndex);
-    console.log('🔐 PaymentController - patientId:', metadata.patientId, 'Type:', typeof metadata.patientId);
 
     // Accept slotIndex = 0 (valid index). Check for null or undefined explicitly.
     const missingSessionId = metadata.sessionId === null || metadata.sessionId === undefined || metadata.sessionId === '';
     const missingSlotIndex = metadata.slotIndex === null || metadata.slotIndex === undefined;
-    const missingPatientId = metadata.patientId === null || metadata.patientId === undefined || metadata.patientId === '';
 
-    if (missingSessionId || missingSlotIndex || missingPatientId) {
+    if (missingSessionId || missingSlotIndex) {
       console.log('🔐 PaymentController - Metadata validation FAILED!');
       console.log('🔐 PaymentController - Missing fields:', {
         sessionId: missingSessionId,
-        slotIndex: missingSlotIndex,
-        patientId: missingPatientId
+        slotIndex: missingSlotIndex
       });
       return res.status(400).json({
-        error: 'Metadata must include sessionId, slotIndex, and patientId for webhook processing'
+        error: 'Metadata must include sessionId and slotIndex for webhook processing'
       });
     }
 
     console.log('🔐 PaymentController - Metadata validation PASSED!');
 
+    // Use verified patient ID from database lookup (SECURE)
+    const verifiedMetadata = {
+      ...metadata,
+      patientId: patient._id.toString(),  // ← MongoDB ObjectId (verified)
+      firebaseUid: req.user.uid,           // ← Firebase UID (verified)
+      patientName: patient.name,
+      patientEmail: patient.email
+    };
+
+    console.log('🔐 PaymentController - Creating payment with verified metadata:', verifiedMetadata);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency,
-      metadata,
+      metadata: verifiedMetadata,
       automatic_payment_methods: {
         enabled: true,
       },
