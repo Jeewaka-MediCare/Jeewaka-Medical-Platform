@@ -16,6 +16,7 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     const fetchAppointments = async () => {
+      // ProtectedRoute already ensures user is authenticated and hydrated
       if (!user) {
         setUpcomingAppointments([])
         setPastAppointments([])
@@ -64,7 +65,7 @@ export default function AppointmentsPage() {
     }
 
     fetchAppointments()
-  }, [user])
+  }, [user, patientBackendId])
 
   if (loading) {
     return (

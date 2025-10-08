@@ -2,31 +2,10 @@ import express from 'express';
 import MedicalRecordsController from './recordsController.js';
 import s3BackupService from '../../services/s3BackupService.js';
 import Audit from './auditModel.js';
+import { authMiddleware, requireRole } from '../../middleware/authMiddleware.js';
+import { auditMiddleware } from '../../middleware/auditMiddleware.js';
 
 const router = express.Router();
-
-// Middleware to authenticate and set user context
-// This should be replaced with your actual auth middleware
-const authMiddleware = (req, res, next) => {
-  // For now, we'll assume the auth middleware sets req.user
-  // In real implementation, this would verify JWT token and set user info
-  if (!req.user) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  next();
-};
-
-// Middleware to log API access for audit trail
-const auditMiddleware = (action) => {
-  return async (req, res, next) => {
-    req.auditData = {
-      action,
-      startTime: Date.now(),
-      resourceId: req.params.recordId || req.params.patientId || 'N/A'
-    };
-    next();
-  };
-};
 
 // ======================
 // MEDICAL RECORDS ROUTES

@@ -17,6 +17,7 @@ import PaymentCheckout from "./pages/PaymentCheckout";
 import { Navbar } from "./components/navBar";
 import PatientLayout from "./Layout.jsx/patientLayout";
 import LandingPage from "./pages/LandingPage";
+import { AuthProvider } from "./components/AuthProvider";
 
 function App() {
   useEffect(() => {
@@ -88,11 +89,12 @@ function App() {
 
   return (
     <Router>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/sign-up" element={<SignupPage />} />
+      <AuthProvider>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/sign-up" element={<SignupPage />} />
 
         {/* Doctor routes */}
         <Route element={<SideBarApp />}>
@@ -119,6 +121,7 @@ function App() {
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Route>
       </Routes>
+      </AuthProvider>
     </Router>
   );
 }

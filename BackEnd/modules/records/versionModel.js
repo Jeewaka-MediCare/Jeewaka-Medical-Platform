@@ -82,7 +82,6 @@ const versionSchema = new mongoose.Schema({
 // Compound index for efficient version queries
 versionSchema.index({ recordId: 1, versionNumber: -1 });
 versionSchema.index({ recordId: 1, createdAt: -1 });
-versionSchema.index({ versionId: 1 });
 versionSchema.index({ contentHash: 1 });
 
 // Pre-save middleware to generate content hash and size

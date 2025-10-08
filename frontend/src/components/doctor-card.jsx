@@ -31,14 +31,13 @@ export function DoctorCard({
     >
       <Card className="overflow-hidden transition-all hover:shadow-lg border-2 border-transparent hover:border-primary/20 h-full">
         <CardContent className="p-0 h-full">
-          <div className="relative h-48 w-full">
+          <div className="relative h-48 w-full overflow-hidden">
             <img
               src={
                 profile || "/placeholder.svg?height=400&width=400&query=doctor"
               }
               alt={name}
-              fill
-              className="object-cover"
+              className="absolute inset-0 w-full h-full object-cover object-center"
             />
             <div className="absolute bottom-0 right-0 bg-primary text-white px-3 py-1 text-sm font-medium">
               ${consultationFee.toLocaleString()}

@@ -79,7 +79,6 @@ const recordSchema = new mongoose.Schema({
 // Index for efficient queries
 recordSchema.index({ patientId: 1, isDeleted: 1 });
 recordSchema.index({ createdBy: 1, isDeleted: 1 });
-recordSchema.index({ recordId: 1 });
 recordSchema.index({ tags: 1 });
 
 // Virtual for getting active records (not soft deleted)

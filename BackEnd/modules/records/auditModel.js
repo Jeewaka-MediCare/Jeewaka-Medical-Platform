@@ -104,7 +104,6 @@ auditSchema.index({ performedBy: 1, timestamp: -1 });
 auditSchema.index({ action: 1, timestamp: -1 });
 auditSchema.index({ resourceType: 1, resourceId: 1, timestamp: -1 });
 auditSchema.index({ timestamp: -1 });
-auditSchema.index({ auditId: 1 });
 
 // Static method to log an action
 auditSchema.statics.logAction = async function(actionData) {
