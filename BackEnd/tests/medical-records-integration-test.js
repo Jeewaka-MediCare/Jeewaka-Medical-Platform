@@ -14,7 +14,7 @@ import Doctor from '../modules/doctor/doctorModel.js';
 import Record from '../modules/records/recordModel.js';
 import Version from '../modules/records/versionModel.js';
 import Audit from '../modules/records/auditModel.js';
-import s3BackupService from '../services/s3BackupService.js';
+import supabaseStorage from '../services/supabaseStorageService.js';
 import { connectDB } from '../shared/database.js';
 
 // Test data
@@ -112,7 +112,7 @@ class MedicalRecordsIntegrationTest {
       await this.testVersioning();
       await this.testAccessControl();
       await this.testAuditLogging();
-      await this.testS3Backup();
+      await this.testSupabaseBackup();
       await this.testSearchAndRetrieval();
       await this.testSoftDelete();
       await this.cleanup();
@@ -343,45 +343,55 @@ class MedicalRecordsIntegrationTest {
     console.log(`✅ Doctor activity summary: ${doctorActivity.length} action types`);
   }
 
-  async testS3Backup() {
-    console.log('\n💾 Testing S3 backup system...');
+  async testSupabaseBackup() {
+    console.log('\n💾 Testing Supabase backup system...');
     
     try {
       // Get latest version for backup
       const latestVersion = await Version.findById(this.testRecord.currentVersionId);
       
-      if (process.env.ENABLE_S3_BACKUP === 'true') {
-        // Test backup creation
-        const backupResult = await s3BackupService.backupRecord(
+      if (process.env.ENABLE_SUPABASE_BACKUP === 'true') {
+        // Test backup creation with patient object
+        const backupResult = await supabaseStorage.backupRecord(
           this.testRecord,
           latestVersion,
+          this.testPatient,  // Now requires full patient object
           this.testDoctor._id
         );
         
-        console.log(`✅ S3 backup created successfully`);
-        console.log(`   S3 Key: ${backupResult.s3Key}`);
-        console.log(`   Version ID: ${backupResult.versionId}`);
+        if (backupResult) {
+          console.log(`✅ Supabase backup created successfully`);
+          console.log(`   Storage Path: ${backupResult.storagePath}`);
+          console.log(`   User Folder: ${backupResult.userFolder}`);
+          console.log(`   Size: ${backupResult.sizeBytes} bytes`);
+        } else {
+          console.log(`⚠️  Supabase backup returned null (service may be disabled)`);
+        }
         
         // Test backup listing
-        const patientBackups = await s3BackupService.listPatientBackups(
+        const patientBackups = await supabaseStorage.listPatientRecords(
+          this.testPatient.name,
           this.testPatient.uuid
         );
-        console.log(`✅ Patient backups listed: ${patientBackups.length} files`);
+        console.log(`✅ Patient backups listed: ${patientBackups.length} records`);
         
         // Test backup statistics
-        const backupStats = await s3BackupService.getBackupStatistics();
+        const backupStats = await supabaseStorage.getPatientStorageStats(
+          this.testPatient.name,
+          this.testPatient.uuid
+        );
         console.log(`✅ Backup statistics retrieved`);
-        console.log(`   Total objects: ${backupStats.totalObjects || 0}`);
-        console.log(`   Backup enabled: ${backupStats.enabled}`);
+        console.log(`   Total size: ${backupStats.totalSize} bytes`);
+        console.log(`   File count: ${backupStats.fileCount}`);
+        console.log(`   User folder: ${backupStats.userFolder}`);
         
       } else {
-        console.log('⚠️  S3 backup is disabled in environment');
-        const backupStats = await s3BackupService.getBackupStatistics();
-        console.log(`✅ Backup service status: ${backupStats.enabled ? 'enabled' : 'disabled'}`);
+        console.log('⚠️  Supabase backup is disabled in environment');
+        console.log(`✅ Backup service status: ${supabaseStorage.backupEnabled ? 'enabled' : 'disabled'}`);
       }
       
     } catch (error) {
-      console.log(`⚠️  S3 backup test skipped: ${error.message}`);
+      console.log(`⚠️  Supabase backup test skipped: ${error.message}`);
     }
   }
 

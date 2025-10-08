@@ -39,14 +39,11 @@ doctorRoutes.get('/uuid/:uuid', getDoctorByUuid);
 doctorRoutes.get('/:id', getDoctorById);
 
 // ============================================
-// AUTHENTICATED ROUTES - Doctor Registration
+// PUBLIC ROUTES - Doctor Registration
 // ============================================
 
-// Create a new doctor profile (during registration - similar to patient)
-doctorRoutes.post('/', 
-  authMiddleware,
-  createDoctor
-);
+// Create a new doctor profile (during registration - no auth required yet)
+doctorRoutes.post('/', createDoctor);
 
 // ============================================
 // DOCTOR ONLY ROUTES - Profile Management

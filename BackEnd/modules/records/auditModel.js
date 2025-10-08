@@ -216,7 +216,7 @@ auditSchema.methods.getDescription = function() {
     'RESTORE_RECORD': 'Restored medical record',
     'CREATE_VERSION': 'Created new version',
     'VIEW_VERSION': 'Viewed version',
-    'BACKUP_RECORD': 'Backed up record to S3',
+    'BACKUP_RECORD': 'Backed up record to Supabase Storage',
     'UPLOAD_ATTACHMENT': 'Uploaded attachment',
     'DELETE_ATTACHMENT': 'Deleted attachment',
     'ACCESS_PATIENT_RECORDS': 'Accessed patient records'

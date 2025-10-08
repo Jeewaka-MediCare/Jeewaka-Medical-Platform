@@ -73,10 +73,21 @@ const useAuthStore = create(
 
       // Centralized logout
       logout: async () => {
-        console.log('AuthStore - Logout');
-        await signOut(auth);
-        set({ user: null, userRole: null });
-        // Zustand persist automatically clears localStorage
+        console.log('AuthStore - Starting logout process');
+        try {
+          // Clear state first to prevent any race conditions
+          set({ user: null, userRole: null, loading: false });
+          
+          // Then sign out from Firebase
+          await signOut(auth);
+          
+          console.log('AuthStore - Logout completed successfully');
+          // Zustand persist automatically clears localStorage
+        } catch (error) {
+          console.error('AuthStore - Logout error:', error);
+          // Even if Firebase signOut fails, clear local state
+          set({ user: null, userRole: null, loading: false });
+        }
       },
 
       // Token validation

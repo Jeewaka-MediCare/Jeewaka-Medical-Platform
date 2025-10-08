@@ -1,6 +1,6 @@
 import express from 'express';
 import MedicalRecordsController from './recordsController.js';
-import s3BackupService from '../../services/s3BackupService.js';
+import supabaseStorage from '../../services/supabaseStorageService.js';
 import Audit from './auditModel.js';
 import { authMiddleware, requireRole } from '../../middleware/authMiddleware.js';
 import { auditMiddleware } from '../../middleware/auditMiddleware.js';
@@ -37,9 +37,9 @@ router.put('/records/:recordId',
   authMiddleware, 
   auditMiddleware('UPDATE_RECORD'),
   async (req, res, next) => {
-    // Enhanced middleware to trigger S3 backup after successful update
+    // Enhanced middleware to trigger Supabase backup after successful update
     const originalSend = res.send;
-    res.send = function(data) {
+    res.send = async function(data) {
       // Call original send first
       originalSend.call(this, data);
       
@@ -48,14 +48,21 @@ router.put('/records/:recordId',
         try {
           const responseData = typeof data === 'string' ? JSON.parse(data) : data;
           if (responseData.success && responseData.newVersion) {
-            // Trigger S3 backup asynchronously
-            s3BackupService.backupRecord(
-              responseData.record,
-              responseData.newVersion,
-              req.user.id
-            ).catch(error => {
-              console.error('S3 backup failed:', error);
-            });
+            // Fetch patient for folder structure
+            const Patient = (await import('../patient/patientModel.js')).default;
+            const patient = await Patient.findById(responseData.record.patientId);
+            
+            if (patient) {
+              // Trigger Supabase backup asynchronously
+              supabaseStorage.backupRecord(
+                responseData.record,
+                responseData.newVersion,
+                patient,
+                req.user.id
+              ).catch(error => {
+                console.error('Supabase backup failed:', error);
+              });
+            }
           }
         } catch (error) {
           console.error('Error parsing response for backup:', error);
@@ -188,7 +195,7 @@ router.get('/doctors/:doctorId/activity',
 );
 
 // ======================
-// S3 BACKUP ROUTES
+// SUPABASE BACKUP ROUTES
 // ======================
 
 // Manually trigger backup for a record
@@ -223,8 +230,15 @@ router.post('/records/:recordId/backup',
         return res.status(404).json({ error: 'Current version not found' });
       }
       
+      // Fetch patient for folder structure
+      const Patient = (await import('../patient/patientModel.js')).default;
+      const patient = await Patient.findById(record.patientId);
+      if (!patient) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+      
       // Trigger backup
-      const backupResult = await s3BackupService.backupRecord(record, version, doctorId);
+      const backupResult = await supabaseStorage.backupRecord(record, version, patient, doctorId);
       
       res.json({
         success: true,
@@ -242,12 +256,11 @@ router.post('/records/:recordId/backup',
 );
 
 // List patient backups
-router.get('/patients/:patientUuid/backups', 
+router.get('/patients/:patientId/backups', 
   authMiddleware,
   async (req, res) => {
     try {
-      const { patientUuid } = req.params;
-      const { maxKeys = 100 } = req.query;
+      const { patientId } = req.params;
       const userType = req.user.type;
       
       // Only doctors can view backups
@@ -255,12 +268,20 @@ router.get('/patients/:patientUuid/backups',
         return res.status(403).json({ error: 'Only doctors can view backups' });
       }
       
-      const backups = await s3BackupService.listPatientBackups(patientUuid, { maxKeys });
+      // Fetch patient for folder structure
+      const Patient = (await import('../patient/patientModel.js')).default;
+      const patient = await Patient.findById(patientId);
+      if (!patient) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+      
+      const backups = await supabaseStorage.listPatientRecords(patient.name, patient.uuid);
       
       res.json({
         success: true,
         backups,
-        totalCount: backups.length
+        totalCount: backups.length,
+        userFolder: supabaseStorage.generateUserFolderPath(patient.name, patient.uuid)
       });
       
     } catch (error) {
@@ -273,12 +294,11 @@ router.get('/patients/:patientUuid/backups',
 );
 
 // Export patient complete history
-router.post('/patients/:patientUuid/export', 
+router.post('/patients/:patientId/export', 
   authMiddleware,
   async (req, res) => {
     try {
-      const { patientUuid } = req.params;
-      const { format = 'json', includeAttachments = false } = req.body;
+      const { patientId } = req.params;
       const userType = req.user.type;
       
       // Only doctors can export patient history
@@ -286,15 +306,29 @@ router.post('/patients/:patientUuid/export',
         return res.status(403).json({ error: 'Only doctors can export patient history' });
       }
       
-      const exportResult = await s3BackupService.exportPatientHistory(patientUuid, {
-        format,
-        includeAttachments
-      });
+      // Fetch patient for folder structure
+      const Patient = (await import('../patient/patientModel.js')).default;
+      const patient = await Patient.findById(patientId);
+      if (!patient) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+      
+      // Get all records and their storage stats
+      const records = await supabaseStorage.listPatientRecords(patient.name, patient.uuid);
+      const stats = await supabaseStorage.getPatientStorageStats(patient.name, patient.uuid);
       
       res.json({
         success: true,
-        export: exportResult,
-        message: 'Export completed successfully'
+        export: {
+          patient: {
+            name: patient.name,
+            uuid: patient.uuid,
+            folder: supabaseStorage.generateUserFolderPath(patient.name, patient.uuid)
+          },
+          records,
+          statistics: stats
+        },
+        message: 'Export data retrieved successfully'
       });
       
     } catch (error) {
@@ -306,19 +340,27 @@ router.post('/patients/:patientUuid/export',
   }
 );
 
-// Get backup statistics
-router.get('/admin/backup-stats', 
+// Get backup statistics (requires patientId)
+router.get('/admin/backup-stats/:patientId', 
   authMiddleware,
   async (req, res) => {
     try {
+      const { patientId } = req.params;
       const userType = req.user.type;
       
-      // Only admins can view backup statistics
+      // Only admins and doctors can view backup statistics
       if (userType !== 'ADMIN' && userType !== 'DOCTOR') {
         return res.status(403).json({ error: 'Unauthorized access' });
       }
       
-      const stats = await s3BackupService.getBackupStatistics();
+      // Fetch patient for folder structure
+      const Patient = (await import('../patient/patientModel.js')).default;
+      const patient = await Patient.findById(patientId);
+      if (!patient) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+      
+      const stats = await supabaseStorage.getPatientStorageStats(patient.name, patient.uuid);
       
       res.json({
         success: true,
@@ -350,8 +392,8 @@ router.get('/health', async (req, res) => {
     const versionCount = await Version.countDocuments();
     const auditCount = await Audit.countDocuments();
     
-    // Test S3 connectivity if enabled
-    const backupStats = await s3BackupService.getBackupStatistics();
+    // Test Supabase connectivity
+    const backupEnabled = supabaseStorage.backupEnabled;
     
     res.json({
       success: true,
@@ -361,7 +403,11 @@ router.get('/health', async (req, res) => {
         versions: versionCount,
         auditLogs: auditCount
       },
-      backup: backupStats,
+      backup: {
+        enabled: backupEnabled,
+        provider: 'supabase',
+        bucket: supabaseStorage.bucketName
+      },
       message: 'Medical records system is healthy'
     });
     

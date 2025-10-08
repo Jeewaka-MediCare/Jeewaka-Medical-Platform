@@ -118,9 +118,11 @@ const data = {
   ],
 };
 
+import useAuthStore from "../store/authStore";
+
 export function AppSidebar({ ...props }) {
-  const loggedInUser = JSON.parse(localStorage.getItem("userData"));
-  console.log(loggedInUser);
+  const { user } = useAuthStore();
+  console.log('AppSidebar - Current user:', user);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -134,7 +136,7 @@ export function AppSidebar({ ...props }) {
         {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={loggedInUser} />
+        <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

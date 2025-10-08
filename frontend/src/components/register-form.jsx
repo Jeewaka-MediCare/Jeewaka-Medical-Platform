@@ -141,13 +141,21 @@ export function SignupForm({ className, ...props }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setErrors({})
 
     const currentForm = userType === "doctor" ? doctorForm : patientForm
     const schema = userType === "doctor" ? doctorSchema : patientSchema
 
+    // Check if gender is selected (required field)
+    if (!currentForm.gender) {
+      setErrors({ gender: "Please select a gender", submit: "Please fill in all required fields." })
+      setIsLoading(false)
+      return
+    }
+
     // Extra password matching check before schema validation
     if (currentForm.password !== currentForm.confirmPassword) {
-      setErrors({ confirmPassword: "Passwords don't match" })
+      setErrors({ confirmPassword: "Passwords don't match", submit: "Passwords don't match." })
       setIsLoading(false)
       return
     }
@@ -159,6 +167,7 @@ export function SignupForm({ className, ...props }) {
       result.error.errors.forEach((err) => {
         fieldErrors[err.path[0]] = err.message
       })
+      fieldErrors.submit = "Please correct the errors below.";
       setErrors(fieldErrors)
       setIsLoading(false)
     } else {
@@ -209,17 +218,38 @@ export function SignupForm({ className, ...props }) {
           console.log("req", req)
 
           const res = await api.post("/api/patient", req);
+          console.log("✅ Patient profile created:", res.data);
         }
 
-        // You can also log them separately if needed
-        console.log("Registering as:", userType)
-        console.log("User data:", JSON.stringify(currentForm, null, 2))
-
-        // Handle successful registration (redirect, etc.)
-        navigate("/")
+        // Success! Profile created in both Firebase and MongoDB
+        console.log("✅ Registration successful!");
+        console.log("User type:", userType);
+        console.log("Firebase UID:", userType === "doctor" ? doctorForm.email : patientForm.email);
+        
+        // Show success message
+        alert(`✅ Registration successful! Your ${userType} account has been created. Please log in.`);
+        
+        // Redirect to login page so they can log in properly and load their profile
+        navigate("/login")
       } catch (error) {
         console.error("Registration failed:", error)
-        // Handle registration error
+        
+        // Show user-friendly error messages
+        let errorMessage = "Registration failed. Please try again.";
+        
+        if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.code === 'auth/email-already-in-use') {
+          errorMessage = "This email is already registered. Please login instead.";
+        } else if (error.code === 'auth/weak-password') {
+          errorMessage = "Password is too weak. Please use a stronger password.";
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = "Invalid email address.";
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        setErrors({ submit: errorMessage });
       } finally {
         setIsLoading(false)
       }
@@ -253,8 +283,15 @@ export function SignupForm({ className, ...props }) {
 
             <TabsContent value="patient" className="mt-6">
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Error Display */}
+                {errors.submit && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-red-800 text-sm">{errors.submit}</p>
+                  </div>
+                )}
+                
                 <div className="grid gap-3">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">Full Name *</Label>
                   <Input
                     id="name"
                     type="text"
@@ -272,7 +309,7 @@ export function SignupForm({ className, ...props }) {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -290,9 +327,13 @@ export function SignupForm({ className, ...props }) {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select onValueChange={(value) => handleSelectChange("gender", value)}>
-                    <SelectTrigger>
+                  <Label htmlFor="gender">Gender *</Label>
+                  <Select 
+                    onValueChange={(value) => handleSelectChange("gender", value)}
+                    required
+                    value={patientForm.gender}
+                  >
+                    <SelectTrigger className={!patientForm.gender ? "border-red-300" : ""}>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                     <SelectContent>
@@ -309,11 +350,12 @@ export function SignupForm({ className, ...props }) {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="dob">Date of Birth</Label>
+                  <Label htmlFor="dob">Date of Birth *</Label>
                   <Input
                     id="dob"
                     type="date"
                     required
+                    max={new Date().toISOString().split('T')[0]}
                     value={patientForm.dob}
                     onChange={handlePatientChange}
                     aria-invalid={errors.dob ? "true" : "false"}
@@ -326,13 +368,14 @@ export function SignupForm({ className, ...props }) {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password * (min. 8 characters)</Label>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Create a password"
                       required
+                      minLength={8}
                       value={patientForm.password}
                       onChange={handlePatientChange}
                       aria-invalid={errors.password ? "true" : "false"}
@@ -354,7 +397,7 @@ export function SignupForm({ className, ...props }) {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword">Confirm Password *</Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
@@ -417,8 +460,15 @@ export function SignupForm({ className, ...props }) {
 
             <TabsContent value="doctor" className="mt-6">
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Error Display */}
+                {errors.submit && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-red-800 text-sm">{errors.submit}</p>
+                  </div>
+                )}
+                
                 <div className="grid gap-3">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">Full Name *</Label>
                   <Input
                     id="name"
                     type="text"
@@ -436,7 +486,7 @@ export function SignupForm({ className, ...props }) {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -454,12 +504,13 @@ export function SignupForm({ className, ...props }) {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">Phone Number * (min. 10 digits)</Label>
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="Enter your phone number"
+                    placeholder="+1234567890"
                     required
+                    minLength={10}
                     value={doctorForm.phone}
                     onChange={handleDoctorChange}
                     aria-invalid={errors.phone ? "true" : "false"}
@@ -472,7 +523,7 @@ export function SignupForm({ className, ...props }) {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="regNo">Medical Registration Number</Label>
+                  <Label htmlFor="regNo">Medical Registration Number *</Label>
                   <Input
                     id="regNo"
                     type="text"
@@ -490,9 +541,13 @@ export function SignupForm({ className, ...props }) {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select onValueChange={(value) => handleSelectChange("gender", value)}>
-                    <SelectTrigger>
+                  <Label htmlFor="gender">Gender *</Label>
+                  <Select 
+                    onValueChange={(value) => handleSelectChange("gender", value)}
+                    required
+                    value={doctorForm.gender}
+                  >
+                    <SelectTrigger className={!doctorForm.gender ? "border-red-300" : ""}>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                     <SelectContent>
@@ -509,11 +564,12 @@ export function SignupForm({ className, ...props }) {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="dob">Date of Birth</Label>
+                  <Label htmlFor="dob">Date of Birth *</Label>
                   <Input
                     id="dob"
                     type="date"
                     required
+                    max={new Date().toISOString().split('T')[0]}
                     value={doctorForm.dob}
                     onChange={handleDoctorChange}
                     aria-invalid={errors.dob ? "true" : "false"}

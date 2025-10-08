@@ -3,7 +3,7 @@ import Version from './versionModel.js';
 import Audit from './auditModel.js';
 import Patient from '../patient/patientModel.js';
 import Doctor from '../doctor/doctorModel.js';
-import s3BackupService from '../../services/s3BackupService.js';
+import supabaseStorage from '../../services/supabaseStorageService.js';
 
 class MedicalRecordsController {
   
@@ -351,12 +351,16 @@ class MedicalRecordsController {
         duration: Date.now() - startTime
       });
       
-      // Trigger S3 backup if content was updated
+      // Trigger Supabase backup if content was updated
       if (newVersion) {
         try {
-          await s3BackupService.backupRecord(record, newVersion, doctorId);
+          // Fetch patient for folder structure
+          const patient = await Patient.findById(record.patientId);
+          if (patient) {
+            await supabaseStorage.backupRecord(record, newVersion, patient, doctorId);
+          }
         } catch (backupError) {
-          console.error('S3 backup failed:', backupError);
+          console.error('Supabase backup failed:', backupError);
           // Don't fail the main operation if backup fails
         }
       }
