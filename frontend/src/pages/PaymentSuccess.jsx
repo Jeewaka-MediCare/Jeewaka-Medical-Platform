@@ -54,6 +54,16 @@ export default function PaymentSuccess() {
 
   const { user, userRole } = useAuthStore();
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
+
   const handleReturnHome = () => {
     // Role-aware return: send logged-in users to their dashboards
     if (user && userRole) {
@@ -141,7 +151,9 @@ export default function PaymentSuccess() {
                           Status: {bookingDetails.payment?.status || bookingDetails.status || 'unknown'}
                         </p>
                         <p>
-                          Time slot: {bookingDetails.slot ? `${bookingDetails.slot.startTime} - ${bookingDetails.slot.endTime}` : `Index ${searchParams.get('slot_index')}`}
+                          Time slot: {bookingDetails.slot && bookingDetails.session?.date 
+                            ? `${formatDate(bookingDetails.session.date)} at ${bookingDetails.slot.startTime} - ${bookingDetails.slot.endTime}` 
+                            : `Index ${searchParams.get('slot_index')}`}
                         </p>
                       </div>
             </div>

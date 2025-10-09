@@ -44,13 +44,23 @@ export function Navbar() {
               </span>
             </Link>
 
-            <div className="hidden md:flex items-center">
+            <div className="hidden md:flex items-center gap-2">
               <Link
                 to="/appointments"
                 className="text-slate-600 hover:text-green-700 hover:bg-green-50/80 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:shadow-sm"
               >
                 <Calendar className="h-4 w-4" />
                 Appointments
+              </Link>
+              
+              <Link
+                to="/medical-records"
+                className="text-slate-600 hover:text-green-700 hover:bg-green-50/80 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:shadow-sm"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Medical Records
               </Link>
             </div>
           </div>
@@ -130,6 +140,18 @@ export function Navbar() {
                     <Link to="/appointments" className="flex items-center p-3">
                       <Calendar className="mr-3 h-4 w-4 text-slate-600" />
                       <span className="text-sm">Appointments</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem
+                    asChild
+                    className="cursor-pointer hover:bg-green-50/80 focus:bg-green-50/80"
+                  >
+                    <Link to="/medical-records" className="flex items-center p-3">
+                      <svg className="mr-3 h-4 w-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span className="text-sm">Medical Records</span>
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

@@ -11,28 +11,61 @@ import {
   aiSearchDoctors,
   getAISearchSuggestions
 } from './doctorControllers.js';
+import { authMiddleware, requireRole } from '../../middleware/authMiddleware.js';
 
 const doctorRoutes = express.Router();
 
-// AI-powered search routes
+// ============================================
+// PUBLIC ROUTES - Doctor Discovery
+// ============================================
+
+// AI-powered search routes (public - for patient search)
 doctorRoutes.get('/ai-search', aiSearchDoctors);
 doctorRoutes.get('/ai-suggestions', getAISearchSuggestions);
 
-// Search doctors with filters
+// Search doctors with filters (public - for patient search)
 doctorRoutes.get('/search', searchDoctors);
-// Get filter options for dropdowns
+
+// Get filter options for dropdowns (public)
 doctorRoutes.get('/filter-options', getFilterOptions);
-// Create a new doctor
-doctorRoutes.post('/', createDoctor);
-// Get all doctors
+
+// Get all doctors (public - doctor directory)
 doctorRoutes.get('/', getDoctors);
-// Get doctor by UUID
+
+// Get doctor by UUID (public - view doctor profile)
 doctorRoutes.get('/uuid/:uuid', getDoctorByUuid);
-// Get doctor by ID
+
+// Get doctor by ID (public - view doctor profile)
 doctorRoutes.get('/:id', getDoctorById);
-// Update doctor
-doctorRoutes.put('/:id', updateDoctor);
-// Delete doctor
-doctorRoutes.delete('/:id', deleteDoctor);
+
+// ============================================
+// PUBLIC ROUTES - Doctor Registration
+// ============================================
+
+// Create a new doctor profile (during registration - no auth required yet)
+doctorRoutes.post('/', createDoctor);
+
+// ============================================
+// DOCTOR ONLY ROUTES - Profile Management
+// ============================================
+
+// Update doctor profile (doctors can update their own profile)
+// TODO: Add controller logic to verify doctor can only update their own profile
+doctorRoutes.put('/:id', 
+  authMiddleware, 
+  requireRole(['doctor', 'admin']), // Doctors update own profile, admins can update any
+  updateDoctor
+);
+
+// ============================================
+// ADMIN ONLY ROUTES
+// ============================================
+
+// Delete doctor (admin only - account removal)
+doctorRoutes.delete('/:id', 
+  authMiddleware, 
+  requireRole(['admin']), 
+  deleteDoctor
+);
 
 export default doctorRoutes;

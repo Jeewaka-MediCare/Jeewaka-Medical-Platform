@@ -13,47 +13,92 @@ import {
   bookAppointment,
   getSessionByDoctorId,
 } from "./sessionController.js";
+import { authMiddleware, requireRole, optionalAuthMiddleware } from "../../middleware/authMiddleware.js";
 
 const sessionRouter = express.Router();
 
-// Create a new session
-sessionRouter.post("/", createSession);
+// ============================================
+// PUBLIC ROUTES (with optional auth for enhanced features)
+// ============================================
 
-// Get all sessions
-sessionRouter.get("/", getSessions);
-// Get a  sessions by doctor id
-sessionRouter.get("/doctor/:doctorId", getSessionByDoctorId);
+// Get all sessions (public - for browsing available appointments)
+sessionRouter.get("/", optionalAuthMiddleware, getSessions);
 
-// Get a single session by ID
-sessionRouter.get("/:sessionId", getSessionById);
+// Get sessions by doctor ID (public - view doctor's availability)
+sessionRouter.get("/doctor/:doctorId", optionalAuthMiddleware, getSessionByDoctorId);
 
-// Update a session
-sessionRouter.patch("/:sessionId", updateSession);
+// Get single session by ID (public - view session details before booking)
+sessionRouter.get("/:sessionId", optionalAuthMiddleware, getSessionById);
 
-// ------------------------new----------------------------
-// Update session meeting ID
-sessionRouter.patch("/:sessionId/meeting-id", updateSessionMeetingId);
+// ============================================
+// AUTHENTICATED ROUTES - Patient Actions
+// ============================================
 
-// Update appointment (timeSlot) meeting ID
+// Book an appointment (requires authentication)
+sessionRouter.post("/:sessionId/book", 
+  authMiddleware, 
+  bookAppointment
+);
+
+// ============================================
+// DOCTOR ONLY ROUTES - Session Management
+// ============================================
+
+// Create a new session (doctors only)
+sessionRouter.post("/", 
+  authMiddleware, 
+  requireRole(['doctor']), 
+  createSession
+);
+
+// Update a session (doctors only - should only update own sessions)
+sessionRouter.patch("/:sessionId", 
+  authMiddleware, 
+  requireRole(['doctor']), 
+  updateSession
+);
+
+// Update session meeting ID (doctors only)
+sessionRouter.patch("/:sessionId/meeting-id", 
+  authMiddleware, 
+  requireRole(['doctor']), 
+  updateSessionMeetingId
+);
+
+// Update appointment meeting ID (doctors only)
 sessionRouter.patch(
   "/:sessionId/appointment/:slotIndex/meeting-id",
+  authMiddleware, 
+  requireRole(['doctor']), 
   updateAppointmentMeetingId
 );
-// -------------------------------------------------------
 
-// Delete a session
-sessionRouter.delete("/:sessionId", deleteSession);
+// Delete a session (doctors only)
+sessionRouter.delete("/:sessionId", 
+  authMiddleware, 
+  requireRole(['doctor']), 
+  deleteSession
+);
 
-// Add a time slot to a session
-sessionRouter.post("/:sessionId/timeslot", addTimeSlot);
+// Add a time slot to a session (doctors only)
+sessionRouter.post("/:sessionId/timeslot", 
+  authMiddleware, 
+  requireRole(['doctor']), 
+  addTimeSlot
+);
 
-// Update a time slot in a session
-sessionRouter.put("/:sessionId/timeslot/:slotIndex", updateTimeSlot);
+// Update a time slot in a session (doctors only)
+sessionRouter.put("/:sessionId/timeslot/:slotIndex", 
+  authMiddleware, 
+  requireRole(['doctor']), 
+  updateTimeSlot
+);
 
-// Delete a time slot from a session
-sessionRouter.delete("/:sessionId/timeslot/:slotIndex", deleteTimeSlot);
-
-// Book an appointment with payment verification
-sessionRouter.post("/:sessionId/book", bookAppointment);
+// Delete a time slot from a session (doctors only)
+sessionRouter.delete("/:sessionId/timeslot/:slotIndex", 
+  authMiddleware, 
+  requireRole(['doctor']), 
+  deleteTimeSlot
+);
 
 export default sessionRouter;
