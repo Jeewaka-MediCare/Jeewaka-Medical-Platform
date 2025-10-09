@@ -9,6 +9,7 @@ import useAuthStore from '../../store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { debugNetworkInfo } from '../../services/networkTest';
 import UserDropdown from '../../components/UserSidebar';
+import DoctorDashboard from '../../components/DoctorDashboard';
 
 export default function Home() {
   const { user, userRole, loading: authLoading, logout } = useAuthStore();
@@ -154,37 +155,42 @@ export default function Home() {
         }}
       />
       
-      <View style={styles.content}>
-        <EnhancedSearchFilters 
-          onSearch={handleSearch} 
-          onAISearch={handleAISearch}
-        />
-        
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>
-            {searchType === 'ai' ? 'AI Search Results' : 'Find Doctors'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {searchType === 'ai' 
-              ? 'Results based on your symptoms and needs' 
-              : 'Book appointments with top specialists'
+      {/* Show Doctor Dashboard for doctors, Patient view for others */}
+      {userRole === 'doctor' ? (
+        <DoctorDashboard />
+      ) : (
+        <View style={styles.content}>
+          <EnhancedSearchFilters 
+            onSearch={handleSearch} 
+            onAISearch={handleAISearch}
+          />
+          
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>
+              {searchType === 'ai' ? 'AI Search Results' : 'Find Doctors'}
+            </Text>
+            <Text style={styles.subtitle}>
+              {searchType === 'ai' 
+                ? 'Results based on your symptoms and needs' 
+                : 'Book appointments with top specialists'
+              }
+            </Text>
+          </View>
+          
+          <DoctorList 
+            doctors={doctors} 
+            loading={loading} 
+            error={error} 
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#2563EB']}
+              />
             }
-          </Text>
+          />
         </View>
-        
-        <DoctorList 
-          doctors={doctors} 
-          loading={loading} 
-          error={error} 
-          refreshControl={
-            <RefreshControl 
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#2563EB']}
-            />
-          }
-        />
-      </View>
+      )}
       
       <UserDropdown
         visible={sidebarVisible}

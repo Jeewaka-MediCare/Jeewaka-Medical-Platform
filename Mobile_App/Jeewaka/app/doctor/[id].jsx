@@ -17,7 +17,7 @@ import useAuthStore from '../../store/authStore';
 import { format, parseISO, isSameDay, parse } from 'date-fns';
 
 export default function DoctorDetails() {
-  const { id, doctorData } = useLocalSearchParams();
+  const { id, doctorData, selectedTab: initialTab } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
   
@@ -25,7 +25,7 @@ export default function DoctorDetails() {
   const [ratingSummary, setRatingSummary] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState('about');
+  const [selectedTab, setSelectedTab] = useState(initialTab || 'about');
   const [showPastSessions, setShowPastSessions] = useState(false);
 
   // Parse fallback data if available
