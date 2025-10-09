@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { debugNetworkInfo } from '../../services/networkTest';
 import UserDropdown from '../../components/UserSidebar';
 import DoctorDashboard from '../../components/DoctorDashboard';
+import LandingPage from '../../components/LandingPage';
 
 export default function Home() {
   const { user, userRole, loading: authLoading, logout } = useAuthStore();
@@ -91,11 +92,15 @@ export default function Home() {
     }
   };
 
-  // Load doctors on component mount
+  // Load doctors on component mount - ONLY for patients
   useEffect(() => {
     debugNetworkInfo(); // Debug network configuration
-    fetchDoctors();
-  }, []);
+    
+    // Only fetch doctors if user is a patient (not doctor, not logged out)
+    if (user && userRole === 'patient') {
+      fetchDoctors();
+    }
+  }, [user, userRole]); // Add user as dependency to handle login/logout
 
   // Handle filter search
   const handleSearch = (newFilters) => {
@@ -155,10 +160,15 @@ export default function Home() {
         }}
       />
       
-      {/* Show Doctor Dashboard for doctors, Patient view for others */}
-      {userRole === 'doctor' ? (
+      {/* Conditional rendering based on user authentication and role */}
+      {!user ? (
+        // User is logged out - show landing page
+        <LandingPage />
+      ) : userRole === 'doctor' ? (
+        // User is a doctor - show doctor dashboard
         <DoctorDashboard />
       ) : (
+        // User is a patient - show doctor list
         <View style={styles.content}>
           <EnhancedSearchFilters 
             onSearch={handleSearch} 
