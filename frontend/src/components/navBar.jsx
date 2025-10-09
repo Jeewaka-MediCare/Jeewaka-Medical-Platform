@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, LogOut, User, Stethoscope, Menu } from "lucide-react";
+import { Calendar, LogOut, User, Stethoscope, Menu, CreditCard } from "lucide-react";
 import useAuthStore from "../store/authStore";
 
 export function Navbar() {
@@ -51,6 +51,14 @@ export function Navbar() {
               >
                 <Calendar className="h-4 w-4" />
                 Appointments
+              </Link>
+              
+              <Link
+                to="/payments"
+                className="text-slate-600 hover:text-green-700 hover:bg-green-50/80 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:shadow-sm"
+              >
+                <CreditCard className="h-4 w-4" />
+                Payments
               </Link>
               
               <Link
@@ -140,6 +148,16 @@ export function Navbar() {
                     <Link to="/appointments" className="flex items-center p-3">
                       <Calendar className="mr-3 h-4 w-4 text-slate-600" />
                       <span className="text-sm">Appointments</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem
+                    asChild
+                    className="cursor-pointer hover:bg-green-50/80 focus:bg-green-50/80"
+                  >
+                    <Link to="/payments" className="flex items-center p-3">
+                      <CreditCard className="mr-3 h-4 w-4 text-slate-600" />
+                      <span className="text-sm">Payments</span>
                     </Link>
                   </DropdownMenuItem>
                   

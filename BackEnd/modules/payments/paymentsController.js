@@ -286,3 +286,290 @@ const handlePaymentFailure = async (paymentIntent) => {
     console.error('Error processing payment failure:', error);
   }
 };
+
+// Get payment history for authenticated user
+export const getPaymentHistory = async (req, res) => {
+  try {
+    console.log('🔐 PaymentController - getPaymentHistory called');
+    console.log('🔐 PaymentController - Authenticated user:', req.user?.uid);
+
+    if (!req.user || !req.user.uid) {
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'You must be logged in to view payment history' 
+      });
+    }
+
+    // Get query parameters for filtering
+    const { 
+      status, 
+      search,
+      startDate, 
+      endDate, 
+      limit = 50, 
+      offset = 0 
+    } = req.query;
+
+    console.log('🔐 PaymentController - Query filters:', { status, search, startDate, endDate, limit, offset });
+
+    // Find patient by Firebase UID
+    const patient = await Patient.findOne({ uuid: req.user.uid });
+    if (!patient) {
+      return res.status(404).json({ 
+        error: 'Patient profile not found',
+        message: 'Please complete your profile setup' 
+      });
+    }
+
+    console.log('🔐 PaymentController - Patient found:', {
+      mongoId: patient._id,
+      firebaseUid: patient.uuid,
+      name: patient.name
+    });
+
+    // Convert patient._id to ObjectId for proper comparison
+    const patientObjectId = new mongoose.Types.ObjectId(patient._id);
+    console.log('🔐 PaymentController - Patient ObjectId:', patientObjectId.toString());
+
+    // Import Session and Doctor models
+    const { default: Session } = await import('../session/sessionModel.js');
+    const { default: Doctor } = await import('../doctor/doctorModel.js');
+
+    // Find all sessions with payments for this patient
+    const matchConditions = {
+      timeSlots: {
+        $elemMatch: {
+          patientId: patientObjectId,
+          paymentIntentId: { $exists: true, $ne: null }
+        }
+      }
+    };
+
+    console.log('🔐 PaymentController - Match conditions:', JSON.stringify(matchConditions, null, 2));
+
+    const sessionsWithPayments = await Session.find(matchConditions)
+      .populate('doctorId')
+      .lean();
+
+    console.log('🔐 PaymentController - Found sessions with payments:', sessionsWithPayments.length);
+
+    // Debug: Check all sessions for this patient (without payment filter)
+    const allPatientSessions = await Session.find({
+      'timeSlots.patientId': patientObjectId
+    }).lean();
+    console.log('🔐 PaymentController - All sessions for patient:', allPatientSessions.length);
+
+    // Debug: Check specific session by ID
+    const specificSession = await Session.findById('68e740748661cfaae2e456d5').lean();
+    console.log('🔐 PaymentController - Specific session found:', !!specificSession);
+    if (specificSession) {
+      console.log('🔐 PaymentController - Session timeSlots:', specificSession.timeSlots.length);
+      specificSession.timeSlots.forEach((slot, idx) => {
+        if (slot.patientId) {
+          console.log(`🔐 PaymentController - Slot ${idx}: patientId=${slot.patientId}, paymentIntentId=${slot.paymentIntentId}`);
+        }
+      });
+    }
+
+    // Extract payment info from all sessions
+    const allPayments = [];
+    
+    for (const session of sessionsWithPayments) {
+      session.timeSlots.forEach((slot, index) => {
+        if (slot.patientId && slot.paymentIntentId && 
+            slot.patientId.toString() === patientObjectId.toString()) {
+          
+          const payment = {
+            id: slot.paymentIntentId,
+            amount: (slot.paymentAmount || 0) * 100, // Convert to cents for frontend
+            currency: slot.paymentCurrency || 'lkr',
+            status: 'succeeded', // Since it's in DB, payment was successful
+            date: slot.paymentDate,
+            created: slot.paymentDate,
+            description: `Medical consultation - ${slot.startTime} to ${slot.endTime}`,
+            doctorName: session.doctorId?.name || 'Unknown Doctor',
+            doctorSpecialization: session.doctorId?.specialization || 'General',
+            appointmentDate: session.date,
+            appointmentTime: `${slot.startTime} - ${slot.endTime}`,
+            appointmentStatus: slot.appointmentStatus || 'confirmed',
+            doctor: {
+              name: session.doctorId?.name || 'Unknown Doctor',
+              specialization: session.doctorId?.specialization || 'General'
+            },
+            appointment: {
+              date: session.date,
+              time: `${slot.startTime} - ${slot.endTime}`,
+              status: slot.appointmentStatus || 'confirmed'
+            },
+            sessionId: session._id,
+            slotIndex: index
+          };
+
+          allPayments.push(payment);
+        }
+      });
+    }
+
+    console.log('🔐 PaymentController - All payments extracted:', allPayments.length);
+
+    // Apply search filter if provided
+    let filteredPayments = allPayments;
+    
+    if (search && search.trim()) {
+      const searchLower = search.toLowerCase().trim();
+      console.log('🔐 PaymentController - Applying search filter:', searchLower);
+      
+      filteredPayments = allPayments.filter(payment => {
+        const doctorMatch = payment.doctorName?.toLowerCase().includes(searchLower);
+        const paymentIdMatch = payment.id?.toLowerCase().includes(searchLower);
+        const amountMatch = (payment.amount / 100).toString().includes(searchLower);
+        const statusMatch = payment.status?.toLowerCase().includes(searchLower);
+        
+        return doctorMatch || paymentIdMatch || amountMatch || statusMatch;
+      });
+      
+      console.log('🔐 PaymentController - Search filtered payments:', filteredPayments.length);
+    }
+
+    // Apply status filter if provided
+    if (status && status !== 'all') {
+      filteredPayments = filteredPayments.filter(payment => 
+        payment.status?.toLowerCase() === status.toLowerCase()
+      );
+      console.log('🔐 PaymentController - Status filtered payments:', filteredPayments.length);
+    }
+
+    // Apply date filters if provided
+    if (startDate || endDate) {
+      filteredPayments = filteredPayments.filter(payment => {
+        const paymentDate = new Date(payment.date);
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+        
+        if (start && paymentDate < start) return false;
+        if (end && paymentDate > end) return false;
+        return true;
+      });
+      console.log('🔐 PaymentController - Date filtered payments:', filteredPayments.length);
+    }
+
+    // Apply pagination
+    const startIndex = parseInt(offset);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedPayments = filteredPayments.slice(startIndex, endIndex);
+
+    console.log('🔐 PaymentController - Returning payments:', paginatedPayments.length);
+
+    res.json({
+      success: true,
+      payments: paginatedPayments,
+      total: filteredPayments.length,
+      filters: {
+        search,
+        status,
+        startDate,
+        endDate,
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }
+    });
+
+  } catch (error) {
+    console.error('🔐 PaymentController - Error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch payment history',
+      message: error.message 
+    });
+  }
+};
+
+// Get specific payment details
+export const getPaymentDetails = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    console.log('🔐 PaymentController - getPaymentDetails called for:', paymentId);
+    console.log('🔐 PaymentController - Authenticated user:', req.user?.uid);
+
+    if (!req.user || !req.user.uid) {
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'You must be logged in to view payment details' 
+      });
+    }
+
+    // Find patient by Firebase UID
+    const patient = await Patient.findOne({ uuid: req.user.uid });
+    if (!patient) {
+      return res.status(404).json({ 
+        error: 'Patient profile not found',
+        message: 'Please complete your profile setup' 
+      });
+    }
+
+    // Import Session model
+    const { default: Session } = await import('../session/sessionModel.js');
+
+    // Find the session and slot with this payment ID
+    const session = await Session.findOne({
+      'timeSlots.paymentIntentId': paymentId,
+      'timeSlots.patientId': patient._id
+    }).populate('doctorId').lean();
+
+    if (!session) {
+      return res.status(404).json({
+        error: 'Payment not found',
+        message: 'This payment does not exist or does not belong to you'
+      });
+    }
+
+    // Find the specific slot
+    const slot = session.timeSlots.find(slot => 
+      slot.paymentIntentId === paymentId && 
+      slot.patientId.toString() === patient._id.toString()
+    );
+
+    if (!slot) {
+      return res.status(404).json({
+        error: 'Payment slot not found'
+      });
+    }
+
+    const paymentDetails = {
+      id: slot.paymentIntentId,
+      amount: (slot.paymentAmount || 0) * 100,
+      currency: slot.paymentCurrency || 'lkr',
+      status: 'succeeded',
+      date: slot.paymentDate,
+      created: slot.paymentDate,
+      description: `Medical consultation - ${slot.startTime} to ${slot.endTime}`,
+      doctorName: session.doctorId?.name || 'Unknown Doctor',
+      doctorSpecialization: session.doctorId?.specialization || 'General',
+      appointmentDate: session.date,
+      appointmentTime: `${slot.startTime} - ${slot.endTime}`,
+      appointmentStatus: slot.appointmentStatus || 'confirmed',
+      doctor: {
+        name: session.doctorId?.name || 'Unknown Doctor',
+        specialization: session.doctorId?.specialization || 'General'
+      },
+      appointment: {
+        date: session.date,
+        time: `${slot.startTime} - ${slot.endTime}`,
+        status: slot.appointmentStatus || 'confirmed'
+      },
+      sessionId: session._id,
+      slotIndex: session.timeSlots.indexOf(slot)
+    };
+
+    res.json({
+      success: true,
+      payment: paymentDetails
+    });
+
+  } catch (error) {
+    console.error('🔐 PaymentController - Error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch payment details',
+      message: error.message 
+    });
+  }
+};

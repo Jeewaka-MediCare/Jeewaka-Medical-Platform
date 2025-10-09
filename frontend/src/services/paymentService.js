@@ -78,6 +78,44 @@ export const paymentService = {
     }
   },
 
+  // Get payment history for authenticated user
+  getPaymentHistory: async (filters = {}) => {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add filters to query params
+      if (filters.status) queryParams.append('status', filters.status);
+      if (filters.search) queryParams.append('search', filters.search);
+      if (filters.startDate) queryParams.append('startDate', filters.startDate);
+      if (filters.endDate) queryParams.append('endDate', filters.endDate);
+      if (filters.limit) queryParams.append('limit', filters.limit);
+      if (filters.offset) queryParams.append('offset', filters.offset);
+
+      const url = `/api/payments/history${queryParams.toString() ? `?${queryParams}` : ''}`;
+      console.log('💳 PaymentService - Fetching payment history:', url);
+      
+      const response = await api.get(url);
+      console.log('💳 PaymentService - Payment history retrieved:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('💳 PaymentService - Error fetching payment history:', error);
+      throw error;
+    }
+  },
+
+  // Get specific payment details
+  getPaymentDetails: async (paymentId) => {
+    try {
+      console.log('💳 PaymentService - Fetching payment details for:', paymentId);
+      const response = await api.get(`/api/payments/${paymentId}`);
+      console.log('💳 PaymentService - Payment details retrieved:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('💳 PaymentService - Error fetching payment details:', error);
+      throw error;
+    }
+  },
+
   // Handle successful payment return
   handlePaymentSuccess: async (sessionId, paymentIntentId, slotIndex, patientId) => {
     // Booking can race with Stripe webhook processing. Retry a few times for transient states

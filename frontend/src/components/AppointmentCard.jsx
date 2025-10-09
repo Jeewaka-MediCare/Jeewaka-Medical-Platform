@@ -9,7 +9,6 @@ import MedicalRecordsModal from "./MedicalRecordsModal"
 import useAuthStore from "../store/authStore"
 
 export default function AppointmentCard({ appointment }) {
-  console.log("Appointment Data:", appointment)
   const { userRole } = useAuthStore()
   const isDoctor = userRole === 'doctor'
   const [isMedicalRecordsOpen, setIsMedicalRecordsOpen] = useState(false)

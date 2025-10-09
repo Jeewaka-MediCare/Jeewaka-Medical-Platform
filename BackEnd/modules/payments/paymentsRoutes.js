@@ -1,5 +1,10 @@
 import express from 'express';
-import { createPaymentIntent, handleWebhook } from './paymentsController.js';
+import { 
+  createPaymentIntent, 
+  handleWebhook, 
+  getPaymentHistory, 
+  getPaymentDetails 
+} from './paymentsController.js';
 import { authMiddleware } from '../../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -13,6 +18,18 @@ const router = express.Router();
 router.post('/create-intent', 
   authMiddleware, 
   createPaymentIntent
+);
+
+// Get payment history for authenticated user
+router.get('/history', 
+  authMiddleware, 
+  getPaymentHistory
+);
+
+// Get specific payment details (must come before /:paymentId to avoid conflicts)
+router.get('/:paymentId', 
+  authMiddleware, 
+  getPaymentDetails
 );
 
 // ============================================
