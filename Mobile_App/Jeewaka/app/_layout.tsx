@@ -45,11 +45,24 @@ export default function RootLayout() {
         );
       }
 
-      // Initialize auth
-      initializeAuth();
+      // Initialize auth - this now sets up Firebase auth listener
+      const unsubscribe = await initializeAuth();
+      
+      // Return cleanup function
+      return unsubscribe;
     };
 
-    initializeApp();
+    let cleanup: (() => void) | undefined;
+    initializeApp().then((unsubscribe) => {
+      cleanup = unsubscribe;
+    });
+
+    // Cleanup function
+    return () => {
+      if (cleanup && typeof cleanup === 'function') {
+        cleanup();
+      }
+    };
   }, []);
 
   if (!loaded) {

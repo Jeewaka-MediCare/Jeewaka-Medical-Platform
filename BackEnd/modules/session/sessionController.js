@@ -82,22 +82,77 @@ export const getSessions = async (req, res) => {
 // Get a single session by ID
 export const getSessionById = async (req, res) => {
   try {
-    const session = await Session.findById(req.params.sessionId);
+    const session = await Session.findById(req.params.sessionId).populate(
+      "hospital"
+    ); //new
     if (!session) return res.status(404).json({ error: "Session not found" });
+
+    // If user is authenticated and is a doctor, populate patient information in time slots      //new
+    if (req.user && req.user.role === "doctor") {
+      // Find the doctor by Firebase UID to get their MongoDB _id
+      const doctor = await Doctor.findOne({ uuid: req.user.uid });
+
+      if (doctor) {
+        // Additional security: Only populate patient data if doctor owns this session or is admin
+        const isDoctorOwner =
+          session.doctorId.toString() === doctor._id.toString();
+        const isAdmin = req.user.role === "admin";
+
+        if (isDoctorOwner || isAdmin) {
+          // Get all patient IDs from booked slots
+          const patientIds = session.timeSlots
+            .filter((slot) => slot.patientId && slot.status !== "available")
+            .map((slot) => slot.patientId);
+
+          // Fetch patient details for all unique patient IDs
+          const patients =
+            patientIds.length > 0
+              ? await Patient.find({ _id: { $in: patientIds } }).select(
+                  "name email phone uuid"
+                )
+              : [];
+
+          // Create a map for quick lookup
+          const patientsMap = new Map();
+          patients.forEach((patient) => {
+            patientsMap.set(patient._id.toString(), patient);
+          });
+
+          // Add patient information to time slots
+          const enhancedTimeSlots = session.timeSlots.map((slot) => ({
+            ...slot.toObject(),
+            patient: slot.patientId
+              ? patientsMap.get(slot.patientId.toString()) || null
+              : null,
+          }));
+
+          const sessionWithPatients = {
+            ...session.toObject(),
+            timeSlots: enhancedTimeSlots,
+          };
+
+          return res.json(sessionWithPatients);
+        }
+      }
+    }
+
+    // For non-authenticated users, non-doctors, or doctors who don't own this session
+    // Return session without patient details but with hospital information       //new
     res.json(session);
   } catch (err) {
+    console.error("Error fetching session:", err); //new
     res.status(400).json({ error: err.message });
   }
 };
 
-export const getSessionByDoctorId  = async (req, res) => {
+export const getSessionByDoctorId = async (req, res) => {
   try {
     const sessions = await Session.find({ doctorId: req.params.doctorId });
     res.json(sessions);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
-}
+};
 
 // Update a session
 export const updateSession = async (req, res) => {
@@ -231,10 +286,10 @@ export const bookAppointment = async (req, res) => {
   try {
     const { sessionId } = req.params;
     const { slotIndex, paymentIntentId } = req.body;
-    
+
     // Get patientId from authenticated user (req.user set by authMiddleware)
     const firebaseUid = req.user?.uid;
-    
+
     if (!firebaseUid) {
       console.error("bookAppointment - No authenticated user");
       return res.status(401).json({ error: "Authentication required" });
@@ -277,23 +332,28 @@ export const bookAppointment = async (req, res) => {
     const slotIdx = parseInt(slotIndex, 10);
 
     // Look up patient by Firebase UID
-    console.log("bookAppointment - Looking up patient by Firebase UID", { firebaseUid });
+    console.log("bookAppointment - Looking up patient by Firebase UID", {
+      firebaseUid,
+    });
     const patient = await Patient.findOne({ uuid: firebaseUid });
-    
+
     if (!patient) {
-      console.error("bookAppointment - No patient found for Firebase UID", { firebaseUid });
-      return res.status(404).json({ 
+      console.error("bookAppointment - No patient found for Firebase UID", {
+        firebaseUid,
+      });
+      return res.status(404).json({
         error: "Patient profile not found",
-        message: "Your account is not properly set up. Please complete your profile or contact support."
+        message:
+          "Your account is not properly set up. Please complete your profile or contact support.",
       });
     }
-    
+
     const resolvedPatientId = patient._id;
     console.log("bookAppointment - Patient resolved", {
       firebaseUid,
       patientMongoId: resolvedPatientId.toString(),
       patientName: patient.name,
-      patientEmail: patient.email
+      patientEmail: patient.email,
     });
 
     // Verify payment status with Stripe (handle Stripe errors explicitly)

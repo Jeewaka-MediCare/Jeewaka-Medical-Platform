@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import api from '../services/api';
+import { apiHelpers } from '../services/apiHelpers';
 import useAuthStore from '../store/authStore';
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
@@ -53,27 +53,32 @@ export default function Login() {
       const user = userCredential.user;
       const uid = user.uid;
       
-      // Get Firebase custom claims (role)
-      const idTokenResult = await user.getIdTokenResult();
-      const role = idTokenResult.claims.role;
+      // Get Firebase custom claims (role) - wait for token refresh if needed
+      let idTokenResult = await user.getIdTokenResult();
+      let role = idTokenResult.claims.role;
+      
+      // If role is not set, wait a moment and try again (Firebase claims might be delayed)
+      if (!role) {
+        console.log('Role not found in claims, refreshing token...');
+        await user.getIdToken(true); // Force token refresh
+        idTokenResult = await user.getIdTokenResult();
+        role = idTokenResult.claims.role;
+      }
       
       console.log('User UID:', uid);
       console.log('User role:', role);
       
-      let res;
-      if (role === 'doctor') {
-        res = await api.get(`/api/doctor/uuid/${uid}`);
-      } else if (role === 'patient') {
-        res = await api.get(`/api/patient/uuid/${uid}`);
-      } else if (role === 'admin') {
-        res = await api.get(`/api/admin/uuid/${uid}`);
-      } else {
-        throw new Error('Invalid user role or role not set');
+      if (!role) {
+        throw new Error('User role not found. Please contact support.');
       }
       
+      // Get user profile data using the new API helper
+      const userData = await apiHelpers.getUserProfile(role, uid);
+      
       // Set user data and role
-      if (res && res.data) {
-        setUser({ ...res.data, role });
+      if (userData) {
+        const userWithRole = { ...userData, role };
+        setUser(userWithRole);
         setUserRole(role);
         
         // Navigate based on user role
@@ -89,6 +94,7 @@ export default function Login() {
         throw new Error('Failed to retrieve user data');
       }
     } catch (error) {
+      console.error('Login error:', error);
       Alert.alert(
         'Login Failed',
         error.message || 'Failed to log in. Please try again.'

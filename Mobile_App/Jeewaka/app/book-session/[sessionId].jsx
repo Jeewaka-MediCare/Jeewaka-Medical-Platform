@@ -93,6 +93,7 @@ export default function BookSession() {
           doctorName: doctorName,
           sessionData: JSON.stringify(session),
           amount: consultationFee,
+          // Note: Backend gets patient from Firebase UID in JWT token, not this parameter
           patientId: user._id || user.uid || user.id
         }
       });

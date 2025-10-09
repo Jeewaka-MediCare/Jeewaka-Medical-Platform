@@ -41,47 +41,24 @@ export default function SessionAppointments() {
         return;
       }
 
+      console.log('Session data received:', data);
+      console.log('Hospital info:', data.hospital);
+      console.log('Session type:', data.type);
+
       setSessionInfo(data);
       
-      // Get all patient IDs from booked slots
-      const patientIds = new Set();
-      (data.timeSlots || []).forEach(slot => {
-        if (slot.patientId && slot.status !== 'available') {
-          patientIds.add(slot.patientId);
-        }
-      });
-
-      // Fetch patient details for all unique patient IDs
-      const patientsMap = new Map();
-      if (patientIds.size > 0) {
-        try {
-          // Fetch all patients
-          const patientsResponse = await api.get('/api/patient');
-          const allPatients = patientsResponse.data || [];
-          
-          // Create a map of patient ID to patient data
-          allPatients.forEach(patient => {
-            if (patientIds.has(patient._id)) {
-              patientsMap.set(patient._id, patient);
-            }
-          });
-        } catch (error) {
-          console.error('Error fetching patient details:', error);
-        }
-      }
-
-      // Prepare time slots with patient information
-      const slotsWithPatients = (data.timeSlots || []).map((slot, index) => ({
+      // Backend now includes patient information in timeSlots when accessed by authenticated doctor
+      // No need to make separate API call to get all patients
+      const slotsWithInfo = (data.timeSlots || []).map((slot, index) => ({
         ...slot,
         slotIndex: index,
         sessionDate: data.date,
         sessionType: data.type,
         hospital: data.hospital,
-        patient: slot.patientId ? patientsMap.get(slot.patientId) || null : null,
         isBooked: slot.patientId && slot.status !== 'available'
       }));
 
-      setTimeSlots(slotsWithPatients);
+      setTimeSlots(slotsWithInfo);
     } catch (error) {
       console.error('Error fetching session data:', error);
       Alert.alert('Error', 'Failed to load session data');
@@ -314,7 +291,7 @@ export default function SessionAppointments() {
         <View style={styles.sessionSummary}>
           <Text style={styles.sessionSummaryTitle}>
             {sessionInfo.type === 'in-person' 
-              ? (sessionInfo.hospital?.name || 'Hospital Session') 
+              ? `Hospital Session${sessionInfo.hospital?.name ? ` - ${sessionInfo.hospital.name}` : ''}`
               : 'Video Consultation Session'
             }
           </Text>

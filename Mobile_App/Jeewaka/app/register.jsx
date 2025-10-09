@@ -13,6 +13,7 @@ import {
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import api from '../services/api';
+import { getErrorMessage } from '../services/errorHandler';
 import useAuthStore from '../store/authStore';
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
@@ -119,12 +120,9 @@ export default function Register() {
       });
       
       // Set user role in Firebase custom claims using auth endpoint
-      const token = await userCredential.user.getIdToken();
       await api.post('/api/auth/role', {
         uid: userCredential.user.uid,
         role: 'patient'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       
       // Set user data and role in app state
@@ -142,9 +140,10 @@ export default function Register() {
       router.replace('/(tabs)');
       
     } catch (error) {
+      console.error('Patient registration error:', error);
       Alert.alert(
         'Registration Failed',
-        error.response?.data?.error || error.message || 'Failed to register. Please try again.'
+        getErrorMessage(error, 'Failed to register patient. Please try again.')
       );
     } finally {
       setLoading(false);
@@ -177,12 +176,9 @@ export default function Register() {
       });
       
       // Set user role in Firebase custom claims using auth endpoint
-      const token = await userCredential.user.getIdToken();
       await api.post('/api/auth/role', {
         uid: userCredential.user.uid,
         role: 'doctor'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       
       // Set user data and role in app state
@@ -201,9 +197,10 @@ export default function Register() {
       router.replace('/(tabs)/appointments');
       
     } catch (error) {
+      console.error('Doctor registration error:', error);
       Alert.alert(
         'Registration Failed',
-        error.response?.data?.error || error.message || 'Failed to register. Please try again.'
+        getErrorMessage(error, 'Failed to register doctor. Please try again.')
       );
     } finally {
       setLoading(false);

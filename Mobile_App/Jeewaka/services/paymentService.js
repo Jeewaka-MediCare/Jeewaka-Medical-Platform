@@ -1,13 +1,21 @@
 import api from "./api";
+import { auth } from "../config/firebase";
 
 export const paymentService = {
-  // Create payment intent using existing backend API
+  // Create payment intent using new backend API with authentication
   createPaymentIntent: async (paymentData) => {
     try {
+      // Ensure user is authenticated
+      if (!auth.currentUser) {
+        throw new Error('Authentication required for payment processing');
+      }
+
       console.log(
         "Mobile PaymentService - Creating payment intent:",
         paymentData
       );
+      
+      // The API interceptor will automatically add the Authorization header
       const response = await api.post(
         "/api/payments/create-intent",
         paymentData
@@ -23,64 +31,60 @@ export const paymentService = {
     }
   },
 
-  // Book appointment after payment using existing backend API
-  bookAppointment: async (sessionId, bookingData) => {
-    try {
-      console.log("Mobile PaymentService - Booking appointment:", {
-        sessionId,
-        bookingData,
-      });
-      const response = await api.post(
-        `/api/session/${sessionId}/book`,
-        bookingData
-      );
-      return response.data;
-    } catch (error) {
-      console.error(
-        "Mobile PaymentService - Error booking appointment:",
-        error
-      );
-      throw error;
-    }
-  },
-
-  // Handle successful payment confirmation with retry logic (similar to web)
+  // Handle successful payment confirmation with manual booking fallback
   handlePaymentSuccess: async (
     sessionId,
     paymentIntentId,
     slotIndex,
-    patientId
+    patientId // NOTE: Backend doesn't use this, gets patient from Firebase UID in JWT token
   ) => {
-    console.log("Mobile PaymentService - Handling payment success:", {
+    console.log("Mobile PaymentService - Payment successful, attempting manual booking:", {
       sessionId,
       paymentIntentId,
       slotIndex,
       patientId,
     });
 
+    // Wait a bit for webhook processing (same as frontend)
+    console.log("Mobile PaymentService - Waiting 2 seconds for webhook processing...");
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Use the same retry logic as the frontend for manual booking
     const bookingData = {
       slotIndex: parseInt(slotIndex, 10),
-      patientId: patientId,
       paymentIntentId: paymentIntentId,
     };
+
+    console.log("Mobile PaymentService - Prepared booking data:", bookingData);
 
     const maxAttempts = 5;
     const delayMs = 1000; // 1 second between attempts
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        const result = await paymentService.bookAppointment(
+        console.log(`Mobile PaymentService - Booking attempt ${attempt}/${maxAttempts}`);
+        console.log(`Mobile PaymentService - Making request to: /api/session/${sessionId}/book`);
+        
+        const response = await api.post(`/api/session/${sessionId}/book`, bookingData);
+        
+        console.log("Mobile PaymentService - Booking successful:", response.data);
+        return {
+          success: true,
+          message: "Appointment booked successfully!",
+          data: response.data,
+          paymentIntentId,
           sessionId,
-          bookingData
-        );
-        console.log(
-          "Mobile PaymentService - Booking confirmed successfully:",
-          result
-        );
-        return result;
+          slotIndex
+        };
       } catch (error) {
         const status = error.response?.status;
         const serverMessage = error.response?.data?.error || error.message;
+
+        console.log(`Mobile PaymentService - Booking attempt ${attempt} failed:`, {
+          status,
+          message: serverMessage,
+          fullError: error.response?.data
+        });
 
         // If the slot is temporarily unavailable or payment not yet processed, retry
         const isTransient =
@@ -91,28 +95,19 @@ export const paymentService = {
 
         // If it's a 409 conflict, it's a real concurrency conflict - surface immediately
         if (status === 409) {
-          console.error(
-            "Mobile PaymentService - Booking conflict (409):",
-            serverMessage
-          );
-          throw error;
+          console.error("Mobile PaymentService - Booking conflict (409):", serverMessage);
+          throw new Error(serverMessage || "This slot has been booked by another patient.");
         }
 
-        if (attempt < maxAttempts && isTransient) {
-          console.warn(
-            `Mobile PaymentService - Booking attempt ${attempt} failed with transient error, retrying after ${delayMs}ms:`,
-            serverMessage
-          );
-          await new Promise((r) => setTimeout(r, delayMs));
+        if (isTransient && attempt < maxAttempts) {
+          console.log(`Mobile PaymentService - Retrying in ${delayMs}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
           continue;
         }
 
-        // Give up and bubble the error
-        console.error(
-          "Mobile PaymentService - Error confirming booking after retries:",
-          serverMessage
-        );
-        throw error;
+        // Non-transient error or max attempts reached
+        console.error(`Mobile PaymentService - Booking failed after ${attempt} attempts:`, serverMessage);
+        throw new Error(serverMessage || "Failed to book appointment. Please contact support.");
       }
     }
   },
