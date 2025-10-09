@@ -229,7 +229,7 @@ export default function Appointments() {
   // If user is doctor, show doctor dashboard directly in appointments tab
   if (!loading && user && userRole === 'doctor') {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <Stack.Screen
           options={{
             title: 'My Sessions',

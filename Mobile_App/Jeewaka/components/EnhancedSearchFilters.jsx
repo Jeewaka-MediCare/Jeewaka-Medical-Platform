@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 0,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },

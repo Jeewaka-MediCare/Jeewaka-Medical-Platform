@@ -960,7 +960,9 @@ const styles = StyleSheet.create({
   scene: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    padding: 16,
+    paddingTop: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 0,
   },
   createSessionHeader: {
     flexDirection: 'row',
