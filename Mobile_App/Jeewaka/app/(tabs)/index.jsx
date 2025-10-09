@@ -131,7 +131,8 @@ export default function Home() {
   const handleLogout = async () => {
     setSidebarVisible(false);
     await logout();
-    router.push('/login');
+    // Stay on current page (index.jsx) which will show LandingPage for logged-out users
+    // Removed: router.push('/login');
   };
 
   return (
