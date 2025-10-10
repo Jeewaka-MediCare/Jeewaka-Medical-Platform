@@ -5,8 +5,10 @@ import SignupPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import PatientDashboard from "./pages/PatientDashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
+import DoctorOverviewPage from "./pages/DoctorOverviewPage";
 import ProtectedRoute from "./components/protectedRoute";
 import SideBarApp from "./Layout.jsx/mainLayout";
+import DoctorLayout from "./Layout.jsx/doctorLayout"; // Import DoctorLayout
 import DoctorProfileSetting from "./pages/DoctorProfileSetting";
 import DoctorDetailsPage from "./pages/DoctorViewPage";
 import AppointmentsPage from "./pages/appointmentPage";
@@ -99,10 +101,11 @@ function App() {
           <Route path="/sign-up" element={<SignupPage />} />
 
         {/* Doctor routes */}
-        <Route element={<SideBarApp />}>
+        <Route element={<DoctorLayout />}>
           <Route element={<ProtectedRoute allowedRoles={["doctor"]} />}>
+            <Route path="/doctor-overview" element={<DoctorOverviewPage />} />
             <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
-            <Route path="/setting" element={<DoctorProfileSetting />} />
+            <Route path="/doctor-profile-setting" element={<DoctorProfileSetting />} />
           </Route>
         </Route>
 
