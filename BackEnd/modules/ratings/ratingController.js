@@ -21,6 +21,7 @@ export const createOrUpdateReview = async (req, res) => {
         .json({
           message: "Review updated successfully",
           review: existingReview,
+          succuess: true,
         });
     }
 
@@ -34,7 +35,7 @@ export const createOrUpdateReview = async (req, res) => {
 
     res
       .status(201)
-      .json({ message: "Review created successfully", review: newReview });
+      .json({ message: "Review created successfully", review: newReview  , succuess: true });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }

@@ -176,16 +176,19 @@ export default function DoctorViewPage() {
       comment: reviewData.comment,
       createdAt: new Date().toISOString(),
     });
+    // const  review_object = {
+    //   doctor: data.doctor._id,
+    //   patient: "current-patient-id", // This should come from auth context
+    //   rating: reviewData.rating,
+    //   comment: reviewData.comment,
+    //   createdAt: new Date().toISOString(),
+    // }
+    //todo: please add zuzstang login user id for current patient id
 
-    // Add the new review to local state
-    const newReview = {
-      rating: reviewData.rating,
-      comment: reviewData.comment,
-      patient: { name: "You" }, // This should come from auth context
-      createdAt: new Date().toISOString(),
-    };
-
-    setData((prevData) => ({
+    const res = api.post('/api/review', review_object);
+    if(res.data.succuess){
+      const newReview = res.data.review;
+      setData((prevData) => ({
       ...prevData,
       reviews: [newReview, ...prevData.reviews],
       ratingSummary: {
@@ -200,6 +203,18 @@ export default function DoctorViewPage() {
     }));
 
     setShowReviewDialog(false);
+    }
+    
+
+    // Add the new review to local state
+    // const newReview = {
+    //   rating: reviewData.rating,
+    //   comment: reviewData.comment,
+    //   patient: { name: "You" }, // This should come from auth context
+    //   createdAt: new Date().toISOString(),
+    // };
+
+    
   };
 
   if (!data) {
