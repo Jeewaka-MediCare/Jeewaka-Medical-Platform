@@ -17,7 +17,8 @@ import PaymentCheckout from "./pages/PaymentCheckout";
 import { Navbar } from "./components/navBar";
 import PatientLayout from "./Layout.jsx/patientLayout";
 import LandingPage from "./pages/LandingPage";
-
+import AdminFinancePage from "./pages/AdminFinancePage";
+import { AdminLayout } from "./Layout.jsx/adminLayOut";
 function App() {
   useEffect(() => {
     console.log("🔐 App - Component mounted");
@@ -115,8 +116,12 @@ function App() {
         </Route>
 
         {/* Admin routes */}
+
         <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route element={<AdminLayout />}>
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin-finance" element={<AdminFinancePage />} />
+          </Route>
         </Route>
       </Routes>
     </Router>

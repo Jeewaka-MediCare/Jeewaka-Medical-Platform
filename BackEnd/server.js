@@ -13,6 +13,7 @@ import patientRouter from "./modules/patient/patientRoute.js";
 import adminRouter from "./modules/admin/adminRoutes.js";
 import adminVerificationRouter from "./modules/doctorCertificates/doctorVerificationRoutes.js";
 import paymentsRouter from "./modules/payments/paymentsRoutes.js";
+import r from "./modules/finance/financeRoutes.js";
 
 
 // Load environment variables
@@ -50,6 +51,8 @@ app.use("/api/ratings", ratingRouter);
 
 // Register payments routes
 app.use("/api/payments", paymentsRouter);
+// Register finance routes
+app.use("/api", r);
 
 // Connect to MongoDB
 connectDB();
