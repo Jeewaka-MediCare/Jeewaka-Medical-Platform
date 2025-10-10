@@ -152,7 +152,7 @@ export default function PaymentCheckout() {
 
       const paymentRequest = {
         amount: parseFloat(amount),
-        currency: 'usd',
+        currency: 'lkr',
         metadata: {
           sessionId,
           slotIndex,

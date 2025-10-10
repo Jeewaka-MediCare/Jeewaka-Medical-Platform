@@ -37,7 +37,7 @@ export const createPaymentIntent = async (req, res) => {
       });
     }
 
-    const { amount, currency = 'usd', metadata = {} } = req.body;
+    const { amount, currency = 'lkr', metadata = {} } = req.body;
 
     console.log('🔐 PaymentController - Extracted data:');
     console.log('🔐 PaymentController - Amount:', amount);
@@ -382,7 +382,7 @@ export const getPaymentHistory = async (req, res) => {
           const payment = {
             id: slot.paymentIntentId,
             amount: (slot.paymentAmount || 0) * 100, // Convert to cents for frontend
-            currency: slot.paymentCurrency || 'lkr',
+            currency: 'lkr', // Always use LKR
             status: 'succeeded', // Since it's in DB, payment was successful
             date: slot.paymentDate,
             created: slot.paymentDate,
@@ -537,7 +537,7 @@ export const getPaymentDetails = async (req, res) => {
     const paymentDetails = {
       id: slot.paymentIntentId,
       amount: (slot.paymentAmount || 0) * 100,
-      currency: slot.paymentCurrency || 'lkr',
+      currency: 'lkr', // Always use LKR
       status: 'succeeded',
       date: slot.paymentDate,
       created: slot.paymentDate,

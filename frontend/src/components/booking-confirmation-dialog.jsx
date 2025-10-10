@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, Clock, MapPin, Video, Users, DollarSign, CreditCard, Loader2 } from "lucide-react"
+import { Calendar, Clock, MapPin, Video, Users, Banknote, CreditCard, Loader2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -67,7 +67,7 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
       console.log('========================');
 
       // Validate consultation fee
-      const consultationFee = doctor.consultationFee || 100; // Default to $1.00 if not set
+      const consultationFee = doctor.consultationFee || 100; // Default to LKR 1.00 if not set
       if (isNaN(consultationFee) || consultationFee <= 0) {
         throw new Error('Invalid consultation fee. Please contact support.');
       }
@@ -110,7 +110,7 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
 
       const paymentData = {
         amount: consultationFee,
-        currency: 'usd',
+        currency: 'lkr',
         metadata: {
           sessionId: sessionId,
           slotIndex: slotIndex,
@@ -204,7 +204,7 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
             <div className="p-4 border rounded-lg bg-gray-50">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium text-gray-900">Consultation Fee</span>
-                <span className="font-bold text-lg text-green-600">${doctor.consultationFee}</span>
+                <span className="font-bold text-lg text-green-600">LKR {doctor.consultationFee}</span>
               </div>
               <div className="text-sm text-gray-600">
                 <div className="flex items-center gap-2 mb-1">
@@ -254,7 +254,7 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
               ) : (
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Pay ${doctor.consultationFee}
+                  Pay LKR {doctor.consultationFee}
                 </>
               )}
             </Button>
@@ -321,8 +321,8 @@ export function BookingConfirmationDialog({ open, onOpenChange, booking, onConfi
             </div>
 
             <div className="flex items-center gap-2 text-sm pt-2 border-t">
-              <DollarSign className="h-4 w-4 text-green-600" />
-              <span className="font-semibold text-green-700">Consultation Fee: ${doctor.consultationFee}</span>
+              <Banknote className="h-4 w-4 text-green-600" />
+              <span className="font-semibold text-green-700">Consultation Fee: LKR {doctor.consultationFee}</span>
             </div>
           </div>
         </div>

@@ -243,7 +243,7 @@ export default function DoctorViewPage() {
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-primary text-primary-foreground px-6 py-4 rounded-md shadow">
-                  <p className="text-xl font-semibold">${doctor.consultationFee}</p>
+                  <p className="text-xl font-semibold">LKR {doctor.consultationFee}</p>
                   <p className="text-primary-foreground text-sm">Consultation Fee</p>
                 </div>
                 <div className="bg-accent text-accent-foreground px-6 py-4 rounded-md shadow">

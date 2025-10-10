@@ -721,7 +721,7 @@ export default function DoctorProfileUpdate() {
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="fee" className="text-sm font-semibold text-gray-700">
-                    Consultation Fee ($)
+                    Consultation Fee (LKR)
                   </Label>
                   <Input
                     id="fee"

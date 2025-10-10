@@ -236,7 +236,7 @@ export default function PaymentsPage() {
 
             <div>
               <label className="text-sm font-medium text-gray-500">Currency</label>
-              <p className="uppercase">{payment.currency}</p>
+              <p className="uppercase">LKR</p>
             </div>
           </div>
         </DialogContent>
