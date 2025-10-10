@@ -13,7 +13,10 @@
     "test:edge": "node tests/edge-cases-tests.js",
     "test:performance": "node tests/performance-tests.js",
     "seed:doctors": "node seeder/doctor-seeder.js",
+     "session-seed": "node seeder/session-seeder.js",
     "doctor-seed": "node test/doctor-seeder-test.js"
+   
+
   },
   "type": "module",
   "keywords": [],

@@ -19,6 +19,7 @@ import PatientLayout from "./Layout.jsx/patientLayout";
 import LandingPage from "./pages/LandingPage";
 import AdminFinancePage from "./pages/AdminFinancePage";
 import { AdminLayout } from "./Layout.jsx/adminLayOut";
+import DoctorFinance from "./pages/DoctorFinance";
 function App() {
   useEffect(() => {
     console.log("🔐 App - Component mounted");
@@ -100,6 +101,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={["doctor"]} />}>
             <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
             <Route path="/setting" element={<DoctorProfileSetting />} />
+            <Route path="/doctor-finance" element={<DoctorFinance />} />
           </Route>
         </Route>
 

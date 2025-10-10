@@ -11,7 +11,9 @@ import {
   Settings,
   Settings2,
   SquareTerminal,
-  Stethoscope
+  Stethoscope,
+  DollarSign
+
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -39,6 +41,26 @@ const data = {
       title: "DoctorDashboard",
       url: "/doctor-dashboard",
       icon: SquareTerminal,
+      isActive: true,
+      // items: [
+      //   {
+      //     title: "History",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Starred",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Settings",
+      //     url: "#",
+      //   },
+      // ],
+    },
+    {
+      title: "Finance",
+      url: "/doctor-finance",
+      icon: DollarSign,
       isActive: true,
       // items: [
       //   {
