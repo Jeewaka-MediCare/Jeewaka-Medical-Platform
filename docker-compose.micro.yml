@@ -18,9 +18,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 200M
+          memory: 512M
         reservations:
-          memory: 100M
+          memory: 256M
     volumes:
       - ./ssl:/etc/nginx/ssl
     environment:
@@ -68,17 +68,17 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}
       
-      # Critical memory optimizations for t3.micro
-      - NODE_OPTIONS=--max-old-space-size=384
+      # Memory optimizations for t3.small (2GB RAM)
+      - NODE_OPTIONS=--max-old-space-size=768
     restart: unless-stopped
     networks:
       - jeewaka-network
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 768M
         reservations:
-          memory: 200M
+          memory: 384M
     volumes:
       # Mount service account key for Google Cloud
       - ./BackEnd/service-account-key.json:/app/service-account-key.json:ro
