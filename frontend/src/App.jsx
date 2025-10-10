@@ -13,6 +13,7 @@ import AppointmentsPage from "./pages/appointmentPage";
 import AppointmentDetails from "./pages/AppointmentDetails";
 import AdminDashboard from "./pages/AdminDashBoard";
 import MedicalRecordsPage from "./pages/MedicalRecordsPage";
+import PaymentsPage from "./pages/PaymentsPage";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCheckout from "./pages/PaymentCheckout";
 import { Navbar } from "./components/navBar";
@@ -112,6 +113,7 @@ function App() {
             <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/appointments/:id" element={<AppointmentDetails />} />
             <Route path="/medical-records" element={<MedicalRecordsPage />} />
+            <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/doctors/review/:id" element={<DoctorDetailsPage />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-checkout" element={<PaymentCheckout />} />
