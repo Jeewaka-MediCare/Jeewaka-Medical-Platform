@@ -387,10 +387,10 @@ export default function Profile() {
         {/* Common menu items for both roles */}
         <TouchableOpacity 
           style={styles.menuItem}
-          onPress={() => router.push('/settings')}
+          onPress={() => router.push('/payment-history')}
         >
-          <Ionicons name="settings-outline" size={24} color="#1E293B" />
-          <Text style={styles.menuText}>Settings</Text>
+          <Ionicons name="card-outline" size={24} color="#1E293B" />
+          <Text style={styles.menuText}>Payment History</Text>
           <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
         </TouchableOpacity>
         
