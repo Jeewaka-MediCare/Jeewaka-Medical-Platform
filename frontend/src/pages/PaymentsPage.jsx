@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, Search, Filter, Download, CreditCard, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Calendar, Search, Filter, Download, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, ChevronLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { format } from "date-fns";
 import useAuthStore from "../store/authStore";
 import paymentService from "../services/paymentService";
+import pdfExportService from "../services/pdfExportService";
 
 export default function PaymentsPage() {
   const { user, userRole } = useAuthStore();
@@ -23,6 +25,7 @@ export default function PaymentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     successful: 0,
@@ -123,6 +126,36 @@ export default function PaymentsPage() {
     }
   };
 
+  // Export payments to PDF
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      
+      const result = await pdfExportService.exportPaymentsPDF(
+        filteredPayments,
+        stats,
+        user,
+        {
+          searchTerm,
+          statusFilter
+        }
+      );
+
+      if (result.success) {
+        console.log('✅ PDF exported successfully:', result.filename);
+        // You could show a toast notification here
+      } else {
+        console.error('❌ PDF export failed:', result.message);
+        alert('Failed to export PDF: ' + result.message);
+      }
+    } catch (error) {
+      console.error('❌ Export error:', error);
+      alert('Failed to export PDF. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const formatDate = (dateValue) => {
     if (!dateValue) return 'N/A';
     
@@ -174,6 +207,21 @@ export default function PaymentsPage() {
 
   const PaymentDetailsModal = ({ payment, onClose }) => {
     if (!payment) return null;
+
+    const handleExportSinglePayment = async () => {
+      try {
+        const result = await pdfExportService.exportPaymentDetailsPDF(payment, user);
+        if (result.success) {
+          console.log('✅ Payment receipt exported:', result.filename);
+        } else {
+          console.error('❌ Receipt export failed:', result.message);
+          alert('Failed to export receipt: ' + result.message);
+        }
+      } catch (error) {
+        console.error('❌ Export error:', error);
+        alert('Failed to export receipt. Please try again.');
+      }
+    };
 
     return (
       <Dialog open={!!payment} onOpenChange={() => onClose()}>
@@ -239,6 +287,19 @@ export default function PaymentsPage() {
               <p className="uppercase">LKR</p>
             </div>
           </div>
+
+          {/* Export Receipt Button */}
+          <div className="flex justify-end pt-4 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportSinglePayment}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export Receipt
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     );
@@ -281,14 +342,30 @@ export default function PaymentsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
+      {/* Back Navigation */}
+      <div className="mb-6">
+        <Link 
+          to="/patient-dashboard" 
+          className="inline-flex items-center text-primary hover:underline"
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to Dashboard
+        </Link>
+      </div>
+
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Payment History</h1>
           <p className="text-gray-600">Track and manage your medical consultation payments</p>
         </div>
-        <Button variant="outline" className="flex items-center gap-2">
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-2"
+          onClick={handleExportPDF}
+          disabled={isExporting || filteredPayments.length === 0}
+        >
           <Download className="h-4 w-4" />
-          Export
+          {isExporting ? 'Exporting...' : 'Export PDF'}
         </Button>
       </div>
 

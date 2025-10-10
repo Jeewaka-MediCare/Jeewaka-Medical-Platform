@@ -9,8 +9,8 @@ import AppointmentCard from "@/components/AppointmentCard"
 
 export default function AppointmentsPage() {
   const user = useAuthStore((state) => state.user)
-  const [upcomingAppointments, setUpcomingAppointments] = useState([])
-  const [pastAppointments, setPastAppointments] = useState([])
+  const [inPersonAppointments, setInPersonAppointments] = useState([])
+  const [onlineAppointments, setOnlineAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [patientBackendId, setPatientBackendId] = useState(null)
 
@@ -18,8 +18,8 @@ export default function AppointmentsPage() {
     const fetchAppointments = async () => {
       // ProtectedRoute already ensures user is authenticated and hydrated
       if (!user) {
-        setUpcomingAppointments([])
-        setPastAppointments([])
+        setInPersonAppointments([])
+        setOnlineAppointments([])
         setLoading(false)
         return
       }
@@ -45,20 +45,43 @@ export default function AppointmentsPage() {
         console.log("Appointments" , res.data)
         const appointments = res.data || []
 
-        // Split upcoming vs past
-        const upcoming = appointments.filter(
-          (a) => a.type === "in-person" || a.status === "booked"
+        // Helper function to determine if appointment is upcoming or past
+        const isUpcoming = (appointment) => {
+          const appointmentDate = new Date(appointment.date)
+          const currentDate = new Date()
+          
+          // If appointment is today, check the time
+          if (appointmentDate.toDateString() === currentDate.toDateString()) {
+            const [hours, minutes] = appointment.startTime.split(':').map(Number)
+            const appointmentDateTime = new Date(appointmentDate)
+            appointmentDateTime.setHours(hours, minutes, 0, 0)
+            return appointmentDateTime > currentDate
+          }
+          
+          return appointmentDate >= currentDate
+        }
+
+        // Add status info to each appointment
+        const appointmentsWithStatus = appointments.map(appointment => ({
+          ...appointment,
+          isUpcoming: isUpcoming(appointment),
+          timeStatus: isUpcoming(appointment) ? 'upcoming' : 'completed'
+        }))
+
+        // Split by appointment type (in-person vs online/video)
+        const inPerson = appointmentsWithStatus.filter(
+          (a) => a.type === "in-person"
         )
-        const past = appointments.filter(
-          (a) => a.type === "online" || a.status === "cancelled"||a.type ==="video"
+        const online = appointmentsWithStatus.filter(
+          (a) => a.type === "online" || a.type === "video"
         )
 
-        setUpcomingAppointments(upcoming)
-        setPastAppointments(past)
+        setInPersonAppointments(inPerson)
+        setOnlineAppointments(online)
       } catch (err) {
         console.error("Failed to load appointments:", err)
-        setUpcomingAppointments([])
-        setPastAppointments([])
+        setInPersonAppointments([])
+        setOnlineAppointments([])
       } finally {
         setLoading(false)
       }
@@ -100,43 +123,95 @@ export default function AppointmentsPage() {
         </TabsList>
 
         <TabsContent value="in-person" className="space-y-6">
-          {upcomingAppointments.length > 0 ? (
-            <div className="grid gap-4">
-              {upcomingAppointments.map((appointment , index) => (
-                <AppointmentCard
-                  key={index+1}
-                  appointment={appointment}
-                  type="in-person"
-                />
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <p className="text-muted-foreground">No upcoming appointments</p>
-              </CardContent>
-            </Card>
-          )}
+          {/* Upcoming In-Person Appointments */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-green-600">Upcoming Appointments</h3>
+            {inPersonAppointments.filter(a => a.isUpcoming).length > 0 ? (
+              <div className="grid gap-4 mb-6">
+                {inPersonAppointments.filter(a => a.isUpcoming).map((appointment, index) => (
+                  <AppointmentCard
+                    key={`upcoming-${index}`}
+                    appointment={appointment}
+                    type="upcoming"
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="mb-6">
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground">No upcoming in-person appointments</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Past In-Person Appointments */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-600">Past Appointments</h3>
+            {inPersonAppointments.filter(a => !a.isUpcoming).length > 0 ? (
+              <div className="grid gap-4">
+                {inPersonAppointments.filter(a => !a.isUpcoming).map((appointment, index) => (
+                  <AppointmentCard
+                    key={`past-${index}`}
+                    appointment={appointment}
+                    type="completed"
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground">No past in-person appointments</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="online" className="space-y-6">
-          {pastAppointments.length > 0 ? (
-            <div className="grid gap-4">
-              {pastAppointments.map((appointment) => (
-                <AppointmentCard
-                  key={appointment._id}
-                  appointment={appointment}
-                  type="past"
-                />
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <p className="text-muted-foreground">No past appointments</p>
-              </CardContent>
-            </Card>
-          )}
+          {/* Upcoming Online Appointments */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-green-600">Upcoming Appointments</h3>
+            {onlineAppointments.filter(a => a.isUpcoming).length > 0 ? (
+              <div className="grid gap-4 mb-6">
+                {onlineAppointments.filter(a => a.isUpcoming).map((appointment, index) => (
+                  <AppointmentCard
+                    key={`upcoming-online-${index}`}
+                    appointment={appointment}
+                    type="upcoming"
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="mb-6">
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground">No upcoming online appointments</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Past Online Appointments */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-600">Past Appointments</h3>
+            {onlineAppointments.filter(a => !a.isUpcoming).length > 0 ? (
+              <div className="grid gap-4">
+                {onlineAppointments.filter(a => !a.isUpcoming).map((appointment, index) => (
+                  <AppointmentCard
+                    key={`past-online-${index}`}
+                    appointment={appointment}
+                    type="completed"
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground">No past online appointments</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </main>
