@@ -34,10 +34,18 @@ export default function WriteReview() {
       if (!user?._id || !doctorId) return;
       
       try {
-        const reviews = await reviewService.getDoctorReviews(doctorId);
-        const userReview = reviews.find(review => 
-          review.patient === user._id || review.patient._id === user._id
-        );
+        let userReview = null;
+        
+        if (appointmentId) {
+          // Check for appointment-specific review
+          userReview = await reviewService.getAppointmentReview(appointmentId, user._id);
+        } else {
+          // Fallback to doctor-specific review for backward compatibility
+          const reviews = await reviewService.getDoctorReviews(doctorId);
+          userReview = reviews.find(review => 
+            review.patient && (review.patient === user._id || review.patient._id === user._id)
+          );
+        }
         
         if (userReview) {
           setExistingReview(userReview);
@@ -52,7 +60,7 @@ export default function WriteReview() {
     };
 
     checkExistingReview();
-  }, [doctorId, user?._id]);
+  }, [doctorId, appointmentId, user?._id]);
 
   const handleRatingPress = (starRating) => {
     setRating(starRating);
@@ -78,6 +86,11 @@ export default function WriteReview() {
         rating,
         comment: comment.trim(),
       };
+
+      // Include appointmentId if available for appointment-specific reviews
+      if (appointmentId) {
+        reviewData.appointmentId = appointmentId;
+      }
 
       await reviewService.submitReview(reviewData);
 
