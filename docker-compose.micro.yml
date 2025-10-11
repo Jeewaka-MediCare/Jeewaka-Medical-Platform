@@ -23,6 +23,8 @@ services:
           memory: 256M
     volumes:
       - ./ssl:/etc/nginx/ssl
+    env_file:
+      - .env.production
     environment:
       # Frontend environment variables
       - VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
@@ -35,6 +37,8 @@ services:
       dockerfile: Dockerfile.prod
     ports:
       - "5000:5000"
+    env_file:
+      - .env.production
     environment:
       # Database Configuration
       - MONGO_URI=${MONGO_URI}
