@@ -381,18 +381,60 @@ export default function Profile() {
               <Text style={styles.menuText}>Edit Profile</Text>
               <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
             </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/doctor-earnings')}
+            >
+              <Ionicons name="wallet-outline" size={24} color="#1E293B" />
+              <Text style={styles.menuText}>Earnings</Text>
+              <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => {
+                console.log('Reviews navigation - User object:', JSON.stringify(user, null, 2));
+                
+                // Try different possible ID fields
+                const doctorId = user?._id || user?.id || user?.doctorId;
+                console.log('Reviews navigation - Doctor ID found:', doctorId);
+                
+                if (doctorId) {
+                  router.push({
+                    pathname: '/doctor-reviews',
+                    params: { doctorId: doctorId }
+                  });
+                } else {
+                  console.error('Doctor ID not found in user object. Available fields:', Object.keys(user || {}));
+                  Alert.alert(
+                    'Error', 
+                    'Unable to access reviews. Doctor ID not found. Please try logging out and back in.',
+                    [
+                      { text: 'OK', style: 'default' }
+                    ]
+                  );
+                }
+              }}
+            >
+              <Ionicons name="star-outline" size={24} color="#1E293B" />
+              <Text style={styles.menuText}>Reviews</Text>
+              <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+            </TouchableOpacity>
           </>
         )}
         
         {/* Common menu items for both roles */}
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={() => router.push('/payment-history')}
-        >
-          <Ionicons name="card-outline" size={24} color="#1E293B" />
-          <Text style={styles.menuText}>Payment History</Text>
-          <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
-        </TouchableOpacity>
+        {userRole === 'patient' && (
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/payment-history')}
+          >
+            <Ionicons name="card-outline" size={24} color="#1E293B" />
+            <Text style={styles.menuText}>Payment History</Text>
+            <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+          </TouchableOpacity>
+        )}
         
         <TouchableOpacity 
           style={styles.menuItem}

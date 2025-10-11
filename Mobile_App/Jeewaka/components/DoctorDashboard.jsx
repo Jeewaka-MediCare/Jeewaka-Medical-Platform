@@ -249,6 +249,59 @@ export default function DoctorDashboard() {
     return 'Good Evening';
   };
 
+  // Calculate profile completion percentage
+  const calculateProfileCompletion = (doctor) => {
+    if (!doctor) return { percentage: 0, missingFields: [] };
+
+    const requiredFields = [
+      { key: 'name', label: 'Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'gender', label: 'Gender' },
+      { key: 'profile', label: 'Profile Image' },
+      { key: 'dob', label: 'Date of Birth' },
+      { key: 'specialization', label: 'Specialization' },
+      { key: 'subSpecializations', label: 'Sub-specializations' },
+      { key: 'qualifications', label: 'Qualifications' },
+      { key: 'yearsOfExperience', label: 'Years of Experience' },
+      { key: 'languagesSpoken', label: 'Languages Spoken' },
+      { key: 'bio', label: 'Bio' },
+      { key: 'consultationFee', label: 'Consultation Fee' }
+    ];
+
+    let completedFields = 0;
+    let missingFields = [];
+
+    requiredFields.forEach(field => {
+      const value = doctor[field.key];
+      let isCompleted = false;
+
+      if (Array.isArray(value)) {
+        isCompleted = value && value.length > 0;
+      } else if (typeof value === 'string') {
+        isCompleted = value && value.trim() !== '';
+      } else if (typeof value === 'number') {
+        isCompleted = value !== null && value !== undefined && value >= 0;
+      } else {
+        isCompleted = value !== null && value !== undefined;
+      }
+
+      if (isCompleted) {
+        completedFields++;
+      } else {
+        missingFields.push(field.label);
+      }
+    });
+
+    const percentage = Math.round((completedFields / requiredFields.length) * 100);
+    return { percentage, missingFields };
+  };
+
+  // Navigate to My Profile tab
+  const navigateToProfile = () => {
+    router.push('/(tabs)/profile');
+  };
+
 
 
   if (loading && !doctorData) {
@@ -286,6 +339,8 @@ export default function DoctorDashboard() {
             style={styles.profileImage} 
           />
       </View>
+
+    
 
       {/* Quick Stats */}
       <View style={styles.statsContainer}>
@@ -660,6 +715,97 @@ export default function DoctorDashboard() {
         )}
       </Animated.View>
 
+      {/* Profile Completion Section */}
+      {(() => {
+        const { percentage, missingFields } = calculateProfileCompletion(doctorData);
+        const isComplete = percentage === 100;
+        
+        return (
+          <View style={[
+            styles.profileCompletionSection,
+            isComplete ? styles.profileCompletionComplete : styles.profileCompletionIncomplete
+          ]}>
+            <View style={styles.profileCompletionHeader}>
+              <Ionicons 
+                name={isComplete ? "checkmark-circle" : "warning"} 
+                size={24} 
+                color={isComplete ? "#10B981" : "#F59E0B"} 
+              />
+              <Text style={[
+                styles.profileCompletionTitle,
+                { color: isComplete ? "#065F46" : "#92400E" }
+              ]}>
+                {isComplete ? "Profile Complete" : `Complete Your Profile (${percentage}% Complete)`}
+              </Text>
+            </View>
+            
+            {isComplete ? (
+              <Text style={[
+                styles.profileCompletionDescription,
+                { color: "#065F46" }
+              ]}>
+                Your profile is fully optimized! Keep it updated to attract more patients.
+              </Text>
+            ) : (
+              <Text style={[
+                styles.profileCompletionDescription,
+                { color: "#78350F" }
+              ]}>
+                Please complete the following fields to have a fully optimized profile:
+              </Text>
+            )}
+            
+            {!isComplete && missingFields.length <= 3 && (
+              <View style={styles.missingFieldsContainer}>
+                {missingFields.map((field, index) => (
+                  <View key={index} style={styles.missingFieldTag}>
+                    <Text style={styles.missingFieldText}>{field}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            
+            <View style={styles.profileProgressContainer}>
+              <View style={[
+                styles.profileProgressBar,
+                { backgroundColor: isComplete ? "#A7F3D0" : "#FDE68A" }
+              ]}>
+                <View 
+                  style={[
+                    styles.profileProgressFill, 
+                    { 
+                      width: `${percentage}%`,
+                      backgroundColor: isComplete ? "#10B981" : "#2563EB"
+                    }
+                  ]} 
+                />
+              </View>
+              <Text style={[
+                styles.profileProgressText,
+                { color: isComplete ? "#065F46" : "#92400E" }
+              ]}>{percentage}%</Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={[
+                styles.profileActionButton,
+                { backgroundColor: isComplete ? "#10B981" : "#2563EB" }
+              ]}
+              onPress={navigateToProfile}
+            >
+              <Ionicons 
+                name={isComplete ? "person" : "add-circle"} 
+                size={20} 
+                color="#FFFFFF" 
+              />
+              <Text style={styles.profileActionButtonText}>
+                {isComplete ? "Update Profile" : "Complete Profile"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        );
+      })()}
+
       {/* Professional Information */}
       <View style={styles.infoSection}>
         <Text style={styles.sectionTitle}>Professional Information</Text>
@@ -794,6 +940,100 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     borderWidth: 3,
     borderColor: '#E2E8F0',
+  },
+  // Profile Completion Section Styles
+  profileCompletionSection: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+  },
+  profileCompletionIncomplete: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
+  },
+  profileCompletionComplete: {
+    backgroundColor: '#D1FAE5',
+    borderColor: '#10B981',
+  },
+  profileCompletionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  profileCompletionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
+    flex: 1,
+  },
+  profileCompletionDescription: {
+    fontSize: 14,
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  missingFieldsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    gap: 6,
+  },
+  missingFieldTag: {
+    backgroundColor: '#FCD34D',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  missingFieldText: {
+    fontSize: 12,
+    color: '#92400E',
+    fontWeight: '600',
+  },
+  profileProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  profileProgressBar: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  profileProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  profileProgressText: {
+    fontSize: 14,
+    fontWeight: '700',
+    minWidth: 40,
+  },
+  profileActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  profileActionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    marginLeft: 8,
   },
   statsContainer: {
     flexDirection: 'row',
