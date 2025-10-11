@@ -15,6 +15,7 @@ import api from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import { format, parseISO } from 'date-fns';
 import VideoCallButton from '../../components/VideoCallButton';
+import MedicalRecordsModal from '../../components/MedicalRecordsModal';
 
 export default function SessionAppointments() {
   const { sessionId } = useLocalSearchParams();
@@ -25,6 +26,8 @@ export default function SessionAppointments() {
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [medicalRecordsVisible, setMedicalRecordsVisible] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
 
   // Fetch session data and prepare time slots with patient info
   const fetchSessionData = async () => {
@@ -44,19 +47,26 @@ export default function SessionAppointments() {
       console.log('Session data received:', data);
       console.log('Hospital info:', data.hospital);
       console.log('Session type:', data.type);
+      console.log('Time slots with patient data:', data.timeSlots);
 
       setSessionInfo(data);
       
       // Backend now includes patient information in timeSlots when accessed by authenticated doctor
       // No need to make separate API call to get all patients
-      const slotsWithInfo = (data.timeSlots || []).map((slot, index) => ({
-        ...slot,
-        slotIndex: index,
-        sessionDate: data.date,
-        sessionType: data.type,
-        hospital: data.hospital,
-        isBooked: slot.patientId && slot.status !== 'available'
-      }));
+      const slotsWithInfo = (data.timeSlots || []).map((slot, index) => {
+        console.log(`Slot ${index}:`, slot);
+        console.log(`Patient data for slot ${index}:`, slot.patient);
+        console.log(`PatientId for slot ${index}:`, slot.patientId);
+        
+        return {
+          ...slot,
+          slotIndex: index,
+          sessionDate: data.date,
+          sessionType: data.type,
+          hospital: data.hospital,
+          isBooked: slot.patientId && slot.status !== 'available'
+        };
+      });
 
       setTimeSlots(slotsWithInfo);
     } catch (error) {
@@ -99,6 +109,44 @@ export default function SessionAppointments() {
     }
   };
 
+  // Helper function to extract patient name from slot data
+  const getPatientName = (slot) => {
+    console.log('Getting patient name for slot:', slot);
+    console.log('slot.patient:', slot.patient);
+    console.log('slot.patientId:', slot.patientId);
+    
+    // Try different possible data structures
+    if (slot.patient?.name) {
+      console.log('Found patient name in slot.patient.name:', slot.patient.name);
+      return slot.patient.name;
+    }
+    
+    if (slot.patientId?.name) {
+      console.log('Found patient name in slot.patientId.name:', slot.patientId.name);
+      return slot.patientId.name;
+    }
+    
+    if (slot.patientId?.firstName && slot.patientId?.lastName) {
+      const fullName = `${slot.patientId.firstName} ${slot.patientId.lastName}`;
+      console.log('Found patient name from firstName + lastName:', fullName);
+      return fullName;
+    }
+    
+    if (slot.patientId?.firstName) {
+      console.log('Found patient firstName only:', slot.patientId.firstName);
+      return slot.patientId.firstName;
+    }
+    
+    // Log what we actually have for debugging
+    console.log('Could not find patient name. Available data:');
+    console.log('- slot.patient keys:', slot.patient ? Object.keys(slot.patient) : 'null');
+    console.log('- slot.patientId keys:', slot.patientId ? Object.keys(slot.patientId) : 'null');
+    console.log('- slot.patientId type:', typeof slot.patientId);
+    console.log('- slot.patientId value:', slot.patientId);
+    
+    return 'Unknown';
+  };
+
   // Helper function to check if slot is in the past
   const isSlotPast = (slot) => {
     try {
@@ -113,19 +161,41 @@ export default function SessionAppointments() {
     }
   };
 
-  // Handle viewing medical records (placeholder functionality)
+  // Handle viewing medical records
   const handleViewMedicalRecords = useCallback(async (slot) => {
-    if (!slot.patient) return;
+    if (!slot.patient && !slot.patientId) {
+      Alert.alert('Error', 'No patient information available for this appointment.');
+      return;
+    }
     
-    // Placeholder functionality - will be implemented later
-    Alert.alert(
-      'Medical Records',
-      `View medical records for ${slot.patient?.name || 'Patient'}?\n\nThis functionality will be implemented soon.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'OK', onPress: () => console.log('View medical records for:', slot.patient?.name) }
-      ]
-    );
+    console.log('Slot data for medical records:', slot);
+    console.log('Patient data:', slot.patient);
+    console.log('PatientId data:', slot.patientId);
+    
+    // Use patient data if available, otherwise use patientId info
+    let patientInfo;
+    
+    if (slot.patient) {
+      patientInfo = {
+        _id: slot.patient._id,
+        name: slot.patient.name,
+        email: slot.patient.email || 'No email available'
+      };
+    } else if (slot.patientId) {
+      // Handle different possible structures of patientId
+      const patientIdData = slot.patientId;
+      const patientName = getPatientName(slot);
+      
+      patientInfo = {
+        _id: typeof patientIdData === 'object' ? patientIdData._id : patientIdData,
+        name: patientName,
+        email: (typeof patientIdData === 'object' ? patientIdData.email : null) || 'No email available'
+      };
+    }
+    
+    console.log('Final patient info for medical records:', patientInfo);
+    setSelectedPatient(patientInfo);
+    setMedicalRecordsVisible(true);
   }, []);
 
   // Render slot card (booked or available)
@@ -181,7 +251,7 @@ export default function SessionAppointments() {
               <View style={styles.detailRow}>
                 <Ionicons name="person-outline" size={18} color="#64748B" />
                 <Text style={styles.detailText}>
-                  Patient - {slot.patient?.name || 'Unknown'}
+                  Patient - {getPatientName(slot)}
                 </Text>
               </View>
               
@@ -325,6 +395,15 @@ export default function SessionAppointments() {
           timeSlots.map((slot, index) => renderSlotCard(slot, index))
         )}
       </ScrollView>
+      
+      <MedicalRecordsModal
+        visible={medicalRecordsVisible}
+        patient={selectedPatient}
+        onClose={() => {
+          setMedicalRecordsVisible(false);
+          setSelectedPatient(null);
+        }}
+      />
     </SafeAreaView>
   );
 }

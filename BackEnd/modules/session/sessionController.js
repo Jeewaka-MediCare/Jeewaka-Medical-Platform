@@ -84,7 +84,7 @@ export const getSessionById = async (req, res) => {
   try {
     const session = await Session.findById(req.params.sessionId)
       .populate("hospital", "name location address")
-      .populate("timeSlots.patientId", "firstName lastName email phone");
+      .populate("timeSlots.patientId", "name email phone uuid");
     if (!session) return res.status(404).json({ error: "Session not found" });
 
     // If user is authenticated and is a doctor, populate patient information in time slots      //new
@@ -149,7 +149,7 @@ export const getSessionByDoctorId = async (req, res) => {
   try {
     const sessions = await Session.find({ doctorId: req.params.doctorId })
       .populate("hospital", "name location address")
-      .populate("timeSlots.patientId", "firstName lastName email phone");
+      .populate("timeSlots.patientId", "name email phone uuid");
     res.json(sessions);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -227,13 +227,14 @@ export const deleteSession = async (req, res) => {
     if (!session) return res.status(404).json({ error: "Session not found" });
 
     // Check if any time slots have bookings
-    const hasBookings = session.timeSlots.some(slot => 
-      slot.patientId !== null || slot.status === 'booked'
+    const hasBookings = session.timeSlots.some(
+      (slot) => slot.patientId !== null || slot.status === "booked"
     );
 
     if (hasBookings) {
-      return res.status(400).json({ 
-        error: "Cannot delete session with existing bookings. Please cancel all appointments first." 
+      return res.status(400).json({
+        error:
+          "Cannot delete session with existing bookings. Please cancel all appointments first.",
       });
     }
 
@@ -241,10 +242,9 @@ export const deleteSession = async (req, res) => {
     await Session.findByIdAndDelete(req.params.sessionId);
 
     // Remove session from doctor's sessions array
-    await Doctor.findByIdAndUpdate(
-      session.doctorId,
-      { $pull: { sessions: req.params.sessionId } }
-    );
+    await Doctor.findByIdAndUpdate(session.doctorId, {
+      $pull: { sessions: req.params.sessionId },
+    });
 
     res.json({ message: "Session deleted successfully" });
   } catch (err) {

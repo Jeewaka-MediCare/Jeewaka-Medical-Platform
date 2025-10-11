@@ -1,6 +1,28 @@
 import api from "./api";
 import { auth } from "../config/firebase";
 
+// Helper function to wait for Firebase auth to be ready
+const waitForAuth = async (maxWait = 2000) => {
+  return new Promise((resolve) => {
+    if (auth.currentUser) {
+      resolve(true);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      resolve(false);
+    }, maxWait);
+
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        clearTimeout(timeout);
+        unsubscribe();
+        resolve(true);
+      }
+    });
+  });
+};
+
 export const paymentService = {
   // Create payment intent using new backend API with authentication
   createPaymentIntent: async (paymentData) => {
@@ -231,10 +253,8 @@ export const paymentService = {
   // Get doctor earnings data (doctor-specific)
   getDoctorEarnings: async (filters = {}) => {
     try {
-      // Ensure user is authenticated
-      if (!auth.currentUser) {
-        throw new Error("Authentication required to view earnings");
-      }
+      // Wait for Firebase auth to be ready
+      await waitForAuth();
 
       console.log(
         "Mobile PaymentService - Getting doctor earnings with filters:",
@@ -251,6 +271,15 @@ export const paymentService = {
       }
       if (filters.endDate) {
         params.append("endDate", filters.endDate);
+      }
+      if (filters.search) {
+        params.append("search", filters.search);
+      }
+      if (filters.limit) {
+        params.append("limit", filters.limit.toString());
+      }
+      if (filters.offset) {
+        params.append("offset", filters.offset.toString());
       }
 
       const queryString = params.toString();
@@ -280,10 +309,8 @@ export const paymentService = {
   // Get doctor earnings statistics for charts (doctor-specific)
   getDoctorEarningsStats: async (timeRange = "4weeks") => {
     try {
-      // Ensure user is authenticated
-      if (!auth.currentUser) {
-        throw new Error("Authentication required to view earnings statistics");
-      }
+      // Wait for Firebase auth to be ready
+      await waitForAuth();
 
       console.log(
         "Mobile PaymentService - Getting doctor earnings statistics for timeRange:",

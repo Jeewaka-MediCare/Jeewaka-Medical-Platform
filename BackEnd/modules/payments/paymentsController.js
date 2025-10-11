@@ -809,12 +809,14 @@ export const getDoctorEarnings = async (req, res) => {
       sessionsWithPayments.length
     );
 
-    // Extract payment info from all sessions
+    // Extract payment info from all sessions and fetch patient names
     const allPayments = [];
     let totalEarnings = 0;
 
     for (const session of sessionsWithPayments) {
-      session.timeSlots.forEach((slot, index) => {
+      for (let index = 0; index < session.timeSlots.length; index++) {
+        const slot = session.timeSlots[index];
+        
         if (
           slot.paymentIntentId &&
           slot.paymentDate &&
@@ -824,6 +826,19 @@ export const getDoctorEarnings = async (req, res) => {
           const amount = slot.paymentAmount || 0;
           totalEarnings += amount;
 
+          // Get patient name if patientId exists
+          let patientName = "Unknown Patient";
+          if (slot.patientId) {
+            try {
+              const patient = await Patient.findById(slot.patientId).select('name').lean();
+              if (patient && patient.name) {
+                patientName = patient.name;
+              }
+            } catch (error) {
+              console.log("🔐 PaymentController - Error fetching patient:", error.message);
+            }
+          }
+
           const payment = {
             id: slot.paymentIntentId,
             amount: amount * 100, // Convert to cents for frontend consistency
@@ -832,13 +847,14 @@ export const getDoctorEarnings = async (req, res) => {
             date: slot.paymentDate,
             appointmentDate: session.date,
             appointmentTime: `${slot.startTime} - ${slot.endTime}`,
+            patientName: patientName,
             sessionId: session._id,
             slotIndex: index,
           };
 
           allPayments.push(payment);
         }
-      });
+      }
     }
 
     // Sort payments by date (newest first)
