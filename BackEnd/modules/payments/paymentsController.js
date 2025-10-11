@@ -703,3 +703,430 @@ export const getPaymentDetails = async (req, res) => {
     });
   }
 };
+
+// Get doctor earnings data
+export const getDoctorEarnings = async (req, res) => {
+  try {
+    console.log("🔐 PaymentController - getDoctorEarnings called");
+    console.log("🔐 PaymentController - Authenticated user:", req.user?.uid);
+
+    if (!req.user || !req.user.uid) {
+      return res.status(401).json({
+        error: "Authentication required",
+        message: "You must be logged in to view earnings",
+      });
+    }
+
+    // Get query parameters for date filtering
+    const { startDate, endDate, period = "week" } = req.query;
+
+    console.log("🔐 PaymentController - Query filters:", {
+      startDate,
+      endDate,
+      period,
+    });
+
+    // Find doctor by Firebase UID
+    const { default: Doctor } = await import("../doctor/doctorModel.js");
+    const doctor = await Doctor.findOne({ uuid: req.user.uid });
+    if (!doctor) {
+      return res.status(404).json({
+        error: "Doctor profile not found",
+        message: "Please complete your profile setup",
+      });
+    }
+
+    console.log("🔐 PaymentController - Doctor found:", {
+      mongoId: doctor._id,
+      firebaseUid: doctor.uuid,
+      name: doctor.name,
+    });
+
+    // Convert doctor._id to ObjectId for proper comparison
+    const doctorObjectId = new mongoose.Types.ObjectId(doctor._id);
+
+    // Import Session model
+    const { default: Session } = await import("../session/sessionModel.js");
+
+    // Calculate date range based on period if specific dates not provided
+    let startDateFilter, endDateFilter;
+    if (startDate && endDate) {
+      startDateFilter = new Date(startDate);
+      endDateFilter = new Date(endDate);
+    } else {
+      const now = new Date();
+      if (period === "today") {
+        startDateFilter = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        );
+        endDateFilter = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() + 1
+        );
+      } else if (period === "week") {
+        startDateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        endDateFilter = now;
+      } else if (period === "month") {
+        startDateFilter = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDateFilter = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      } else {
+        // Default to all time
+        startDateFilter = new Date("2020-01-01");
+        endDateFilter = now;
+      }
+    }
+
+    console.log("🔐 PaymentController - Date range:", {
+      startDate: startDateFilter,
+      endDate: endDateFilter,
+    });
+
+    // Find all sessions for this doctor with payments in the date range
+    const sessionsWithPayments = await Session.find({
+      doctorId: doctorObjectId,
+      date: {
+        $gte: startDateFilter,
+        $lte: endDateFilter,
+      },
+      timeSlots: {
+        $elemMatch: {
+          paymentIntentId: { $exists: true, $ne: null },
+          paymentDate: {
+            $gte: startDateFilter,
+            $lte: endDateFilter,
+          },
+        },
+      },
+    })
+      .populate("doctorId")
+      .lean();
+
+    console.log(
+      "🔐 PaymentController - Found sessions with payments:",
+      sessionsWithPayments.length
+    );
+
+    // Extract payment info from all sessions
+    const allPayments = [];
+    let totalEarnings = 0;
+
+    for (const session of sessionsWithPayments) {
+      session.timeSlots.forEach((slot, index) => {
+        if (
+          slot.paymentIntentId &&
+          slot.paymentDate &&
+          slot.paymentDate >= startDateFilter &&
+          slot.paymentDate <= endDateFilter
+        ) {
+          const amount = slot.paymentAmount || 0;
+          totalEarnings += amount;
+
+          const payment = {
+            id: slot.paymentIntentId,
+            amount: amount * 100, // Convert to cents for frontend consistency
+            currency: slot.paymentCurrency || "lkr",
+            status: "succeeded",
+            date: slot.paymentDate,
+            appointmentDate: session.date,
+            appointmentTime: `${slot.startTime} - ${slot.endTime}`,
+            sessionId: session._id,
+            slotIndex: index,
+          };
+
+          allPayments.push(payment);
+        }
+      });
+    }
+
+    // Sort payments by date (newest first)
+    allPayments.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    console.log(
+      "🔐 PaymentController - Total earnings:",
+      totalEarnings,
+      "Payments:",
+      allPayments.length
+    );
+
+    res.json({
+      success: true,
+      earnings: {
+        total: totalEarnings * 100, // Convert to cents for frontend
+        currency: "lkr",
+        period,
+        dateRange: {
+          startDate: startDateFilter,
+          endDate: endDateFilter,
+        },
+        payments: allPayments,
+        count: allPayments.length,
+      },
+    });
+  } catch (error) {
+    console.error("🔐 PaymentController - getDoctorEarnings Error:", error);
+    res.status(500).json({
+      error: "Failed to fetch doctor earnings",
+      message: error.message,
+    });
+  }
+};
+
+// Get doctor earnings statistics (daily breakdown for charts)
+export const getDoctorEarningsStats = async (req, res) => {
+  try {
+    console.log("🔐 PaymentController - getDoctorEarningsStats called");
+    console.log("🔐 PaymentController - Authenticated user:", req.user?.uid);
+    console.log("🔐 PaymentController - Query params:", req.query);
+
+    if (!req.user || !req.user.uid) {
+      return res.status(401).json({
+        error: "Authentication required",
+        message: "You must be logged in to view earnings statistics",
+      });
+    }
+
+    // Get time range from query parameter (default to 4weeks)
+    const timeRange = req.query.timeRange || "4weeks";
+    console.log("🔐 PaymentController - Time range:", timeRange);
+
+    // Find doctor by Firebase UID
+    const { default: Doctor } = await import("../doctor/doctorModel.js");
+    const doctor = await Doctor.findOne({ uuid: req.user.uid });
+    if (!doctor) {
+      return res.status(404).json({
+        error: "Doctor profile not found",
+        message: "Please complete your profile setup",
+      });
+    }
+
+    const doctorObjectId = new mongoose.Types.ObjectId(doctor._id);
+    const { default: Session } = await import("../session/sessionModel.js");
+
+    // Calculate date ranges based on timeRange parameter
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    let periods = [];
+    let labelPrefix = "W";
+
+    switch (timeRange) {
+      case "4weeks":
+        for (let i = 3; i >= 0; i--) {
+          const weekStart = new Date(
+            today.getTime() - (i * 7 + 6) * 24 * 60 * 60 * 1000
+          );
+          const weekEnd = new Date(
+            today.getTime() - i * 7 * 24 * 60 * 60 * 1000
+          );
+          periods.push({
+            start: weekStart,
+            end: weekEnd,
+            label: `W${4 - i}`,
+            date: weekStart.toISOString().split("T")[0],
+          });
+        }
+        break;
+
+      case "8weeks":
+        for (let i = 7; i >= 0; i--) {
+          const weekStart = new Date(
+            today.getTime() - (i * 7 + 6) * 24 * 60 * 60 * 1000
+          );
+          const weekEnd = new Date(
+            today.getTime() - i * 7 * 24 * 60 * 60 * 1000
+          );
+          periods.push({
+            start: weekStart,
+            end: weekEnd,
+            label: `W${8 - i}`,
+            date: weekStart.toISOString().split("T")[0],
+          });
+        }
+        break;
+
+      case "3months":
+        for (let i = 2; i >= 0; i--) {
+          const monthStart = new Date(
+            today.getFullYear(),
+            today.getMonth() - i,
+            1
+          );
+          const monthEnd = new Date(
+            today.getFullYear(),
+            today.getMonth() - i + 1,
+            0
+          );
+          const monthNames = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
+          periods.push({
+            start: monthStart,
+            end: new Date(monthEnd.getTime() + 24 * 60 * 60 * 1000), // Include the last day
+            label: monthNames[monthStart.getMonth()],
+            date: monthStart.toISOString().split("T")[0],
+          });
+        }
+        break;
+
+      case "6months":
+        for (let i = 5; i >= 0; i--) {
+          const monthStart = new Date(
+            today.getFullYear(),
+            today.getMonth() - i,
+            1
+          );
+          const monthEnd = new Date(
+            today.getFullYear(),
+            today.getMonth() - i + 1,
+            0
+          );
+          const monthNames = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
+          periods.push({
+            start: monthStart,
+            end: new Date(monthEnd.getTime() + 24 * 60 * 60 * 1000), // Include the last day
+            label: monthNames[monthStart.getMonth()],
+            date: monthStart.toISOString().split("T")[0],
+          });
+        }
+        break;
+
+      default:
+        // Default to 4 weeks
+        for (let i = 3; i >= 0; i--) {
+          const weekStart = new Date(
+            today.getTime() - (i * 7 + 6) * 24 * 60 * 60 * 1000
+          );
+          const weekEnd = new Date(
+            today.getTime() - i * 7 * 24 * 60 * 60 * 1000
+          );
+          periods.push({
+            start: weekStart,
+            end: weekEnd,
+            label: `W${4 - i}`,
+            date: weekStart.toISOString().split("T")[0],
+          });
+        }
+    }
+
+    // Get today's earnings
+    const todaySessions = await Session.find({
+      doctorId: doctorObjectId,
+      timeSlots: {
+        $elemMatch: {
+          paymentIntentId: { $exists: true, $ne: null },
+          paymentDate: {
+            $gte: today,
+            $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+          },
+        },
+      },
+    }).lean();
+
+    let todayEarnings = 0;
+    todaySessions.forEach((session) => {
+      session.timeSlots.forEach((slot) => {
+        if (
+          slot.paymentIntentId &&
+          slot.paymentDate &&
+          slot.paymentDate >= today
+        ) {
+          todayEarnings += slot.paymentAmount || 0;
+        }
+      });
+    });
+
+    // Get earnings breakdown for each period
+    const breakdown = [];
+    let totalEarnings = 0;
+
+    for (const period of periods) {
+      const periodSessions = await Session.find({
+        doctorId: doctorObjectId,
+        timeSlots: {
+          $elemMatch: {
+            paymentIntentId: { $exists: true, $ne: null },
+            paymentDate: {
+              $gte: period.start,
+              $lt: period.end,
+            },
+          },
+        },
+      }).lean();
+
+      let periodEarnings = 0;
+      periodSessions.forEach((session) => {
+        session.timeSlots.forEach((slot) => {
+          if (
+            slot.paymentIntentId &&
+            slot.paymentDate &&
+            slot.paymentDate >= period.start &&
+            slot.paymentDate < period.end
+          ) {
+            periodEarnings += slot.paymentAmount || 0;
+          }
+        });
+      });
+
+      totalEarnings += periodEarnings;
+
+      breakdown.push({
+        date: period.date,
+        week: period.label,
+        earnings: periodEarnings * 100, // Convert to cents for frontend
+      });
+    }
+
+    console.log("🔐 PaymentController - Earnings stats:", {
+      timeRange,
+      todayEarnings,
+      totalEarnings,
+      chartDataPoints: breakdown.length,
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        todayEarnings: todayEarnings * 100, // Convert to cents
+        weeklyEarnings: totalEarnings * 100, // Convert to cents (total for selected period)
+        currency: "lkr",
+        chartData: breakdown,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "🔐 PaymentController - getDoctorEarningsStats Error:",
+      error
+    );
+    res.status(500).json({
+      error: "Failed to fetch doctor earnings statistics",
+      message: error.message,
+    });
+  }
+};

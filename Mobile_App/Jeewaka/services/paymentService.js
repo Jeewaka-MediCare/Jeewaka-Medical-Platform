@@ -227,6 +227,87 @@ export const paymentService = {
       throw error;
     }
   },
+
+  // Get doctor earnings data (doctor-specific)
+  getDoctorEarnings: async (filters = {}) => {
+    try {
+      // Ensure user is authenticated
+      if (!auth.currentUser) {
+        throw new Error("Authentication required to view earnings");
+      }
+
+      console.log(
+        "Mobile PaymentService - Getting doctor earnings with filters:",
+        filters
+      );
+
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (filters.period) {
+        params.append("period", filters.period);
+      }
+      if (filters.startDate) {
+        params.append("startDate", filters.startDate);
+      }
+      if (filters.endDate) {
+        params.append("endDate", filters.endDate);
+      }
+
+      const queryString = params.toString();
+      const url = `/api/payments/earnings${
+        queryString ? `?${queryString}` : ""
+      }`;
+
+      console.log("Mobile PaymentService - Making request to:", url);
+
+      const response = await api.get(url);
+      console.log(
+        "Mobile PaymentService - Doctor earnings response:",
+        response.data
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Mobile PaymentService - Error getting doctor earnings:",
+        error
+      );
+      console.error("Error response:", error.response?.data);
+      throw error;
+    }
+  },
+
+  // Get doctor earnings statistics for charts (doctor-specific)
+  getDoctorEarningsStats: async (timeRange = "4weeks") => {
+    try {
+      // Ensure user is authenticated
+      if (!auth.currentUser) {
+        throw new Error("Authentication required to view earnings statistics");
+      }
+
+      console.log(
+        "Mobile PaymentService - Getting doctor earnings statistics for timeRange:",
+        timeRange
+      );
+
+      const response = await api.get(
+        `/api/payments/earnings/stats?timeRange=${timeRange}`
+      );
+      console.log(
+        "Mobile PaymentService - Doctor earnings stats response:",
+        response.data
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Mobile PaymentService - Error getting doctor earnings stats:",
+        error
+      );
+      console.error("Error response:", error.response?.data);
+      throw error;
+    }
+  },
 };
 
 export default paymentService;

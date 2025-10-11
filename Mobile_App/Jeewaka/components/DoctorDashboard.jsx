@@ -12,10 +12,12 @@ import {
   Dimensions
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LineChart } from 'react-native-gifted-charts';
 import { useRouter } from 'expo-router';
 import { format, parseISO } from 'date-fns';
 import api from '../services/api';
 import useAuthStore from '../store/authStore';
+import paymentService from '../services/paymentService';
 
 export default function DoctorDashboard() {
   const { user } = useAuthStore();
@@ -26,26 +28,43 @@ export default function DoctorDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
+  // Earnings state
+  const [earningsData, setEarningsData] = useState({
+    weeklyEarnings: 0,
+    todayEarnings: 0,
+    chartData: []
+  });
+  
+  // Time range state for chart
+  const [selectedTimeRange, setSelectedTimeRange] = useState('4weeks');
+  const [showTimeRangePicker, setShowTimeRangePicker] = useState(false);
+  const timeRangeOptions = [
+    { label: 'Last 4 Weeks', value: '4weeks' },
+    { label: 'Last 8 Weeks', value: '8weeks' },
+    { label: 'Last 3 Months', value: '3months' },
+    { label: 'Last 6 Months', value: '6months' },
+  ];
+  
+  // Handler functions
+  const handleTimeRangeSelect = (value) => {
+    setSelectedTimeRange(value);
+    setShowTimeRangePicker(false);
+    fetchEarningsData(value);
+  };
+
+  const toggleTimeRangePicker = () => {
+    setShowTimeRangePicker(!showTimeRangePicker);
+  };
+
+  const getSelectedTimeRangeLabel = () => {
+    const selected = timeRangeOptions.find(option => option.value === selectedTimeRange);
+    return selected ? selected.label : 'Last 4 Weeks';
+  };
+  
   // Animation values for floating reviews
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50)); // Start 50 pixels below
   const [scrollAnim] = useState(new Animated.Value(0)); // For continuous scrolling animation
-
-  // Mock reviews for testing
-  const mockReviews = [
-    {
-      patient: { name: 'John Doe' },
-      rating: 5,
-      comment: 'Excellent doctor! Very professional and caring. Highly recommend for orthopedic treatments.',
-      createdAt: new Date().toISOString()
-    },
-    {
-      patient: { name: 'Jane Smith' },
-      rating: 4,
-      comment: 'Great experience. Dr. Priya explained everything clearly and the treatment was effective.',
-      createdAt: new Date(Date.now() - 86400000).toISOString() // 1 day ago
-    }
-  ];
 
   // Function to start continuous scrolling animation
   const startContinuousScroll = (reviewCount) => {
@@ -72,6 +91,50 @@ export default function DoctorDashboard() {
     scrollSequence();
   };
 
+  const fetchEarningsData = async (timeRange = '4weeks') => {
+    if (!user?._id) return;
+    
+    try {
+      console.log('Fetching earnings data for doctor:', user._id, 'timeRange:', timeRange);
+      
+      // Import payment service
+      const { default: paymentService } = await import('../services/paymentService');
+      
+      // Fetch real earnings statistics from backend with time range
+      const response = await paymentService.getDoctorEarningsStats(timeRange);
+      
+      if (response.success) {
+        const { stats } = response;
+        
+        // Convert data format for the dashboard
+        setEarningsData({
+          weeklyEarnings: stats.weeklyEarnings, // Already in cents from backend
+          todayEarnings: stats.todayEarnings, // Already in cents from backend
+          chartData: stats.chartData // Already formatted with date, week, earnings
+        });
+        
+        console.log('Real earnings data loaded successfully:', {
+          weeklyEarnings: stats.weeklyEarnings,
+          todayEarnings: stats.todayEarnings,
+          chartDataPoints: stats.chartData.length,
+          chartData: stats.chartData
+        });
+      } else {
+        throw new Error('Invalid response format from earnings API');
+      }
+      
+    } catch (error) {
+      console.error('Failed to fetch earnings data:', error);
+      
+      // Fallback to empty state if API fails
+      setEarningsData({
+        weeklyEarnings: 0,
+        todayEarnings: 0,
+        chartData: []
+      });
+    }
+  };
+
   const fetchDoctorData = async () => {
     if (!user?._id) return;
     
@@ -80,6 +143,9 @@ export default function DoctorDashboard() {
       const { data } = await api.get(`/api/doctorCard/${user._id}`);
       setDoctorData(data.doctor);
       setRatingSummary(data.ratingSummary);
+      
+      // Fetch earnings data with selected time range
+      await fetchEarningsData(selectedTimeRange);
       
       // Fetch recent reviews
       try {
@@ -91,17 +157,9 @@ export default function DoctorDashboard() {
           .slice(0, 10);
         setRecentReviews(sortedReviews);
         console.log('Reviews set:', sortedReviews.length);
-        
-        // For testing: Always use mock reviews to ensure animation works
-        // Comment out this section when you have real reviews
-        if (sortedReviews.length === 0) {
-          setRecentReviews(mockReviews);
-          console.log('Set mock reviews for testing');
-        }
       } catch (reviewError) {
         console.error('Failed to fetch reviews:', reviewError);
-        // Set mock reviews for testing even on error
-        setRecentReviews(mockReviews);
+        setRecentReviews([]);
       }
     } catch (error) {
       console.error('Failed to fetch doctor data:', error);
@@ -115,6 +173,13 @@ export default function DoctorDashboard() {
   useEffect(() => {
     fetchDoctorData();
   }, [user?._id]);
+
+  // Listen for time range changes
+  useEffect(() => {
+    if (user?._id && selectedTimeRange) {
+      fetchEarningsData(selectedTimeRange);
+    }
+  }, [selectedTimeRange, user?._id]);
 
   // Separate useEffect to handle animations when reviews change
   useEffect(() => {
@@ -165,12 +230,19 @@ export default function DoctorDashboard() {
     }
   };
 
+  const handleViewEarnings = () => {
+    // Navigate to doctor earnings page
+    router.push('/doctor-earnings');
+  };
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good Morning';
     if (hour < 17) return 'Good Afternoon';
     return 'Good Evening';
   };
+
+
 
   if (loading && !doctorData) {
     return (
@@ -225,6 +297,276 @@ export default function DoctorDashboard() {
           <Text style={styles.statValue}>{doctorData?.yearsOfExperience || 0}</Text>
           <Text style={styles.statLabel}>Years Exp</Text>
         </View>
+      </View>
+
+      {/* Your Earnings Section */}
+      <View style={styles.earningsSection}>
+        {/* Earnings Header Row */}
+        <View style={styles.earningsHeaderRow}>
+          <Text style={styles.sectionTitle}>Your Earnings</Text>
+          <TouchableOpacity 
+            style={styles.viewEarningsButton}
+            onPress={handleViewEarnings}
+          >
+            <MaterialCommunityIcons name="eye" size={16} color="#2563EB" />
+            <Text style={styles.viewEarningsText}>View Earnings</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Earnings Stats Row */}
+        <View style={styles.earningsStatsRow}>
+          <View style={styles.earningsCard}>
+            <MaterialCommunityIcons name="calendar-month" size={20} color="#10B981" />
+            <Text style={styles.earningsValue}>LKR {(earningsData.weeklyEarnings / 100).toLocaleString()}</Text>
+            <Text style={styles.earningsLabel}>Monthly</Text>
+          </View>
+          
+          <View style={styles.earningsCard}>
+            <MaterialCommunityIcons name="calendar-today" size={20} color="#F59E0B" />
+            <Text style={styles.earningsValue}>LKR {(earningsData.todayEarnings / 100).toLocaleString()}</Text>
+            <Text style={styles.earningsLabel}>Today</Text>
+          </View>
+        </View>
+        
+        {/* Earnings Chart with Time Range Selector */}
+        {earningsData.chartData.length > 0 && (
+          <View style={styles.chartContainer}>
+            <View style={styles.chartHeader}>
+              <Text style={styles.chartTitle}>Earnings Trend</Text>
+              <TouchableOpacity 
+                style={styles.timeRangeButton}
+                onPress={toggleTimeRangePicker}
+              >
+                <Text style={styles.timeRangeText}>{getSelectedTimeRangeLabel()}</Text>
+                <MaterialCommunityIcons 
+                  name={showTimeRangePicker ? "chevron-up" : "chevron-down"} 
+                  size={16} 
+                  color="#6B7280" 
+                />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Time Range Picker Dropdown */}
+            {showTimeRangePicker && (
+              <View style={styles.timeRangeDropdown}>
+                {timeRangeOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.timeRangeOption,
+                      selectedTimeRange === option.value && styles.selectedTimeRangeOption
+                    ]}
+                    onPress={() => handleTimeRangeSelect(option.value)}
+                  >
+                    <Text style={[
+                      styles.timeRangeOptionText,
+                      selectedTimeRange === option.value && styles.selectedTimeRangeOptionText
+                    ]}>
+                      {option.label}
+                    </Text>
+                    {selectedTimeRange === option.value && (
+                      <MaterialCommunityIcons name="check" size={16} color="#059669" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            
+            <View style={styles.chartWrapper}>
+              {(() => {
+                const screenWidth = Dimensions.get('window').width;
+                // Account for: screen margins (8px), container padding (32px), wrapper padding (20px)
+                const chartWidth = screenWidth - 120; 
+                const dataLength = earningsData.chartData.length;
+                // Ensure spacing distributes points evenly with proper margins
+                const availableWidth = chartWidth - 80; // Space for labels and margins
+                const spacing = dataLength > 1 ? Math.max(30, availableWidth / (dataLength - 1)) : 50;
+                
+                // Calculate Y-axis labels with improved scaling
+                const maxEarnings = Math.max(...earningsData.chartData.map(d => Math.max(d.earnings / 100, 0)));
+                
+                // Smart scaling: ensure nice round numbers for Y-axis
+                let maxValue;
+                if (maxEarnings <= 100) {
+                  maxValue = Math.ceil(maxEarnings * 1.2 / 10) * 10; // Round to nearest 10
+                } else if (maxEarnings <= 1000) {
+                  maxValue = Math.ceil(maxEarnings * 1.2 / 100) * 100; // Round to nearest 100
+                } else if (maxEarnings <= 10000) {
+                  maxValue = Math.ceil(maxEarnings * 1.2 / 1000) * 1000; // Round to nearest 1000
+                } else if (maxEarnings <= 100000) {
+                  maxValue = Math.ceil(maxEarnings * 1.2 / 5000) * 5000; // Round to nearest 5000
+                } else if (maxEarnings <= 1000000) {
+                  maxValue = Math.ceil(maxEarnings * 1.2 / 50000) * 50000; // Round to nearest 50000
+                } else {
+                  maxValue = Math.ceil(maxEarnings * 1.2 / 100000) * 100000; // Round to nearest 100000
+                }
+                
+                // Ensure minimum scale
+                maxValue = Math.max(1000, maxValue);
+                
+                const yAxisLabels = [];
+                for (let i = 0; i <= 6; i++) {
+                  const value = (maxValue / 6) * i;
+                  if (value >= 1000000) {
+                    yAxisLabels.push(`${(value / 1000000).toFixed(1)}M`);
+                  } else if (value >= 1000) {
+                    yAxisLabels.push(`${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}K`);
+                  } else {
+                    yAxisLabels.push(`${Math.round(value)}`);
+                  }
+                }
+                
+                console.log('Chart Scaling Debug:', {
+                  screenWidth,
+                  chartWidth,
+                  dataLength,
+                  spacing,
+                  availableWidth,
+                  rawEarningsData: earningsData.chartData.map(item => item.earnings),
+                  maxEarnings,
+                  maxValue,
+                  scalingRatio: maxValue / maxEarnings,
+                  yAxisLabels,
+                  chartData: earningsData.chartData.map(item => ({ week: item.week, earnings: item.earnings }))
+                });
+                
+                // Test scaling logic with different scenarios
+                const testScenarios = [
+                  { name: 'Low earnings', maxEarnings: 50 },
+                  { name: 'Medium earnings', maxEarnings: 500 },
+                  { name: 'High earnings', maxEarnings: 5000 },
+                  { name: 'Very high earnings', maxEarnings: 50000 },
+                  { name: 'Extremely high earnings', maxEarnings: 500000 }
+                ];
+                
+                console.log('Y-Axis Scaling Test Results:');
+                testScenarios.forEach(scenario => {
+                  let testMaxValue;
+                  if (scenario.maxEarnings <= 100) {
+                    testMaxValue = Math.ceil(scenario.maxEarnings * 1.2 / 10) * 10;
+                  } else if (scenario.maxEarnings <= 1000) {
+                    testMaxValue = Math.ceil(scenario.maxEarnings * 1.2 / 100) * 100;
+                  } else if (scenario.maxEarnings <= 10000) {
+                    testMaxValue = Math.ceil(scenario.maxEarnings * 1.2 / 1000) * 1000;
+                  } else if (scenario.maxEarnings <= 100000) {
+                    testMaxValue = Math.ceil(scenario.maxEarnings * 1.2 / 5000) * 5000;
+                  } else if (scenario.maxEarnings <= 1000000) {
+                    testMaxValue = Math.ceil(scenario.maxEarnings * 1.2 / 50000) * 50000;
+                  } else {
+                    testMaxValue = Math.ceil(scenario.maxEarnings * 1.2 / 100000) * 100000;
+                  }
+                  testMaxValue = Math.max(1000, testMaxValue);
+                  
+                  const testLabels = [];
+                  for (let i = 0; i <= 6; i++) {
+                    const value = (testMaxValue / 6) * i;
+                    if (value >= 1000000) {
+                      testLabels.push(`${(value / 1000000).toFixed(1)}M`);
+                    } else if (value >= 1000) {
+                      testLabels.push(`${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}K`);
+                    } else {
+                      testLabels.push(`${Math.round(value)}`);
+                    }
+                  }
+                  
+                  console.log(`${scenario.name} (${scenario.maxEarnings}):`, {
+                    maxValue: testMaxValue,
+                    labels: testLabels
+                  });
+                });
+                
+                return (
+                  <LineChart
+                    areaChart
+                    data={earningsData.chartData.map(item => ({
+                      value: Math.max(item.earnings / 100, 0), // Convert from cents to LKR, ensure minimum 0
+                      label: item.week,
+                    }))}
+                    width={chartWidth}
+                    height={240}
+                    spacing={spacing}
+                    initialSpacing={40}
+                    endSpacing={40}
+                    adjustToWidth={false}
+                    color="#60A5FA"
+                    thickness={3}
+                    startFillColor="rgba(96, 165, 250, 0.4)"
+                    endFillColor="rgba(147, 197, 253, 0.1)"
+                    startOpacity={0.4}
+                    endOpacity={0.1}
+                    noOfSections={6}
+                    maxValue={maxValue}
+                    minValue={0}
+                    yAxisOffset={0}
+                    hideOrigin={false}
+                    yAxisLabelTexts={yAxisLabels}
+                    yAxisColor="#E5E7EB"
+                    xAxisColor="#E5E7EB"
+                    yAxisThickness={1}
+                    xAxisThickness={1}
+                    yAxisLabelWidth={50}
+                    rulesType="solid"
+                    rulesColor="#F3F4F6"
+                    rulesThickness={1}
+                    yAxisTextStyle={{
+                      color: '#374151',
+                      fontSize: 11,
+                      fontWeight: '500',
+                    }}
+                    showYAxisIndices={true}
+                    yAxisLabelSuffix=""
+                xAxisLabelTextStyle={{
+                  color: '#6B7280',
+                  fontSize: 11,
+                  fontWeight: '500',
+                }}
+                showVerticalLines={false}
+                curved={false}
+                isAnimated={true}
+                animationDuration={1500}
+                animateOnDataChange={true}
+                onDataChangeAnimationDuration={800}
+                hideDataPoints={false}
+                dataPointsHeight={8}
+                dataPointsWidth={8}
+                dataPointsColor="#3B82F6"
+                dataPointsRadius={4}
+                focusEnabled={true}
+                showStripOnFocus={true}
+                stripColor="#E5E7EB"
+                stripOpacity={0.5}
+                stripWidth={2}
+                showTextOnFocus={true}
+                focusedDataPointColor="#1D4ED8"
+                focusedDataPointRadius={6}
+                textShiftY={-8}
+                textShiftX={0}
+                textColor="#1F2937"
+                textFontSize={12}
+                  />
+                );
+              })()}
+            </View>
+            
+            {/* Chart Statistics */}
+            <View style={styles.chartStats}>
+              <View style={styles.statRow}>
+                <View style={styles.statItem}>
+                  <MaterialCommunityIcons name="trending-up" size={16} color="#10B981" />
+                  <Text style={styles.statLabel}>
+                    {earningsData.chartData.length > 1 ? 
+                      (earningsData.chartData[earningsData.chartData.length - 1].earnings > earningsData.chartData[0].earnings ? 
+                        'Trending up' : 'Trending down') 
+                      : 'Stable'}
+                  </Text>
+                </View>
+                <Text style={styles.periodLabel}>
+                  {timeRangeOptions.find(opt => opt.value === selectedTimeRange)?.label}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
 
       {/* Recent Reviews Section */}
@@ -469,6 +811,193 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
     textAlign: 'center',
+  },
+  // Earnings Section Styles
+  earningsSection: {
+    backgroundColor: 'white',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1E293B',
+  },
+  earningsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  earningsStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 8,
+  },
+  earningsCard: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  earningsValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    marginTop: 4,
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  earningsLabel: {
+    fontSize: 11,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  viewEarningsButton: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  viewEarningsText: {
+    fontSize: 12,
+    color: '#2563EB',
+    fontWeight: '500',
+  },
+  // Chart styles
+  chartContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    marginTop: 16,
+    marginHorizontal: 4,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+  },
+  timeRangeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    minWidth: 120,
+    justifyContent: 'center',
+  },
+  timeRangeText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  timeRangeDropdown: {
+    position: 'absolute',
+    top: 50,
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1000,
+    minWidth: 140,
+  },
+  timeRangeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  selectedTimeRangeOption: {
+    backgroundColor: '#F0FDF4',
+  },
+  timeRangeOptionText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '400',
+  },
+  selectedTimeRangeOptionText: {
+    color: '#059669',
+    fontWeight: '500',
+  },
+  chartWrapper: {
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 0,
+    backgroundColor: '#FEFEFE',
+    borderRadius: 12,
+    marginBottom: 15,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  chartStats: {
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 15,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  periodLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '400',
   },
   infoSection: {
     paddingHorizontal: 16,
