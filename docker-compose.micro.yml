@@ -26,8 +26,8 @@ services:
     environment:
       # Frontend environment variables
       - VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
-      - VITE_API_URL=http://backend:5000/api
-      - VITE_BACKEND_URL=http://backend:5000
+      - VITE_API_URL=http://13.50.239.26:5000
+      - VITE_BACKEND_URL=http://13.50.239.26:5000
 
   backend:
     build:
