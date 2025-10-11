@@ -58,6 +58,7 @@ import { PatientReportsDialog } from "../components/PatientReportsDialog";
 import { PatientHistoryDialog } from "../components/PatientHistoryDialog";
 import { LocationTab } from "../components/LocationTab";
 import api from "../services/api.js";
+import { toast } from "sonner";
 import useAuthStore from "../store/authStore.js";
 
 export default function DoctorSessionManager() {
@@ -210,8 +211,27 @@ export default function DoctorSessionManager() {
     console.log("Edit session:", session);
   };
 
-  const handleDeleteSession = (sessionId) => {
-    setSessions(prev => prev.filter(s => s._id !== sessionId));
+  const handleDeleteSession = async (sessionId) => {
+    try {
+      const response = await api.delete(`/api/session/${sessionId}`);
+      
+      if (response.data.message) {
+        toast.success("Session deleted successfully");
+        setSessions(prev => prev.filter(s => s._id !== sessionId));
+      }
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      
+      if (error.response?.data?.error) {
+        toast.error("Cannot delete session", {
+          description: error.response.data.error
+        });
+      } else {
+        toast.error("Failed to delete session", {
+          description: "Please try again later"
+        });
+      }
+    }
   };
 
   const handleUpdateAppointmentStatus = (sessionId, slotId, newStatus) => {

@@ -7,6 +7,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        - VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_BACKEND_URL=${VITE_BACKEND_URL}
     ports:
       - "80:80"
       - "443:443"

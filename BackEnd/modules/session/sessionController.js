@@ -223,9 +223,30 @@ export const updateAppointmentMeetingId = async (req, res) => {
 // Delete a session
 export const deleteSession = async (req, res) => {
   try {
-    const session = await Session.findByIdAndDelete(req.params.sessionId);
+    const session = await Session.findById(req.params.sessionId);
     if (!session) return res.status(404).json({ error: "Session not found" });
-    res.json({ message: "Session deleted" });
+
+    // Check if any time slots have bookings
+    const hasBookings = session.timeSlots.some(slot => 
+      slot.patientId !== null || slot.status === 'booked'
+    );
+
+    if (hasBookings) {
+      return res.status(400).json({ 
+        error: "Cannot delete session with existing bookings. Please cancel all appointments first." 
+      });
+    }
+
+    // Delete the session
+    await Session.findByIdAndDelete(req.params.sessionId);
+
+    // Remove session from doctor's sessions array
+    await Doctor.findByIdAndUpdate(
+      session.doctorId,
+      { $pull: { sessions: req.params.sessionId } }
+    );
+
+    res.json({ message: "Session deleted successfully" });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

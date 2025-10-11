@@ -22,6 +22,7 @@ import { Navbar } from "./components/navBar";
 import PatientLayout from "./Layout.jsx/patientLayout";
 import LandingPage from "./pages/LandingPage";
 import { AuthProvider } from "./components/AuthProvider";
+import { Toaster } from "./components/ui/sonner";
 
 function App() {
   useEffect(() => {
@@ -129,6 +130,7 @@ function App() {
         </Route>
       </Routes>
       </AuthProvider>
+      <Toaster />
     </Router>
   );
 }
