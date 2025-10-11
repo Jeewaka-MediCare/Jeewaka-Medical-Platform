@@ -40,7 +40,7 @@ export function TimeSlotCard({
         )}
       </div>
 
-      {slot.status === "booked" && slot.patientName && patient ? (
+      {slot.status === "booked" && slot.patientName ? (
         <div className="space-y-4">
           {/* Patient Header */}
           <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
@@ -54,16 +54,16 @@ export function TimeSlotCard({
               <div>
                 <h3 className="text-xl font-bold text-gray-900">{slot.patientName}</h3>
                 <p className="text-gray-600">
-                  {patient.age} years • {patient.gender}
+                  Patient ID: {slot.patientId}
                 </p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Button size="sm" variant="outline" onClick={() => onViewReports(patient)}>
+              <Button size="sm" variant="outline" onClick={() => onViewReports({ name: slot.patientName, id: slot.patientId })}>
                 <Eye className="h-4 w-4 mr-1" />
                 View Reports
               </Button>
-              <Button size="sm" variant="outline" onClick={() => onViewHistory(patient)}>
+              <Button size="sm" variant="outline" onClick={() => onViewHistory({ name: slot.patientName, id: slot.patientId })}>
                 <Calendar className="h-4 w-4 mr-1" />
                 View History
               </Button>

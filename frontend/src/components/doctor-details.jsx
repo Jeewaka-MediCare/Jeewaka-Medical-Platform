@@ -41,7 +41,7 @@ export function DoctorDetails({ doctor, ratingSummary, sessions, reviews, onClos
 
               <div className="pt-2">
                 <Badge className="bg-primary/10 text-primary border-none">
-                  ${doctor.consultationFee.toLocaleString()}
+                  LKR {doctor.consultationFee.toLocaleString()}
                 </Badge>
               </div>
 

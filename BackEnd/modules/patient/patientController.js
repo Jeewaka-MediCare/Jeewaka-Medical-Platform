@@ -28,14 +28,12 @@ export const getPatientAppointments = async (req, res) => {
 
   try {
     // Find all sessions where at least one timeslot has this patient
-    // const sessions = await Session.find({ "timeSlots.patientId": patientId })
-    //   .populate("doctorId", "name specialization") // include doctor details
-    //   .populate("hospital", "name address") // include hospital details
-    //   .lean();
-    const sessions = await Session.find({ "_id": '687e83310b4a56d306c626f7' })
-    console.log("Sessions retrieved:", sessions);
-    const docotr = await Doctor.findById('687c8a2f5b9997e7b8128e35');
-    console.log("Doctor retrieved:",docotr)
+    const sessions = await Session.find({ "timeSlots.patientId": patientId })
+      .populate("doctorId", "name specialization") // include doctor details
+      .populate("hospital", "name address") // include hospital details
+      .lean();
+    
+    console.log("Sessions retrieved:", sessions.length);
   
 
 

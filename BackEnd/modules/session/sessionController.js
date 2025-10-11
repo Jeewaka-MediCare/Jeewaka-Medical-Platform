@@ -82,9 +82,9 @@ export const getSessions = async (req, res) => {
 // Get a single session by ID
 export const getSessionById = async (req, res) => {
   try {
-    const session = await Session.findById(req.params.sessionId).populate(
-      "hospital"
-    ); //new
+    const session = await Session.findById(req.params.sessionId)
+      .populate("hospital", "name location address")
+      .populate("timeSlots.patientId", "firstName lastName email phone");
     if (!session) return res.status(404).json({ error: "Session not found" });
 
     // If user is authenticated and is a doctor, populate patient information in time slots      //new
@@ -147,7 +147,9 @@ export const getSessionById = async (req, res) => {
 
 export const getSessionByDoctorId = async (req, res) => {
   try {
-    const sessions = await Session.find({ doctorId: req.params.doctorId });
+    const sessions = await Session.find({ doctorId: req.params.doctorId })
+      .populate("hospital", "name location address")
+      .populate("timeSlots.patientId", "firstName lastName email phone");
     res.json(sessions);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -467,6 +469,110 @@ export const bookAppointment = async (req, res) => {
     });
   } catch (error) {
     console.error("Error booking appointment:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get doctor statistics
+export const getDoctorStatistics = async (req, res) => {
+  console.log("🔍 getDoctorStatistics called");
+  console.log("🔍 Request params:", req.params);
+  console.log("🔍 Request URL:", req.originalUrl);
+
+  try {
+    const doctorId = req.params.doctorId;
+    console.log("🔍 Getting statistics for doctor:", doctorId);
+
+    // Validate doctorId format
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      return res.status(400).json({ error: "Invalid doctor ID format" });
+    }
+
+    // Get all sessions for the doctor
+    const sessions = await Session.find({ doctorId });
+    console.log(`Found ${sessions.length} sessions for doctor ${doctorId}`);
+
+    // Debug: log first session structure
+    if (sessions.length > 0) {
+      console.log(
+        "🔍 Sample session structure:",
+        JSON.stringify(sessions[0], null, 2)
+      );
+    }
+
+    // Get unique patients who have booked appointments
+    const uniquePatients = new Set();
+    let appointmentsToday = 0;
+    let completedSessions = 0;
+    let totalBookedSlots = 0;
+
+    const today = new Date();
+    const todayString = today.toDateString();
+
+    sessions.forEach((session) => {
+      console.log("🔍 Processing session:", {
+        id: session._id,
+        date: session.date,
+        slotsCount: session.timeSlots?.length || 0,
+      });
+
+      if (session.timeSlots) {
+        session.timeSlots.forEach((slot) => {
+          console.log("🔍 Processing slot:", {
+            startTime: slot.startTime,
+            appointmentStatus: slot.appointmentStatus,
+            patientId: slot.patientId ? slot.patientId.toString() : null,
+            sessionDate: session.date,
+          });
+
+          // Count unique patients (check both patientId and confirmed status)
+          if (slot.patientId && slot.patientId.toString() !== "null") {
+            uniquePatients.add(slot.patientId.toString());
+            totalBookedSlots++;
+            console.log(
+              "🔍 Added patient to count:",
+              slot.patientId.toString()
+            );
+          }
+
+          // Count today's appointments (confirmed appointments)
+          if (slot.appointmentStatus === "confirmed" && slot.patientId) {
+            // Use session date, not slot startTime for date comparison
+            const sessionDate = new Date(session.date);
+            const sessionDateString = sessionDate.toDateString();
+            console.log("🔍 Checking today appointment:", {
+              sessionDate: session.date,
+              sessionDateString,
+              todayString,
+              isToday: sessionDateString === todayString,
+            });
+
+            if (sessionDateString === todayString) {
+              appointmentsToday++;
+              console.log("🔍 Found today appointment:", slot.startTime);
+            }
+          }
+
+          // Count completed appointments (individual appointments that are completed)
+          if (slot.appointmentStatus === "completed") {
+            completedSessions++;
+          }
+        });
+      }
+    });
+
+    const statistics = {
+      totalPatients: uniquePatients.size,
+      appointmentsToday,
+      completedAppointments: completedSessions, // Renamed for clarity - these are completed individual appointments
+      totalSessions: sessions.length,
+      totalBookedSlots,
+    };
+
+    console.log("Calculated statistics:", statistics);
+    res.json(statistics);
+  } catch (error) {
+    console.error("Error fetching doctor statistics:", error);
     res.status(500).json({ error: error.message });
   }
 };

@@ -40,7 +40,7 @@ export function DoctorCard({
               className="absolute inset-0 w-full h-full object-cover object-center"
             />
             <div className="absolute bottom-0 right-0 bg-primary text-white px-3 py-1 text-sm font-medium">
-              ${consultationFee.toLocaleString()}
+              LKR {consultationFee.toLocaleString()}
             </div>
           </div>
           <div className="p-5 space-y-3">

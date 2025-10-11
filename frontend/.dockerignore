@@ -86,8 +86,8 @@ docker-compose*.yml
 .travis.yml
 Jenkinsfile
 
-# Package manager files
-package-lock.json
+# Package manager files (KEEP package-lock.json for production builds)
+# package-lock.json  # COMMENTED OUT - needed for Docker builds
 yarn.lock
 pnpm-lock.yaml
 

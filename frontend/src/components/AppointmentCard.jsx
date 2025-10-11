@@ -12,6 +12,24 @@ export default function AppointmentCard({ appointment }) {
   const { userRole } = useAuthStore()
   const isDoctor = userRole === 'doctor'
   const [isMedicalRecordsOpen, setIsMedicalRecordsOpen] = useState(false)
+
+  // Function to convert 24-hour time to 12-hour format with AM/PM
+  const formatTime = (time24) => {
+    if (!time24) return "TBD"
+    
+    const [hours, minutes] = time24.split(':').map(Number)
+    const period = hours >= 12 ? 'PM' : 'AM'
+    const hours12 = hours % 12 || 12
+    
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`
+  }
+
+  // Function to format time range
+  const formatTimeRange = (startTime, endTime) => {
+    if (!startTime || !endTime) return "TBD"
+    return `${formatTime(startTime)} - ${formatTime(endTime)}`
+  }
+
   // Determine status based on current date/time
   const now = new Date()
   const appointmentDateTime = appointment.date
@@ -51,12 +69,12 @@ export default function AppointmentCard({ appointment }) {
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
               <span>
-                {appointment.startTime || "TBD"} - {appointment.endTime || "TBD"}
+                {formatTimeRange(appointment.startTime, appointment.endTime)}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              {appointment.type === "video" |appointment.type ==="online"? (
+              {appointment.type === "video" || appointment.type === "online" ? (
                 <>
                   <Globe className="h-4 w-4 text-primary" />
                   <span>Video Consultation</span>

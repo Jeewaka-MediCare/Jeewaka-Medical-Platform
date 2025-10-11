@@ -13,11 +13,15 @@ lerna-debug.log*
 .env.production
 .env.staging
 .env.test
+.env.example
 BackEnd/env
 
 # Firebase keys and sensitive config
 config/fireBaseKey.json
 **/fireBaseKey.json
+service-account-key.json
+**/service-account-key.json
+BackEnd/service-account-key.json
 firebase-adminsdk-*.json
 service-account-key.json
 google-services.json
