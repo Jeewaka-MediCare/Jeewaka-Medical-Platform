@@ -130,8 +130,22 @@ export default function DoctorEarnings() {
     }
 
     const dateFilters = {};
-    if (startDate) dateFilters.startDate = startDate.toISOString();
-    if (endDate) dateFilters.endDate = endDate.toISOString();
+    if (startDate) {
+      // Create UTC date string using the local date components to avoid timezone shifts
+      const year = startDate.getFullYear();
+      const month = startDate.getMonth();
+      const day = startDate.getDate();
+      const startUTC = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+      dateFilters.startDate = startUTC.toISOString();
+    }
+    if (endDate) {
+      // Create UTC date string using the local date components to avoid timezone shifts
+      const year = endDate.getFullYear();
+      const month = endDate.getMonth();
+      const day = endDate.getDate();
+      const endUTC = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+      dateFilters.endDate = endUTC.toISOString();
+    }
 
     setExpandedCards(new Set());
     loadEarnings(true, searchText, dateFilters);
@@ -160,7 +174,9 @@ export default function DoctorEarnings() {
 
   const formatDateTime = (dateString) => {
     try {
-      return format(parseISO(dateString), 'MMM dd, yyyy HH:mm');
+      const date = new Date(dateString);
+      // Format in UTC to match backend filtering
+      return `${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()} ${date.getUTCHours().toString().padStart(2, '0')}:${date.getUTCMinutes().toString().padStart(2, '0')}`;
     } catch (error) {
       return 'Invalid Date';
     }
@@ -168,7 +184,21 @@ export default function DoctorEarnings() {
 
   const formatDate = (dateString) => {
     try {
-      return format(parseISO(dateString), 'MMM dd, yyyy');
+      const date = new Date(dateString);
+      // Display date in UTC to match backend filtering
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${months[date.getUTCMonth()]} ${date.getUTCDate().toString().padStart(2, '0')}, ${date.getUTCFullYear()}`;
+    } catch (error) {
+      return 'Invalid Date';
+    }
+  };
+
+  // Separate function for date picker display to avoid timezone issues
+  const formatDatePickerDisplay = (dateObject) => {
+    try {
+      if (!dateObject) return '';
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${months[dateObject.getMonth()]} ${dateObject.getDate().toString().padStart(2, '0')}, ${dateObject.getFullYear()}`;
     } catch (error) {
       return 'Invalid Date';
     }
@@ -247,7 +277,7 @@ export default function DoctorEarnings() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color="#ffffff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>View Earnings</Text>
       </View>
@@ -294,7 +324,7 @@ export default function DoctorEarnings() {
           >
             <Ionicons name="calendar-outline" size={16} color="#007AFF" />
             <Text style={styles.datePickerText}>
-              {startDate ? formatDate(startDate.toISOString()) : 'Start Date'}
+              {startDate ? formatDatePickerDisplay(startDate) : 'Start Date'}
             </Text>
           </TouchableOpacity>
 
@@ -304,7 +334,7 @@ export default function DoctorEarnings() {
           >
             <Ionicons name="calendar-outline" size={16} color="#007AFF" />
             <Text style={styles.datePickerText}>
-              {endDate ? formatDate(endDate.toISOString()) : 'End Date'}
+              {endDate ? formatDatePickerDisplay(endDate) : 'End Date'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -400,35 +430,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#fff',
+    backgroundColor: '#1E293B',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#1E293B',
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   backButton: {
     marginRight: 15,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 0.5,
   },
   searchContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8faff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#e2e8f0',
   },
   searchInputContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     paddingHorizontal: 15,
     marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   searchIcon: {
     marginRight: 10,
@@ -443,28 +495,38 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   searchButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#2563eb',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: 'center',
+    shadowColor: '#2563eb',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   searchButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 15,
   },
   dateFiltersContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f8faff',
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#e2e8f0',
   },
   dateFiltersTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 12,
+    letterSpacing: 0.3,
   },
   datePickersRow: {
     flexDirection: 'row',
@@ -475,47 +537,74 @@ const styles = StyleSheet.create({
     flex: 0.48,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   datePickerText: {
     marginLeft: 8,
-    fontSize: 14,
-    color: '#333',
+    fontSize: 15,
+    color: '#1e293b',
+    fontWeight: '500',
   },
   dateActionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   filterButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 10,
+    backgroundColor: '#2563eb',
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     flex: 0.48,
+    shadowColor: '#2563eb',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   filterButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: '#ffffff',
+    fontWeight: '700',
     textAlign: 'center',
+    fontSize: 15,
   },
   clearFilterButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 10,
+    backgroundColor: '#ffffff',
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#007AFF',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#2563eb',
     flex: 0.48,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   clearFilterButtonText: {
-    color: '#007AFF',
-    fontWeight: '600',
+    color: '#2563eb',
+    fontWeight: '700',
     textAlign: 'center',
+    fontSize: 15,
   },
   earningsList: {
     flex: 1,

@@ -44,6 +44,7 @@ export default function DoctorDashboard() {
     { label: 'Last 3 Months', value: '3months' },
     { label: 'Last 6 Months', value: '6months' },
   ];
+      const [totalEarnings, setTotalEarnings] = useState(0);
   
   // Handler functions
   const handleTimeRangeSelect = (value) => {
@@ -113,11 +114,16 @@ export default function DoctorDashboard() {
           chartData: stats.chartData // Already formatted with date, week, earnings
         });
         
+        // Calculate total earnings for selected time range (sum all chartData earnings)
+        const total = stats.chartData.reduce((sum, item) => sum + item.earnings, 0);
+        setTotalEarnings(total);
+        
         console.log('Real earnings data loaded successfully:', {
           weeklyEarnings: stats.weeklyEarnings,
           todayEarnings: stats.todayEarnings,
           chartDataPoints: stats.chartData.length,
-          chartData: stats.chartData
+          chartData: stats.chartData,
+          totalEarnings: total
         });
       } else {
         throw new Error('Invalid response format from earnings API');
@@ -132,6 +138,7 @@ export default function DoctorDashboard() {
         todayEarnings: 0,
         chartData: []
       });
+      setTotalEarnings(0);
     }
   };
 
@@ -312,20 +319,23 @@ export default function DoctorDashboard() {
             <Text style={styles.viewEarningsText}>View Earnings</Text>
           </TouchableOpacity>
         </View>
-        
-        {/* Earnings Stats Row */}
+            
         <View style={styles.earningsStatsRow}>
-          <View style={styles.earningsCard}>
-            <MaterialCommunityIcons name="calendar-month" size={20} color="#10B981" />
-            <Text style={styles.earningsValue}>LKR {(earningsData.weeklyEarnings / 100).toLocaleString()}</Text>
-            <Text style={styles.earningsLabel}>Monthly</Text>
-          </View>
-          
           <View style={styles.earningsCard}>
             <MaterialCommunityIcons name="calendar-today" size={20} color="#F59E0B" />
             <Text style={styles.earningsValue}>LKR {(earningsData.todayEarnings / 100).toLocaleString()}</Text>
             <Text style={styles.earningsLabel}>Today</Text>
           </View>
+          <View style={styles.earningsCard}>
+            <MaterialCommunityIcons name="calendar-week" size={20} color="#10B981" />
+            <Text style={styles.earningsValue}>LKR {(earningsData.weeklyEarnings / 100).toLocaleString()}</Text>
+            <Text style={styles.earningsLabel}>Weekly</Text>
+          </View>
+        </View>
+        <View style={styles.totalEarningsRow}>
+          <MaterialCommunityIcons name="cash-multiple" size={20} color="#2563EB" />
+          <Text style={styles.totalEarningsLabel}>Total Earnings ({getSelectedTimeRangeLabel()}): </Text>
+          <Text style={styles.totalEarningsValue}>LKR {(totalEarnings / 100).toLocaleString()}</Text>
         </View>
         
         {/* Earnings Chart with Time Range Selector */}
@@ -861,6 +871,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     textAlign: 'center',
+  },
+  totalEarningsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F9FF',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#0EA5E9',
+  },
+  totalEarningsLabel: {
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '500',
+    marginLeft: 8,
+    flex: 1,
+  },
+  totalEarningsValue: {
+    fontSize: 16,
+    color: '#2563EB',
+    fontWeight: 'bold',
   },
   viewEarningsButton: {
     backgroundColor: '#EFF6FF',

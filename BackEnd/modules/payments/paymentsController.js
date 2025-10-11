@@ -563,8 +563,16 @@ export const getPaymentHistory = async (req, res) => {
     if (startDate || endDate) {
       filteredPayments = filteredPayments.filter((payment) => {
         const paymentDate = new Date(payment.date);
-        const start = startDate ? new Date(startDate) : null;
-        const end = endDate ? new Date(endDate) : null;
+        let start = startDate ? new Date(startDate) : null;
+        let end = endDate ? new Date(endDate) : null;
+        
+        // Normalize dates to handle same-day filtering correctly (UTC)
+        if (start) {
+          start.setUTCHours(0, 0, 0, 0); // Start of day in UTC
+        }
+        if (end) {
+          end.setUTCHours(23, 59, 59, 999); // End of day in UTC
+        }
 
         if (start && paymentDate < start) return false;
         if (end && paymentDate > end) return false;
@@ -707,9 +715,6 @@ export const getPaymentDetails = async (req, res) => {
 // Get doctor earnings data
 export const getDoctorEarnings = async (req, res) => {
   try {
-    console.log("🔐 PaymentController - getDoctorEarnings called");
-    console.log("🔐 PaymentController - Authenticated user:", req.user?.uid);
-
     if (!req.user || !req.user.uid) {
       return res.status(401).json({
         error: "Authentication required",
@@ -719,12 +724,6 @@ export const getDoctorEarnings = async (req, res) => {
 
     // Get query parameters for date filtering
     const { startDate, endDate, period = "week" } = req.query;
-
-    console.log("🔐 PaymentController - Query filters:", {
-      startDate,
-      endDate,
-      period,
-    });
 
     // Find doctor by Firebase UID
     const { default: Doctor } = await import("../doctor/doctorModel.js");
@@ -736,12 +735,6 @@ export const getDoctorEarnings = async (req, res) => {
       });
     }
 
-    console.log("🔐 PaymentController - Doctor found:", {
-      mongoId: doctor._id,
-      firebaseUid: doctor.uuid,
-      name: doctor.name,
-    });
-
     // Convert doctor._id to ObjectId for proper comparison
     const doctorObjectId = new mongoose.Types.ObjectId(doctor._id);
 
@@ -751,8 +744,13 @@ export const getDoctorEarnings = async (req, res) => {
     // Calculate date range based on period if specific dates not provided
     let startDateFilter, endDateFilter;
     if (startDate && endDate) {
+      // Normalize start date to beginning of day (UTC)
       startDateFilter = new Date(startDate);
+      startDateFilter.setUTCHours(0, 0, 0, 0); // Start of the selected day in UTC
+      
+      // Normalize end date to end of day (UTC)
       endDateFilter = new Date(endDate);
+      endDateFilter.setUTCHours(23, 59, 59, 999); // End of the selected day in UTC
     } else {
       const now = new Date();
       if (period === "today") {
@@ -779,18 +777,10 @@ export const getDoctorEarnings = async (req, res) => {
       }
     }
 
-    console.log("🔐 PaymentController - Date range:", {
-      startDate: startDateFilter,
-      endDate: endDateFilter,
-    });
-
     // Find all sessions for this doctor with payments in the date range
-    const sessionsWithPayments = await Session.find({
+    // Only filter by payment date, not session date, to capture all payments regardless of when session was created
+    const queryConditions = {
       doctorId: doctorObjectId,
-      date: {
-        $gte: startDateFilter,
-        $lte: endDateFilter,
-      },
       timeSlots: {
         $elemMatch: {
           paymentIntentId: { $exists: true, $ne: null },
@@ -800,14 +790,11 @@ export const getDoctorEarnings = async (req, res) => {
           },
         },
       },
-    })
+    };
+
+    const sessionsWithPayments = await Session.find(queryConditions)
       .populate("doctorId")
       .lean();
-
-    console.log(
-      "🔐 PaymentController - Found sessions with payments:",
-      sessionsWithPayments.length
-    );
 
     // Extract payment info from all sessions and fetch patient names
     const allPayments = [];
@@ -817,6 +804,7 @@ export const getDoctorEarnings = async (req, res) => {
       for (let index = 0; index < session.timeSlots.length; index++) {
         const slot = session.timeSlots[index];
         
+        // Since we already filtered in the MongoDB query, we just need to check if payment exists and is in date range
         if (
           slot.paymentIntentId &&
           slot.paymentDate &&
@@ -835,7 +823,7 @@ export const getDoctorEarnings = async (req, res) => {
                 patientName = patient.name;
               }
             } catch (error) {
-              console.log("🔐 PaymentController - Error fetching patient:", error.message);
+              // Silently handle patient fetch errors
             }
           }
 
@@ -859,13 +847,6 @@ export const getDoctorEarnings = async (req, res) => {
 
     // Sort payments by date (newest first)
     allPayments.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    console.log(
-      "🔐 PaymentController - Total earnings:",
-      totalEarnings,
-      "Payments:",
-      allPayments.length
-    );
 
     res.json({
       success: true,
@@ -893,10 +874,6 @@ export const getDoctorEarnings = async (req, res) => {
 // Get doctor earnings statistics (daily breakdown for charts)
 export const getDoctorEarningsStats = async (req, res) => {
   try {
-    console.log("🔐 PaymentController - getDoctorEarningsStats called");
-    console.log("🔐 PaymentController - Authenticated user:", req.user?.uid);
-    console.log("🔐 PaymentController - Query params:", req.query);
-
     if (!req.user || !req.user.uid) {
       return res.status(401).json({
         error: "Authentication required",
@@ -906,7 +883,6 @@ export const getDoctorEarningsStats = async (req, res) => {
 
     // Get time range from query parameter (default to 4weeks)
     const timeRange = req.query.timeRange || "4weeks";
-    console.log("🔐 PaymentController - Time range:", timeRange);
 
     // Find doctor by Firebase UID
     const { default: Doctor } = await import("../doctor/doctorModel.js");
@@ -934,9 +910,9 @@ export const getDoctorEarningsStats = async (req, res) => {
           const weekStart = new Date(
             today.getTime() - (i * 7 + 6) * 24 * 60 * 60 * 1000
           );
-          const weekEnd = new Date(
-            today.getTime() - i * 7 * 24 * 60 * 60 * 1000
-          );
+          const weekEnd = i === 0 
+            ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today
+            : new Date(today.getTime() - i * 7 * 24 * 60 * 60 * 1000);
           periods.push({
             start: weekStart,
             end: weekEnd,
@@ -951,9 +927,9 @@ export const getDoctorEarningsStats = async (req, res) => {
           const weekStart = new Date(
             today.getTime() - (i * 7 + 6) * 24 * 60 * 60 * 1000
           );
-          const weekEnd = new Date(
-            today.getTime() - i * 7 * 24 * 60 * 60 * 1000
-          );
+          const weekEnd = i === 0 
+            ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today
+            : new Date(today.getTime() - i * 7 * 24 * 60 * 60 * 1000);
           periods.push({
             start: weekStart,
             end: weekEnd,
@@ -970,11 +946,9 @@ export const getDoctorEarningsStats = async (req, res) => {
             today.getMonth() - i,
             1
           );
-          const monthEnd = new Date(
-            today.getFullYear(),
-            today.getMonth() - i + 1,
-            0
-          );
+          const monthEnd = i === 0 
+            ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today for current month
+            : new Date(today.getFullYear(), today.getMonth() - i + 1, 0, 23, 59, 59, 999);
           const monthNames = [
             "Jan",
             "Feb",
@@ -991,7 +965,7 @@ export const getDoctorEarningsStats = async (req, res) => {
           ];
           periods.push({
             start: monthStart,
-            end: new Date(monthEnd.getTime() + 24 * 60 * 60 * 1000), // Include the last day
+            end: monthEnd,
             label: monthNames[monthStart.getMonth()],
             date: monthStart.toISOString().split("T")[0],
           });
@@ -1005,11 +979,9 @@ export const getDoctorEarningsStats = async (req, res) => {
             today.getMonth() - i,
             1
           );
-          const monthEnd = new Date(
-            today.getFullYear(),
-            today.getMonth() - i + 1,
-            0
-          );
+          const monthEnd = i === 0 
+            ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today for current month
+            : new Date(today.getFullYear(), today.getMonth() - i + 1, 0, 23, 59, 59, 999);
           const monthNames = [
             "Jan",
             "Feb",
@@ -1026,7 +998,7 @@ export const getDoctorEarningsStats = async (req, res) => {
           ];
           periods.push({
             start: monthStart,
-            end: new Date(monthEnd.getTime() + 24 * 60 * 60 * 1000), // Include the last day
+            end: monthEnd,
             label: monthNames[monthStart.getMonth()],
             date: monthStart.toISOString().split("T")[0],
           });
@@ -1039,9 +1011,9 @@ export const getDoctorEarningsStats = async (req, res) => {
           const weekStart = new Date(
             today.getTime() - (i * 7 + 6) * 24 * 60 * 60 * 1000
           );
-          const weekEnd = new Date(
-            today.getTime() - i * 7 * 24 * 60 * 60 * 1000
-          );
+          const weekEnd = i === 0 
+            ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today
+            : new Date(today.getTime() - i * 7 * 24 * 60 * 60 * 1000);
           periods.push({
             start: weekStart,
             end: weekEnd,
@@ -1074,6 +1046,46 @@ export const getDoctorEarningsStats = async (req, res) => {
           slot.paymentDate >= today
         ) {
           todayEarnings += slot.paymentAmount || 0;
+        }
+      });
+    });
+
+    // Calculate weekly earnings (from most recent Monday to today)
+    const getMostRecentMonday = (date) => {
+      const result = new Date(date);
+      const dayOfWeek = result.getDay();
+      const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday is 0, so it's 6 days since Monday
+      result.setDate(result.getDate() - daysSinceMonday);
+      result.setHours(0, 0, 0, 0);
+      return result;
+    };
+
+    const mostRecentMonday = getMostRecentMonday(now);
+    const endOfToday = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+    const weeklySessions = await Session.find({
+      doctorId: doctorObjectId,
+      timeSlots: {
+        $elemMatch: {
+          paymentIntentId: { $exists: true, $ne: null },
+          paymentDate: {
+            $gte: mostRecentMonday,
+            $lt: endOfToday,
+          },
+        },
+      },
+    }).lean();
+
+    let weeklyEarnings = 0;
+    weeklySessions.forEach((session) => {
+      session.timeSlots.forEach((slot) => {
+        if (
+          slot.paymentIntentId &&
+          slot.paymentDate &&
+          slot.paymentDate >= mostRecentMonday &&
+          slot.paymentDate < endOfToday
+        ) {
+          weeklyEarnings += slot.paymentAmount || 0;
         }
       });
     });
@@ -1119,27 +1131,17 @@ export const getDoctorEarningsStats = async (req, res) => {
       });
     }
 
-    console.log("🔐 PaymentController - Earnings stats:", {
-      timeRange,
-      todayEarnings,
-      totalEarnings,
-      chartDataPoints: breakdown.length,
-    });
-
     res.json({
       success: true,
       stats: {
         todayEarnings: todayEarnings * 100, // Convert to cents
-        weeklyEarnings: totalEarnings * 100, // Convert to cents (total for selected period)
+        weeklyEarnings: weeklyEarnings * 100, // Convert to cents (Monday to today)
         currency: "lkr",
         chartData: breakdown,
       },
     });
   } catch (error) {
-    console.error(
-      "🔐 PaymentController - getDoctorEarningsStats Error:",
-      error
-    );
+    console.error("PaymentController - getDoctorEarningsStats Error:", error);
     res.status(500).json({
       error: "Failed to fetch doctor earnings statistics",
       message: error.message,
