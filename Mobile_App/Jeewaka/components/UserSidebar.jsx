@@ -141,7 +141,7 @@ const UserDropdown = ({ visible, onClose, onLogin, onLogout }) => {
                   style={styles.menuItem} 
                   onPress={onLogin}
                 >
-                  <Ionicons name="log-in-outline" size={18} color="#2563EB" />
+                  <Ionicons name="log-in-outline" size={18} color="#008080" />
                   <Text style={styles.loginText}>Login</Text>
                 </TouchableOpacity>
               </>
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 14,
-    color: '#2563EB',
+    color: '#008080',
     marginLeft: 8,
     fontWeight: '500',
   },

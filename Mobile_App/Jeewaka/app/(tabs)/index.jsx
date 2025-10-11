@@ -196,7 +196,7 @@ export default function Home() {
               <RefreshControl 
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={['#2563EB']}
+                colors={['#008080']}
               />
             }
           />

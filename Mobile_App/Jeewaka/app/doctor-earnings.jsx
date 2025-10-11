@@ -495,12 +495,12 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   searchButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#008080',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
     justifyContent: 'center',
-    shadowColor: '#2563eb',
+    shadowColor: '#008080',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -563,12 +563,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   filterButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#008080',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
     flex: 0.48,
-    shadowColor: '#2563eb',
+    shadowColor: '#008080',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#2563eb',
+    borderColor: '#008080',
     flex: 0.48,
     shadowColor: '#000',
     shadowOffset: {
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   clearFilterButtonText: {
-    color: '#2563eb',
+    color: '#008080',
     fontWeight: '700',
     textAlign: 'center',
     fontSize: 15,
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   loadMoreButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#008080',
     paddingVertical: 15,
     borderRadius: 10,
     marginVertical: 20,

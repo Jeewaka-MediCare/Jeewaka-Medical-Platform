@@ -244,11 +244,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   forgotPasswordText: {
-    color: '#2563EB',
+    color: '#008080',
     fontSize: 14,
   },
   button: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     height: 50,
     borderRadius: 8,
     justifyContent: 'center',
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontSize: 16,
-    color: '#2563EB',
+    color: '#008080',
     fontWeight: '500',
     marginLeft: 4,
   },

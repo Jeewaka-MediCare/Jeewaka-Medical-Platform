@@ -254,7 +254,7 @@ const PaymentDetailsModal = ({
                 style={styles.viewDetailsButton}
                 onPress={() => onViewDetails(payment)}
               >
-                <Ionicons name="eye-outline" size={16} color="#2563EB" />
+                <Ionicons name="eye-outline" size={16} color="#008080" />
                 <Text style={styles.viewDetailsText}>View Full Details</Text>
               </TouchableOpacity>
             </View>
@@ -383,10 +383,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: '#008080',
   },
   viewDetailsText: {
-    color: '#2563EB',
+    color: '#008080',
     fontSize: 14,
     fontWeight: '500',
     marginLeft: 6,

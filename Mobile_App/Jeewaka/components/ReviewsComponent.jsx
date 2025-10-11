@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   ratingBar: {
     height: '100%',
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     borderRadius: 4,
   },
   ratingCount: {
