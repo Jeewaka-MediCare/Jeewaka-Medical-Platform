@@ -43,17 +43,17 @@ export function AddAdminDialog({ open, onOpenChange }) {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      toast(
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(values, null, 2)}</code>
-        </pre>,
-      )
+      toast.success("Admin added successfully!", {
+        description: "New admin user has been created"
+      })
 
       form.reset()
       onOpenChange(false)
     } catch (error) {
       console.error("Form submission error", error)
-      toast.error("Failed to add admin. Please try again.")
+      toast.error("Failed to add admin", {
+        description: "Please try again later"
+      })
     } finally {
       setIsLoading(false)
     }
