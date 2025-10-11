@@ -1,4 +1,32 @@
 import adminVerificationSchema from "./doctorCertificateModel.js";
+import SupabaseStorageService from "../../services/supabaseStorageService.js";
+import multer from "multer";
+import path from "path";
+
+// Initialize storage service
+const storageService = new SupabaseStorageService();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow only specific file types
+    const allowedTypes = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+    const fileExt = path.extname(file.originalname).toLowerCase();
+    
+    if (allowedTypes.includes(fileExt)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, JPG, PNG, DOC, DOCX files are allowed.'));
+    }
+  }
+});
+
+// Export upload middleware
+export const uploadMiddleware = upload.single('document');
 
 export const createVerification = async (req, res) => {
     
@@ -56,3 +84,93 @@ export const updateVerificationStatus = async (req, res) => {
     res.status(500).json({ message: "Error updating certificate", error });
   }
 }
+
+// Upload doctor verification document
+export const uploadDoctorDocument = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    if (!doctorId) {
+      return res.status(400).json({ message: "Doctor ID is required" });
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const fileExt = path.extname(file.originalname);
+    const filename = `${file.originalname.replace(fileExt, '')}_${timestamp}${fileExt}`;
+
+    // Upload to Supabase storage
+    const uploadResult = await storageService.uploadDoctorDocument(
+      doctorId,
+      file.buffer,
+      filename
+    );
+
+    res.status(200).json({
+      message: "Document uploaded successfully",
+      document: uploadResult
+    });
+
+  } catch (error) {
+    console.error("Error uploading doctor document:", error);
+    res.status(500).json({ 
+      message: "Failed to upload document", 
+      error: error.message 
+    });
+  }
+};
+
+// Get all documents for a doctor
+export const getDoctorDocuments = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+
+    if (!doctorId) {
+      return res.status(400).json({ message: "Doctor ID is required" });
+    }
+
+    const documents = await storageService.listDoctorDocuments(doctorId);
+
+    res.status(200).json({
+      message: "Documents retrieved successfully",
+      documents
+    });
+
+  } catch (error) {
+    console.error("Error getting doctor documents:", error);
+    res.status(500).json({ 
+      message: "Failed to retrieve documents", 
+      error: error.message 
+    });
+  }
+};
+
+// Delete a doctor document
+export const deleteDoctorDocument = async (req, res) => {
+  try {
+    const { doctorId, filename } = req.params;
+
+    if (!doctorId || !filename) {
+      return res.status(400).json({ message: "Doctor ID and filename are required" });
+    }
+
+    const result = await storageService.deleteDoctorDocument(doctorId, filename);
+
+    res.status(200).json({
+      message: "Document deleted successfully",
+      result
+    });
+
+  } catch (error) {
+    console.error("Error deleting doctor document:", error);
+    res.status(500).json({ 
+      message: "Failed to delete document", 
+      error: error.message 
+    });
+  }
+};
