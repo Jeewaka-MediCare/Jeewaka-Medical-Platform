@@ -6,8 +6,7 @@ import {
   Animated,
   Dimensions,
   Image,
-  TouchableOpacity,
-  ImageBackground
+  TouchableOpacity
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -77,12 +76,8 @@ export default function LandingPage() {
   };
 
   return (
-    <ImageBackground 
-      source={require('../assets/images/background.jpg')}
-      style={styles.container}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay}>
+    <View style={styles.container}>
+      <View style={styles.content}>
         {/* Title */}
         <Animated.View
           style={[
@@ -95,23 +90,6 @@ export default function LandingPage() {
         >
           <Text style={styles.subtitle}>Your Health, Our Priority</Text>
         </Animated.View>
-
-      {/* Medical Image */}
-      <Animated.View
-        style={[
-          styles.imageContainer,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }
-        ]}
-      >
-        <Image
-          source={{ uri: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400&h=300&fit=crop' }}
-          style={styles.medicalImage}
-          resizeMode="cover"
-        />
-      </Animated.View>
 
       {/* Welcome Message */}
       <Animated.View
@@ -160,17 +138,17 @@ export default function LandingPage() {
         </Animated.View>
       </View>
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#ffffffff', // Teal background
   },
-  overlay: {
+  content: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)', // Semi-transparent overlay for better text readability
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
@@ -182,12 +160,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 42,
     fontWeight: 'bold',
-    color: '#FFFFFF', // Changed to white for better contrast on background
+    color: '#027878ff', // Dark gray for better contrast on teal
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 24, // Made larger since it's now the main title
-    color: '#FFFFFF', // Changed to white for better prominence
+    color: '#008080', // Dark gray for better visibility on teal
     fontStyle: 'italic',
     fontWeight: '600', // Added font weight
     textAlign: 'center',
@@ -213,12 +191,12 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFFFFF', // Changed to white for better contrast
+    color: '#008080', // Dark gray for better contrast on teal
     marginBottom: 12,
   },
   welcomeText: {
     fontSize: 16,
-    color: '#E2E8F0', // Light gray for better readability on background
+    color: '#008080', // Medium gray for good readability on teal
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -230,13 +208,13 @@ const styles = StyleSheet.create({
     marginBottom: 12, // Reduced margin
   },
   primaryButton: {
-    backgroundColor: '#10B981', // Changed to green
+    backgroundColor: '#008080', // Dark green complementing teal
     paddingVertical: 12, // Reduced padding
     paddingHorizontal: 24, // Added horizontal padding
     borderRadius: 8, // Smaller border radius
     alignItems: 'center',
     elevation: 2, // Reduced elevation
-    shadowColor: '#10B981',
+    shadowColor: '#008080',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -253,7 +231,7 @@ const styles = StyleSheet.create({
     borderRadius: 8, // Smaller border radius
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#10B981', // Changed border color to green
+    borderColor: '#008080', // Dark green border complementing teal
     elevation: 1, // Reduced elevation
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -261,7 +239,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   secondaryButtonText: {
-    color: '#10B981', // Changed to green
+    color: '#008080', // Dark green text complementing teal
     fontSize: 16, // Smaller font
     fontWeight: '600',
   },

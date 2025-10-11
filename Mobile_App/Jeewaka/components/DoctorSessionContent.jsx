@@ -7,7 +7,8 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
-  Modal
+  Modal,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -452,39 +453,54 @@ export default function DoctorSessionContent() {
         </TouchableOpacity>
       </View>
       
-      <ScrollView 
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {upcomingSessions.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="calendar-outline" size={60} color="#94A3B8" />
-            <Text style={styles.emptyTitle}>No Upcoming Sessions</Text>
-            <Text style={styles.emptyMessage}>Create your first session to start accepting appointments</Text>
-          </View>
-        ) : (
-          upcomingSessions.map(renderSessionCard)
-        )}
-      </ScrollView>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>Loading sessions...</Text>
+        </View>
+      ) : (
+        <ScrollView 
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {upcomingSessions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={60} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No Upcoming Sessions</Text>
+              <Text style={styles.emptyMessage}>Create your first session to start accepting appointments</Text>
+            </View>
+          ) : (
+            upcomingSessions.map(renderSessionCard)
+          )}
+        </ScrollView>
+      )}
     </View>
-  ), [upcomingSessions, refreshing, onRefresh, modalVisible, renderSessionCard]);
+  ), [upcomingSessions, refreshing, onRefresh, modalVisible, renderSessionCard, loading]);
 
   // Past Sessions Scene
   const PastSessionsScene = useCallback(() => (
-    <ScrollView 
-      style={styles.scene}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      {pastSessions.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={60} color="#94A3B8" />
-          <Text style={styles.emptyTitle}>No Past Sessions</Text>
-          <Text style={styles.emptyMessage}>Your completed sessions will appear here</Text>
+    <View style={styles.scene}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>Loading sessions...</Text>
         </View>
       ) : (
-        pastSessions.map(renderSessionCard)
+        <ScrollView 
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {pastSessions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={60} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No Past Sessions</Text>
+              <Text style={styles.emptyMessage}>Your completed sessions will appear here</Text>
+            </View>
+          ) : (
+            pastSessions.map(renderSessionCard)
+          )}
+        </ScrollView>
       )}
-    </ScrollView>
-  ), [pastSessions, refreshing, onRefresh, renderSessionCard]);
+    </View>
+  ), [pastSessions, refreshing, onRefresh, renderSessionCard, loading]);
 
   const renderScene = ({ route }) => {
     switch (route.key) {
@@ -963,6 +979,18 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingHorizontal: 10,
     paddingBottom: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 50,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#64748B',
+    fontWeight: '500',
   },
   createSessionHeader: {
     flexDirection: 'row',
