@@ -45,6 +45,117 @@ class SupabaseStorageService {
   }
   
   /**
+   * Upload doctor verification document
+   * Folder structure: verification-documents/{doctorId}/{filename}
+   */
+  async uploadDoctorDocument(doctorId, file, filename) {
+    if (!this.backupEnabled) {
+      console.warn('Supabase backup is disabled');
+      return null;
+    }
+
+    try {
+      // Create folder path for doctor documents
+      const folderPath = `verification-documents/${doctorId}`;
+      const filePath = `${folderPath}/${filename}`;
+      
+      // Upload file to Supabase storage
+      const { data, error } = await this.supabase.storage
+        .from(this.bucketName)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true // Allow overwriting existing files
+        });
+
+      if (error) {
+        console.error('Error uploading doctor document:', error);
+        throw new Error(`Failed to upload document: ${error.message}`);
+      }
+
+      // Get public URL for the uploaded file
+      const { data: urlData } = this.supabase.storage
+        .from(this.bucketName)
+        .getPublicUrl(filePath);
+
+      return {
+        path: filePath,
+        url: urlData.publicUrl,
+        doctorId,
+        filename,
+        uploadedAt: new Date().toISOString()
+      };
+
+    } catch (error) {
+      console.error('Doctor document upload failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all documents for a specific doctor
+   */
+  async listDoctorDocuments(doctorId) {
+    if (!this.backupEnabled) {
+      console.warn('Supabase backup is disabled');
+      return [];
+    }
+
+    try {
+      const folderPath = `verification-documents/${doctorId}`;
+      
+      const { data, error } = await this.supabase.storage
+        .from(this.bucketName)
+        .list(folderPath);
+
+      if (error) {
+        console.error('Error listing doctor documents:', error);
+        throw new Error(`Failed to list documents: ${error.message}`);
+      }
+
+      return data.map(file => ({
+        name: file.name,
+        path: `${folderPath}/${file.name}`,
+        size: file.metadata?.size || 0,
+        lastModified: file.updated_at,
+        url: this.supabase.storage.from(this.bucketName).getPublicUrl(`${folderPath}/${file.name}`).data.publicUrl
+      }));
+
+    } catch (error) {
+      console.error('Failed to list doctor documents:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a specific doctor document
+   */
+  async deleteDoctorDocument(doctorId, filename) {
+    if (!this.backupEnabled) {
+      console.warn('Supabase backup is disabled');
+      return null;
+    }
+
+    try {
+      const filePath = `verification-documents/${doctorId}/${filename}`;
+      
+      const { error } = await this.supabase.storage
+        .from(this.bucketName)
+        .remove([filePath]);
+
+      if (error) {
+        console.error('Error deleting doctor document:', error);
+        throw new Error(`Failed to delete document: ${error.message}`);
+      }
+
+      return { message: 'Document deleted successfully', path: filePath };
+
+    } catch (error) {
+      console.error('Failed to delete doctor document:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Ensure Supabase storage bucket exists
    */
   async ensureBucketExists() {
