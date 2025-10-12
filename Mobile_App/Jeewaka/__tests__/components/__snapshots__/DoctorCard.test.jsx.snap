@@ -1,0 +1,409 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DoctorCard matches snapshot 1`] = `
+<View
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": undefined,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  collapsable={false}
+  focusable={true}
+  onClick={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  style={
+    {
+      "backgroundColor": "white",
+      "borderRadius": 16,
+      "elevation": 6,
+      "marginHorizontal": 16,
+      "marginVertical": 8,
+      "opacity": 1,
+      "overflow": "hidden",
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 4,
+        "width": 0,
+      },
+      "shadowOpacity": 0.1,
+      "shadowRadius": 8,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "flex-start",
+        "flexDirection": "row",
+        "padding": 16,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "position": "relative",
+        }
+      }
+    >
+      <Image
+        resizeMode="cover"
+        source={
+          {
+            "testUri": "../../../assets/images/doctor-placeholder.png",
+          }
+        }
+        style={
+          {
+            "borderColor": "#E2E8F0",
+            "borderRadius": 32,
+            "borderWidth": 3,
+            "height": 64,
+            "width": 64,
+          }
+        }
+      />
+      <View
+        style={
+          {
+            "backgroundColor": "#22C55E",
+            "borderColor": "white",
+            "borderRadius": 8,
+            "borderWidth": 2,
+            "bottom": 2,
+            "height": 16,
+            "position": "absolute",
+            "right": 2,
+            "width": 16,
+          }
+        }
+      />
+    </View>
+    <View
+      style={
+        {
+          "flex": 1,
+          "marginLeft": 12,
+          "marginRight": 8,
+        }
+      }
+    >
+      <Text
+        numberOfLines={1}
+        style={
+          {
+            "color": "#1E293B",
+            "fontSize": 18,
+            "fontWeight": "700",
+            "marginBottom": 2,
+          }
+        }
+      />
+      <Text
+        numberOfLines={1}
+        style={
+          {
+            "color": "#64748B",
+            "fontSize": 14,
+            "fontWeight": "500",
+            "marginBottom": 4,
+          }
+        }
+      >
+        <Text>
+           • 
+          Interventional Cardiology
+        </Text>
+      </Text>
+      <View
+        style={
+          {
+            "marginBottom": 6,
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "alignSelf": "flex-start",
+              "backgroundColor": "#EFF6FF",
+              "borderRadius": 4,
+              "color": "#2563EB",
+              "fontSize": 12,
+              "fontWeight": "600",
+              "paddingHorizontal": 8,
+              "paddingVertical": 2,
+            }
+          }
+        >
+          MBBS, MD Cardiology, FRCPC
+          <Text>
+             • 
+            15
+            + years exp
+          </Text>
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+          }
+        }
+      >
+        <Text
+          testID="AntDesign-star"
+        >
+          star
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#1E293B",
+              "fontSize": 14,
+              "fontWeight": "600",
+              "marginLeft": 4,
+            }
+          }
+        >
+          0.0
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#64748B",
+              "fontSize": 12,
+              "marginLeft": 4,
+            }
+          }
+        >
+          (
+          0
+          )
+        </Text>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "alignItems": "flex-end",
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#64748B",
+            "fontSize": 12,
+            "marginBottom": 2,
+          }
+        }
+      >
+        Fee
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#2563EB",
+            "fontSize": 18,
+            "fontWeight": "700",
+          }
+        }
+      >
+        LKR
+        0
+      </Text>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "borderBottomColor": "#F1F5F9",
+        "borderBottomWidth": 1,
+        "paddingBottom": 12,
+        "paddingHorizontal": 16,
+      }
+    }
+  >
+    <Text
+      numberOfLines={2}
+      style={
+        {
+          "color": "#475569",
+          "fontSize": 13,
+          "fontStyle": "italic",
+          "lineHeight": 18,
+        }
+      }
+    >
+      Experienced cardiologist with 15 years of practice.
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "paddingBottom": 16,
+        "paddingHorizontal": 16,
+        "paddingVertical": 12,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+          "marginBottom": 6,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flex": 1,
+            "flexDirection": "row",
+            "marginRight": 8,
+          }
+        }
+      >
+        <Text
+          testID="AntDesign-team"
+        >
+          team
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#64748B",
+              "flex": 1,
+              "fontSize": 12,
+              "fontWeight": "500",
+              "marginLeft": 6,
+            }
+          }
+        >
+          English
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flex": 1,
+            "flexDirection": "row",
+            "marginRight": 8,
+          }
+        }
+      >
+        <Text
+          testID="AntDesign-clockcircleo"
+        >
+          clockcircleo
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#64748B",
+              "flex": 1,
+              "fontSize": 12,
+              "fontWeight": "500",
+              "marginLeft": 6,
+            }
+          }
+        >
+          Available Today
+        </Text>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+          "marginBottom": 6,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flex": 1,
+            "flexDirection": "row",
+            "marginRight": 8,
+          }
+        }
+      >
+        <Text
+          testID="AntDesign-enviromento"
+        >
+          enviromento
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#64748B",
+              "flex": 1,
+              "fontSize": 12,
+              "fontWeight": "500",
+              "marginLeft": 6,
+            }
+          }
+        >
+          In-person & Online
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flex": 1,
+            "flexDirection": "row",
+            "marginRight": 8,
+          }
+        }
+      >
+        <Text
+          testID="AntDesign-Safety"
+        >
+          Safety
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#64748B",
+              "flex": 1,
+              "fontSize": 12,
+              "fontWeight": "500",
+              "marginLeft": 6,
+            }
+          }
+        >
+          Verified Doctor
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
