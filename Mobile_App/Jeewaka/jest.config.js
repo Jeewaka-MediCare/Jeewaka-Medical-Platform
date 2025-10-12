@@ -1,0 +1,60 @@
+module.exports = {
+  preset: 'jest-expo',
+  setupFilesAfterEnv: ['<rootDir>/test-utils/setup.js'],
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/.expo/',
+    '<rootDir>/android/',
+    '<rootDir>/ios/',
+    '<rootDir>/__tests__/e2e/',
+  ],
+  collectCoverageFrom: [
+    'components/**/*.{js,jsx,ts,tsx}',
+    '!**/*.test.{js,jsx,ts,tsx}',
+    '!**/*.d.ts',
+    '!**/node_modules/**',
+    '!**/.expo/**',
+    '!**/coverage/**',
+    '!**/__mocks__/**',
+    '!**/test-utils/**',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+    './components/': {
+      branches: 85,
+      functions: 85,
+      lines: 85,
+      statements: 85,
+    },
+  },
+  coverageReporters: [
+    'text',
+    'text-summary',
+    'html',
+    'lcov',
+    'json',
+  ],
+  transformIgnorePatterns: [
+    'node_modules/(?!(react-native|@expo|expo|@react-native|react-native-|@testing-library|@react-navigation|@videosdk.live|@stripe|@babel|expo-modules-core|react-native-gifted-charts|react-native-permissions)/)',
+  ],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
+  },
+  testEnvironment: 'node',
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  transform: {
+    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
+  },
+  setupFiles: ['<rootDir>/node_modules/react-native/jest/setup.js'],
+  collectCoverage: false,
+  verbose: true,
+  testTimeout: 10000,
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
+};

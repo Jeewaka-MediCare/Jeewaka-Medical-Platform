@@ -1,0 +1,357 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`UserSidebar matches snapshot when user is logged in 1`] = `
+<Modal
+  animationType="none"
+  hardwareAccelerated={false}
+  onRequestClose={[MockFunction]}
+  transparent={true}
+  visible={true}
+>
+  <View
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessible={true}
+    focusable={true}
+    onClick={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={
+      {
+        "alignItems": "flex-end",
+        "backgroundColor": "transparent",
+        "flex": 1,
+        "justifyContent": "flex-start",
+        "paddingRight": 16,
+        "paddingTop": 60,
+      }
+    }
+  >
+    <View
+      collapsable={false}
+      style={
+        {
+          "backgroundColor": "white",
+          "borderRadius": 12,
+          "elevation": 8,
+          "minWidth": 200,
+          "opacity": 0,
+          "padding": 16,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 4,
+            "width": 0,
+          },
+          "shadowOpacity": 0.25,
+          "shadowRadius": 8,
+          "transform": [
+            {
+              "scale": 0,
+            },
+          ],
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "marginBottom": 8,
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "backgroundColor": "#008080",
+              "borderRadius": 18,
+              "height": 36,
+              "justifyContent": "center",
+              "marginRight": 12,
+              "width": 36,
+            }
+          }
+        >
+          <Text
+            style={
+              {
+                "color": "white",
+                "fontSize": 16,
+                "fontWeight": "bold",
+              }
+            }
+          >
+            J
+          </Text>
+        </View>
+        <View
+          style={
+            {
+              "flex": 1,
+            }
+          }
+        >
+          <Text
+            style={
+              {
+                "color": "#1F2937",
+                "fontSize": 16,
+                "fontWeight": "600",
+                "marginBottom": 2,
+              }
+            }
+          >
+            John Doe
+          </Text>
+          <Text
+            style={
+              {
+                "color": "#64748B",
+                "fontSize": 12,
+                "textTransform": "capitalize",
+              }
+            }
+          >
+            Patient
+          </Text>
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "backgroundColor": "#E2E8F0",
+            "height": 1,
+            "marginVertical": 12,
+          }
+        }
+      />
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "opacity": 1,
+            "paddingVertical": 8,
+          }
+        }
+      >
+        <Text
+          testID="Ionicons-log-out-outline"
+        >
+          log-out-outline
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#EF4444",
+              "fontSize": 14,
+              "fontWeight": "500",
+              "marginLeft": 8,
+            }
+          }
+        >
+          Logout
+        </Text>
+      </View>
+    </View>
+  </View>
+</Modal>
+`;
+
+exports[`UserSidebar matches snapshot when user is not logged in 1`] = `
+<Modal
+  animationType="none"
+  hardwareAccelerated={false}
+  onRequestClose={[MockFunction]}
+  transparent={true}
+  visible={true}
+>
+  <View
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessible={true}
+    focusable={true}
+    onClick={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={
+      {
+        "alignItems": "flex-end",
+        "backgroundColor": "transparent",
+        "flex": 1,
+        "justifyContent": "flex-start",
+        "paddingRight": 16,
+        "paddingTop": 60,
+      }
+    }
+  >
+    <View
+      collapsable={false}
+      style={
+        {
+          "backgroundColor": "white",
+          "borderRadius": 12,
+          "elevation": 8,
+          "minWidth": 200,
+          "opacity": 0,
+          "padding": 16,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 4,
+            "width": 0,
+          },
+          "shadowOpacity": 0.25,
+          "shadowRadius": 8,
+          "transform": [
+            {
+              "scale": 0,
+            },
+          ],
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "marginBottom": 8,
+          }
+        }
+      >
+        <Text
+          testID="Ionicons-person-circle-outline"
+        >
+          person-circle-outline
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#64748B",
+              "fontSize": 14,
+              "marginLeft": 8,
+            }
+          }
+        >
+          Not logged in
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "backgroundColor": "#E2E8F0",
+            "height": 1,
+            "marginVertical": 12,
+          }
+        }
+      />
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "opacity": 1,
+            "paddingVertical": 8,
+          }
+        }
+      >
+        <Text
+          testID="Ionicons-log-in-outline"
+        >
+          log-in-outline
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#008080",
+              "fontSize": 14,
+              "fontWeight": "500",
+              "marginLeft": 8,
+            }
+          }
+        >
+          Login
+        </Text>
+      </View>
+    </View>
+  </View>
+</Modal>
+`;
