@@ -4,7 +4,7 @@
   "description": "Dummy Content",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "dev": "nodemon server.js",
     "start": "node server.js",
     "test:ai": "node tests/test-runner.js",
@@ -37,6 +37,11 @@
     "stripe": "^18.5.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "jest": "^29.0.0",
+    "supertest": "^6.3.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
   }
 }
