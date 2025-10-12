@@ -56,7 +56,7 @@ export function LoginForm({ className, ...props }) {
       // Navigate based on role
       const { role } = loginResult;
       if (role === "doctor") {
-        navigate("/doctor-dashboard");
+        navigate("/doctor-overview");
       } else if (role === "patient") {
         navigate("/patient-dashboard");
       } else if (role === "admin") {
