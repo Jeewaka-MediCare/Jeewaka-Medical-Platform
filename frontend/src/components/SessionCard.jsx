@@ -149,6 +149,26 @@ export function SessionCard({
           </div>
         </div>
 
+        {/* Booking Status */}
+        <div className="flex items-center justify-between mb-3 p-2 bg-gray-50 rounded-lg">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-1">
+              <Calendar className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">
+                {session.timeSlots?.filter(slot => slot.status === 'booked').length || 0}/{session.timeSlots?.length || 0} slots booked
+              </span>
+            </div>
+            {session.timeSlots?.filter(slot => slot.status === 'available').length > 0 && (
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-xs text-green-600">
+                  {session.timeSlots?.filter(slot => slot.status === 'available').length} available
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Session Type */}
         <div className="flex items-center space-x-2 mb-3">
           {isOnline ? (
@@ -198,6 +218,8 @@ export function SessionCard({
             </div>
           </div>
         )}
+
+
 
         {/* Online Session Indicator */}
         {isOnline && !session.meetingLink && (

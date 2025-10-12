@@ -19,7 +19,6 @@ export function TimeSlotCard({
   onAddPrescription,
   onAddNote,
 }) {
-  // const patient = session.patients.find((p) => p._id === slot.patientId)
 
   return (
     <div
@@ -40,86 +39,133 @@ export function TimeSlotCard({
         )}
       </div>
 
-      {slot.status === "booked" && slot.patientName ? (
+      {slot.status === "booked" && (slot.patientName || slot.patientId) ? (
         <div className="space-y-4">
           {/* Patient Header */}
-          <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
+          <div className="flex items-center p-4 bg-white rounded-lg border">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                {slot.patientName
+                {(slot.patientId?.name || slot.patientName || 'Patient')
                   .split(" ")
                   .map((n) => n[0])
                   .join("")}
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">{slot.patientName}</h3>
-                <p className="text-gray-600">
-                  Patient ID: {slot.patientId}
-                </p>
+                <h3 className="text-xl font-bold text-gray-900 truncate">
+                  {slot.patientId?.name || slot.patientName || 'Patient'}
+                </h3>
+                {slot.patientId?.email && (
+                  <p className="text-sm text-gray-500 truncate">📧 {slot.patientId.email}</p>
+                )}
+                {slot.patientId?.phone && (
+                  <p className="text-sm text-gray-500 truncate">📞 {slot.patientId.phone}</p>
+                )}
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button size="sm" variant="outline" onClick={() => onViewReports({ name: slot.patientName, id: slot.patientId })}>
-                <Eye className="h-4 w-4 mr-1" />
-                View Reports
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => onViewHistory({ name: slot.patientName, id: slot.patientId })}>
-                <Calendar className="h-4 w-4 mr-1" />
-                View History
-              </Button>
             </div>
           </div>
 
-          {/* Patient Quick Info */}
-          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-3 bg-white rounded-lg border">
-              <Label className="text-sm text-gray-500">Contact</Label>
-              <p className="font-medium text-sm">{patient.email}</p>
-              <p className="font-medium text-sm">{patient.phone}</p>
-            </div>
-            <div className="p-3 bg-white rounded-lg border">
-              <Label className="text-sm text-gray-500">Blood Type</Label>
-              <p className="font-medium">{patient.bloodType}</p>
-            </div>
-            <div className="p-3 bg-white rounded-lg border">
-              <Label className="text-sm text-gray-500">Allergies</Label>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {patient.allergies.map((allergy, index) => (
-                  <Badge key={index} variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
-                    {allergy}
-                  </Badge>
-                ))}
+          {/* Payment Information */}
+          {(slot.paymentIntentId || slot.paymentAmount || slot.paymentDate) && (
+            <div className="p-4 bg-white rounded-lg border">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <span className="mr-2">💳</span>Payment Information
+              </h4>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {slot.paymentIntentId && (
+                  <div className="min-w-0">
+                    <Label className="text-sm text-gray-500">Payment ID</Label>
+                    <p className="font-medium text-sm font-mono truncate">
+                      {slot.paymentIntentId.substring(0, 20)}...
+                    </p>
+                  </div>
+                )}
+                {slot.paymentAmount && (
+                  <div>
+                    <Label className="text-sm text-gray-500">Amount</Label>
+                    <p className="font-medium text-lg text-green-600">
+                      LKR {slot.paymentAmount}
+                    </p>
+                  </div>
+                )}
+                {slot.paymentDate && (
+                  <div>
+                    <Label className="text-sm text-gray-500">Payment Date</Label>
+                    <p className="font-medium text-sm">
+                      {new Date(slot.paymentDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                )}
               </div>
+              {(slot.paymentStatus || slot.paymentIntentId) && (
+                <div className="mt-3">
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                    ✅ Payment {slot.paymentStatus || 'Confirmed'}
+                  </Badge>
+                </div>
+              )}
             </div>
-          </div> */}
+          )}
 
-          {/* Quick Actions */}
-          {/* <div className="flex space-x-2 p-4 bg-white rounded-lg border">
-            <Button size="sm" variant="outline" onClick={() => onAddObservation(patient)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Observation
+          {/* Patient Additional Info (if available) */}
+          {slot.patientId && typeof slot.patientId === 'object' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {slot.patientId.dateOfBirth && (
+                <div className="p-3 bg-white rounded-lg border min-w-0">
+                  <Label className="text-sm text-gray-500">Age</Label>
+                  <p className="font-medium">
+                    {new Date().getFullYear() - new Date(slot.patientId.dateOfBirth).getFullYear()} years
+                  </p>
+                </div>
+              )}
+              {slot.patientId.gender && (
+                <div className="p-3 bg-white rounded-lg border min-w-0">
+                  <Label className="text-sm text-gray-500">Gender</Label>
+                  <p className="font-medium truncate">{slot.patientId.gender}</p>
+                </div>
+              )}
+              {slot.patientId.bloodType && (
+                <div className="p-3 bg-white rounded-lg border min-w-0">
+                  <Label className="text-sm text-gray-500">Blood Type</Label>
+                  <p className="font-medium text-red-600">{slot.patientId.bloodType}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Patient Actions */}
+          <div className="flex flex-col sm:flex-row gap-2 p-4 bg-white rounded-lg border">
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => onViewReports({ 
+              name: slot.patientId?.name || slot.patientName, 
+              id: slot.patientId?._id || slot.patientId 
+            })}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Reports
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onAddPrescription(patient)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Prescription
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => onViewHistory({ 
+              name: slot.patientId?.name || slot.patientName, 
+              id: slot.patientId?._id || slot.patientId 
+            })}>
+              <Calendar className="h-4 w-4 mr-2" />
+              View History
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onAddNote(patient)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Note
-            </Button>
-          </div> */}
+          </div>
+
+          {/* Appointment Notes */}
+          {slot.notes && (
+            <div className="p-4 bg-white rounded-lg border">
+              <Label className="text-sm text-gray-500">Appointment Notes</Label>
+              <p className="font-medium text-sm mt-1">{slot.notes}</p>
+            </div>
+          )}
 
           {/* Status Management */}
           <div className="flex space-x-2 p-4 bg-white rounded-lg border">
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 bg-transparent"
-              onClick={() => onUpdateStatus(slot.id, "upcoming")}
-              disabled={slot.appointmentStatus === "upcoming"}
-            >
-              Mark Upcoming
-            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -145,7 +191,7 @@ export function TimeSlotCard({
             <div className="p-4 bg-white rounded-lg border">
               <Button variant="outline" size="sm" className="w-full bg-transparent">
                 <Video className="h-4 w-4 mr-2" />
-                Start Video Call with {slot.patientName}
+                Start Video Call with {slot.patientId?.name || slot.patientName}
               </Button>
             </div>
           )}

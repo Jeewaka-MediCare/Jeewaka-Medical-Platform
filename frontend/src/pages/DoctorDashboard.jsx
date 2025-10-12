@@ -56,7 +56,6 @@ import { CreateSessionDialog } from "../components/CreateSessionDialog";
 import { TimeSlotCard } from "../components/TimeSlotCard";
 import { PatientReportsDialog } from "../components/PatientReportsDialog";
 import { PatientHistoryDialog } from "../components/PatientHistoryDialog";
-import { LocationTab } from "../components/LocationTab";
 import api from "../services/api.js";
 import { toast } from "sonner";
 import useAuthStore from "../store/authStore.js";
@@ -479,7 +478,7 @@ export default function DoctorSessionManager() {
         {/* Dialogs */}
         {/* Session Details Modal */}
         <Dialog open={isSessionDetailsOpen} onOpenChange={setIsSessionDetailsOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-6xl max-h-[95vh] w-[95vw] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2">
                 <span>Session Details</span>
@@ -506,62 +505,47 @@ export default function DoctorSessionManager() {
             </DialogHeader>
             
             {selectedSession && (
-              <Tabs defaultValue="slots" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="slots">Time Slots</TabsTrigger>
-                  <TabsTrigger value="location">Location</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="slots" className="mt-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Time Slots</h3>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditSession(selectedSession)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Session
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteSession(selectedSession._id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Session
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {selectedSession.timeSlots?.map((slot) => (
-                        <TimeSlotCard
-                          key={slot._id}
-                          slot={slot}
-                          session={selectedSession}
-                          onUpdateStatus={handleUpdateAppointmentStatus}
-                          onViewReports={handleViewReports}
-                          onViewHistory={handleViewHistory}
-                          onAddNote={handleAddNote}
-                        />
-                      ))}
-                    </div>
+              <div className="mt-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Time Slots</h3>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditSession(selectedSession)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Session
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteSession(selectedSession._id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Session
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                </TabsContent>
-
-                <TabsContent value="location" className="mt-4">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Session Location</h3>
-                    <p className="text-sm text-gray-600 mb-4">Access information for this session</p>
-                    <LocationTab session={selectedSession} />
+                  
+                  <div className="space-y-3">
+                    {selectedSession.timeSlots?.map((slot) => (
+                      <TimeSlotCard
+                        key={slot._id}
+                        slot={slot}
+                        session={selectedSession}
+                        onUpdateStatus={handleUpdateAppointmentStatus}
+                        onViewReports={handleViewReports}
+                        onViewHistory={handleViewHistory}
+                        onAddNote={handleAddNote}
+                      />
+                    ))}
                   </div>
-                </TabsContent>
-              </Tabs>
+                </div>
+              </div>
             )}
           </DialogContent>
         </Dialog>
