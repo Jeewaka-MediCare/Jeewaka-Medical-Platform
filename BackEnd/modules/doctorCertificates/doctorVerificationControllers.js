@@ -1,10 +1,7 @@
 import adminVerificationSchema from "./doctorCertificateModel.js";
-import SupabaseStorageService from "../../services/supabaseStorageService.js";
+import storageService from "../../services/supabaseStorageService.js";
 import multer from "multer";
 import path from "path";
-
-// Initialize storage service
-const storageService = new SupabaseStorageService();
 
 // Configure multer for file uploads
 const upload = multer({
