@@ -7,7 +7,8 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
-  Modal
+  Modal,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,19 +21,20 @@ import { TextInput, GestureHandlerRootView } from 'react-native-gesture-handler'
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import VideoCallButton from './VideoCallButton';
+import { useRouter } from 'expo-router';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
-export default function DoctorDashboardContent() {
+export default function DoctorSessionContent() {
   const { user, logout } = useAuthStore();
+  const router = useRouter();
   
-  const [index, setIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useState(0);
   const [routes] = useState([
-    { key: 'appointments', title: 'Appointments' },
-    { key: 'sessions', title: 'Sessions' },
+    { key: 'upcoming', title: 'Upcoming' },
+    { key: 'past', title: 'Past' },
   ]);
   
-  const [appointments, setAppointments] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,80 +55,7 @@ export default function DoctorDashboardContent() {
   // Hospital options
   const [hospitals, setHospitals] = useState([]);
 
-  // Fetch appointments
-  const fetchAppointments = async () => {
-    if (!user || !user._id) return;
-    
-    setLoading(true);
-    try {
-      const { data } = await api.get('/api/session');
-      
-      // Filter sessions for this doctor only
-      const doctorSessions = (data || []).filter(session => 
-        session.doctorId && session.doctorId._id === user._id
-      );
-      
-      // Transform session data into individual appointments
-      const appointments = [];
-      const patientIds = new Set();
-      
-      doctorSessions.forEach(session => {
-        // Get all time slots and find booked ones with their original indexes
-        (session.timeSlots || []).forEach((slot, slotIndex) => {
-          if (slot.patientId && slot.status !== 'available') {
-            patientIds.add(slot.patientId);
-            appointments.push({
-              _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
-              sessionId: session._id,
-              slotIndex: slotIndex, // Add slot index for appointment-specific video calls
-              startTime: slot.startTime,
-              endTime: slot.endTime,
-              status: slot.status,
-              appointmentStatus: slot.appointmentStatus,
-              patientId: slot.patientId, // Keep the ID for now
-              session: {
-                date: session.date,
-                sessionType: session.type,
-                hospital: session.hospital,
-              }
-            });
-          }
-        });
-      });
-
-      // Fetch patient details for all unique patient IDs
-      const patientsMap = new Map();
-      if (patientIds.size > 0) {
-        try {
-          // Fetch all patients
-          const patientsResponse = await api.get('/api/patient');
-          const allPatients = patientsResponse.data || [];
-          
-          // Create a map of patient ID to patient data
-          allPatients.forEach(patient => {
-            if (patientIds.has(patient._id)) {
-              patientsMap.set(patient._id, patient);
-            }
-          });
-        } catch (error) {
-          console.error('Error fetching patient details:', error);
-        }
-      }
-
-      // Populate appointments with patient data
-      const appointmentsWithPatients = appointments.map(appointment => ({
-        ...appointment,
-        patient: patientsMap.get(appointment.patientId) || null
-      }));
-
-      setAppointments(appointmentsWithPatients);
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
-      Alert.alert('Error', 'Failed to load appointments');
-    } finally {
-      setLoading(false);
-    }
-  };  // Fetch sessions
+  // Fetch sessions
   const fetchSessions = async () => {
     if (!user || !user._id) return;
     
@@ -160,7 +89,6 @@ export default function DoctorDashboardContent() {
 
   useEffect(() => {
     if (user) {
-      fetchAppointments();
       fetchSessions();
       fetchHospitals();
     }
@@ -168,7 +96,7 @@ export default function DoctorDashboardContent() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchAppointments(), fetchSessions()]);
+    await fetchSessions();
     setRefreshing(false);
   };
 
@@ -177,20 +105,13 @@ export default function DoctorDashboardContent() {
     Alert.alert('Coming Soon', 'Appointment cancellation feature will be available soon');
   };
 
-  // Helper function to check if appointment is currently ongoing
-  const isAppointmentOngoing = (appointment) => {
-    try {
-      const now = new Date();
-      const dateOnly = appointment.session.date.split('T')[0];
-      const appointmentStartDate = parseISO(`${dateOnly}T${appointment.startTime}`);
-      const appointmentEndDate = parseISO(`${dateOnly}T${appointment.endTime}`);
-      
-      return now >= appointmentStartDate && now <= appointmentEndDate;
-    } catch (error) {
-      console.error('Error checking if appointment is ongoing:', error);
-      return false;
+  // Handle session click to navigate to appointments for that session
+  const handleSessionPress = useCallback((session) => {
+    const bookedSlots = getBookedSlotsCount(session);
+    if (bookedSlots > 0) {
+      router.push(`/session-appointments/${session._id}`);
     }
-  };
+  }, [router]);
 
   // Create time slots array based on form inputs
   const createTimeSlots = useCallback(() => {
@@ -219,78 +140,6 @@ export default function DoctorDashboardContent() {
     return slots;
   }, [newSession.startTime, newSession.totalSlots, newSession.slotDuration]);
 
-  // Helper function to get the actual end DateTime for an appointment (handles midnight crossover)
-  const getAppointmentEndDateTime = useCallback((appointment) => {
-    if (!appointment.endTime || !appointment.session?.date) return null;
-    
-    const appointmentEndDateTime = new Date(appointment.session.date);
-    const [endHours, endMinutes] = appointment.endTime.split(':');
-    const [startHours] = appointment.startTime.split(':');
-    
-    // If end hour is less than start hour, it means the appointment crosses midnight
-    // so we need to add a day to the end time
-    if (parseInt(endHours) < parseInt(startHours)) {
-      appointmentEndDateTime.setDate(appointmentEndDateTime.getDate() + 1);
-    }
-    
-    appointmentEndDateTime.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
-    return appointmentEndDateTime;
-  }, []);
-
-  // Helper function to check if an appointment is in the past
-  const isAppointmentPast = useCallback((appointment) => {
-    const appointmentEndDateTime = getAppointmentEndDateTime(appointment);
-    if (!appointmentEndDateTime) return false;
-    return appointmentEndDateTime < new Date();
-  }, [getAppointmentEndDateTime]);
-
-  // Helper function to sort appointments (upcoming first, past last)  
-  const sortedAppointments = useMemo(() => {
-    const now = new Date();
-    
-    // Separate appointments into future and past
-    const futureAppointments = [];
-    const pastAppointments = [];
-    
-    appointments.forEach((appointment) => {
-      const appointmentEndTime = getAppointmentEndDateTime(appointment);
-      
-      if (appointmentEndTime && appointmentEndTime >= now) {
-        futureAppointments.push(appointment);
-      } else {
-        pastAppointments.push(appointment);
-      }
-    });
-    
-    // Sort future appointments: earliest first
-    futureAppointments.sort((a, b) => {
-      const dateA = new Date(a.session.date);
-      const [hours, minutes] = a.startTime.split(':');
-      dateA.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      
-      const dateB = new Date(b.session.date);
-      const [hoursB, minutesB] = b.startTime.split(':');
-      dateB.setHours(parseInt(hoursB), parseInt(minutesB), 0, 0);
-      
-      return dateA - dateB;
-    });
-    
-    // Sort past appointments: most recent first  
-    pastAppointments.sort((a, b) => {
-      const dateA = new Date(a.session.date);
-      const [hours, minutes] = a.startTime.split(':');
-      dateA.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      
-      const dateB = new Date(b.session.date);
-      const [hoursB, minutesB] = b.startTime.split(':');
-      dateB.setHours(parseInt(hoursB), parseInt(minutesB), 0, 0);
-      
-      return dateB - dateA; // Reverse order for past appointments
-    });
-    
-    // Combine: future appointments first, then past appointments
-    return [...futureAppointments, ...pastAppointments];
-  }, [appointments, getAppointmentEndDateTime]);
   const getSessionEndDateTime = useCallback((session) => {
     const lastSlot = session.timeSlots?.[session.timeSlots.length - 1];
     const firstSlot = session.timeSlots?.[0];
@@ -377,18 +226,78 @@ export default function DoctorDashboardContent() {
     return [...futureSessions, ...pastSessions];
   }, [sessions, getSessionEndDateTime]);
 
-  // Handle viewing medical records (placeholder functionality)
-  const handleViewMedicalRecords = useCallback(async (appointment) => {
-    // Placeholder functionality - will be implemented later
-    Alert.alert(
-      'Medical Records',
-      `View medical records for ${appointment.patient?.name || 'Patient'}?\n\nThis functionality will be implemented soon.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'OK', onPress: () => console.log('View medical records for:', appointment.patient?.name) }
-      ]
-    );
-  }, []);
+  // Separate upcoming and past sessions with proper sorting
+  const upcomingSessions = useMemo(() => {
+    const now = new Date();
+    
+    // Get future sessions
+    const futureSessions = [];
+    
+    sessions.forEach((session) => {
+      const sessionEndTime = getSessionEndDateTime(session);
+      
+      if (sessionEndTime && sessionEndTime >= now) {
+        futureSessions.push(session);
+      }
+    });
+    
+    // Sort future sessions: earliest first
+    futureSessions.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const firstSlotA = a.timeSlots?.[0];
+      if (firstSlotA?.startTime) {
+        const [hours, minutes] = firstSlotA.startTime.split(':');
+        dateA.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      
+      const dateB = new Date(b.date);
+      const firstSlotB = b.timeSlots?.[0];
+      if (firstSlotB?.startTime) {
+        const [hours, minutes] = firstSlotB.startTime.split(':');
+        dateB.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      
+      return dateA - dateB;
+    });
+    
+    return futureSessions;
+  }, [sessions, getSessionEndDateTime]);
+
+  const pastSessions = useMemo(() => {
+    const now = new Date();
+    
+    // Get past sessions
+    const pastSessionsList = [];
+    
+    sessions.forEach((session) => {
+      const sessionEndTime = getSessionEndDateTime(session);
+      
+      if (sessionEndTime && sessionEndTime < now) {
+        pastSessionsList.push(session);
+      }
+    });
+    
+    // Sort past sessions: most recent first  
+    pastSessionsList.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const firstSlotA = a.timeSlots?.[0];
+      if (firstSlotA?.startTime) {
+        const [hours, minutes] = firstSlotA.startTime.split(':');
+        dateA.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      
+      const dateB = new Date(b.date);
+      const firstSlotB = b.timeSlots?.[0];
+      if (firstSlotB?.startTime) {
+        const [hours, minutes] = firstSlotB.startTime.split(':');
+        dateB.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      
+      return dateB - dateA; // Reverse order for past sessions
+    });
+    
+    return pastSessionsList;
+  }, [sessions, getSessionEndDateTime]);
 
   // Helper function to get booked slots count
   const getBookedSlotsCount = useCallback((session) => {
@@ -419,6 +328,201 @@ export default function DoctorDashboardContent() {
       ]
     );
   }, [fetchSessions]);
+
+  // Render session card
+  const renderSessionCard = useCallback((session) => {
+    const bookedSlots = getBookedSlotsCount(session);
+    const totalSlots = session.timeSlots?.length || 0;
+    const isPast = isSessionPast(session);
+    const canCancel = !isPast && bookedSlots === 0; // Only show cancel if NOT past AND no bookings
+    const hasBookings = bookedSlots > 0; // Check if session has any bookings
+
+    return (
+      <TouchableOpacity 
+        key={session._id} 
+        style={[
+          styles.sessionCard, 
+          isPast && styles.pastSessionCard,
+          hasBookings && styles.clickableSessionCard
+        ]}
+        onPress={() => handleSessionPress(session)}
+        disabled={!hasBookings}
+        activeOpacity={hasBookings ? 0.7 : 1}
+      >
+        <View style={styles.cardHeader}>
+          <Text style={[styles.sessionDate, isPast && styles.pastSessionText]}>
+            {format(parseISO(session.date), 'EEE, MMM dd, yyyy')}
+          </Text>
+          <View style={styles.badgeContainer}>
+            {isPast && (
+              <View style={[styles.statusBadge, { backgroundColor: '#64748B' }]}>
+                <Text style={styles.statusText}>Past</Text>
+              </View>
+            )}
+            <View style={styles.sessionStats}>
+              <Text style={styles.sessionStatsText}>
+                {bookedSlots}/{totalSlots} booked
+              </Text>
+            </View>
+          </View>
+        </View>
+        
+        <View style={styles.sessionDetails}>
+          <View style={styles.detailRow}>
+            <Ionicons name="time-outline" size={18} color="#64748B" />
+            <Text style={styles.detailText}>
+              {session.timeSlots?.[0]?.startTime} - {session.timeSlots?.[session.timeSlots.length - 1]?.endTime}
+            </Text>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <Ionicons 
+              name={session.type === 'in-person' ? 'location-outline' : 'videocam-outline'} 
+              size={18} 
+              color="#64748B" 
+            />
+            <Text style={styles.detailText}>
+              {session.type === 'in-person' 
+                ? (session.hospital?.name || 'Hospital') 
+                : 'Video Consultation'
+              }
+            </Text>
+          </View>
+
+          {/* Display individual slot times */}
+          <View style={styles.detailRow}>
+            <Ionicons name="calendar-outline" size={18} color="#64748B" />
+            <View style={styles.slotTimesContainer}>
+              <Text style={styles.detailText}>
+                Available slots: 
+              </Text>
+              <View style={styles.slotTimesWrapper}>
+                {session.timeSlots?.map((slot, index) => (
+                  <View 
+                    key={index} 
+                    style={[
+                      styles.slotTimeChip,
+                      slot.patientId && styles.bookedSlotChip
+                    ]}
+                  >
+                    <Text style={[
+                      styles.slotTimeText,
+                      slot.patientId && styles.bookedSlotText
+                    ]}>
+                      {slot.startTime}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Action buttons */}
+        {canCancel && (
+          <View style={styles.cardActionsRight}>
+            <TouchableOpacity 
+              style={[styles.smallCancelButton]}
+              onPress={() => handleCancelSession(session._id)}
+            >
+              <Text style={styles.smallCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {/* Add visual indicator if session has bookings */}
+        {hasBookings && (
+          <View style={styles.clickableIndicator}>
+            <Ionicons name="chevron-forward" size={20} color="#2563EB" />
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  }, [getBookedSlotsCount, isSessionPast, handleSessionPress, handleCancelSession]);
+
+  // Upcoming Sessions Scene
+  const UpcomingSessionsScene = useCallback(() => (
+    <View style={styles.scene}>
+      <View style={styles.createSessionHeader}>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Ionicons name="add" size={20} color="white" />
+          <Text style={styles.createButtonText}>Create Session</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>Loading sessions...</Text>
+        </View>
+      ) : (
+        <ScrollView 
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {upcomingSessions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={60} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No Upcoming Sessions</Text>
+              <Text style={styles.emptyMessage}>Create your first session to start accepting appointments</Text>
+            </View>
+          ) : (
+            upcomingSessions.map(renderSessionCard)
+          )}
+        </ScrollView>
+      )}
+    </View>
+  ), [upcomingSessions, refreshing, onRefresh, modalVisible, renderSessionCard, loading]);
+
+  // Past Sessions Scene
+  const PastSessionsScene = useCallback(() => (
+    <View style={styles.scene}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>Loading sessions...</Text>
+        </View>
+      ) : (
+        <ScrollView 
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {pastSessions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={60} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No Past Sessions</Text>
+              <Text style={styles.emptyMessage}>Your completed sessions will appear here</Text>
+            </View>
+          ) : (
+            pastSessions.map(renderSessionCard)
+          )}
+        </ScrollView>
+      )}
+    </View>
+  ), [pastSessions, refreshing, onRefresh, renderSessionCard, loading]);
+
+  const renderScene = ({ route }) => {
+    switch (route.key) {
+      case 'upcoming':
+        return UpcomingSessionsScene();
+      case 'past':
+        return PastSessionsScene();
+      default:
+        return null;
+    }
+  };
+
+  const renderTabBar = useCallback(props => (
+    <TabBar
+      {...props}
+      indicatorStyle={{ backgroundColor: '#2563EB' }}
+      style={{ backgroundColor: 'white', elevation: 0, shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}
+      labelStyle={{ color: '#1E293B', fontWeight: '500', textTransform: 'none' }}
+      activeColor="#2563EB"
+      inactiveColor="#64748B"
+    />
+  ), []);
 
   // Handle session creation
   const handleCreateSession = useCallback(async () => {
@@ -472,114 +576,6 @@ export default function DoctorDashboardContent() {
     }
   }, [user, newSession, fetchSessions, createTimeSlots]);
 
-  // Appointments Scene
-  const AppointmentsScene = useCallback(() => (
-    <ScrollView 
-      style={styles.scene}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      {sortedAppointments.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={60} color="#94A3B8" />
-          <Text style={styles.emptyTitle}>No Appointments</Text>
-          <Text style={styles.emptyMessage}>You don't have any appointments yet</Text>
-        </View>
-      ) : (
-        sortedAppointments.map((appointment) => {
-          const isOngoing = isAppointmentOngoing(appointment);
-          const isPast = isAppointmentPast(appointment);
-          
-          return (
-            <View 
-              key={appointment._id} 
-              style={[
-                styles.appointmentCard,
-                isOngoing && styles.ongoingAppointmentCard,
-                isPast && styles.pastAppointmentCard
-              ]}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.appointmentDate}>
-                  {format(parseISO(appointment.session.date), 'EEE, MMM dd, yyyy')}
-                </Text>
-                
-                <View style={styles.badgeContainer}>
-                  {isOngoing ? (
-                    <View style={[styles.statusBadge, styles.ongoingBadge]}>
-                      <Text style={styles.statusText}>Ongoing</Text>
-                    </View>
-                  ) : isPast ? (
-                    <View style={[styles.statusBadge, styles.completedBadge]}>
-                      <Text style={styles.statusText}>Completed</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.statusBadge}>
-                      <Text style={styles.statusText}>Booked</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-              
-              <View style={styles.appointmentDetails}>
-                <View style={styles.detailRow}>
-                  <Ionicons name="time-outline" size={18} color="#64748B" />
-                  <Text style={styles.detailText}>
-                    {appointment.startTime} - {appointment.endTime}
-                  </Text>
-                  {isOngoing && (
-                    <Text style={styles.ongoingText}> • In Progress</Text>
-                  )}
-                </View>
-                
-                <View style={styles.detailRow}>
-                  <Ionicons name="person-outline" size={18} color="#64748B" />
-                  <Text style={styles.detailText}>
-                    Patient - {appointment.patient?.name || 'Unknown'}
-                  </Text>
-                </View>
-                
-                <View style={styles.detailRow}>
-                  <Ionicons 
-                    name={appointment.session.sessionType === 'in-person' ? 'location-outline' : 'videocam-outline'} 
-                    size={18} 
-                    color="#64748B" 
-                  />
-                  <Text style={styles.detailText}>
-                    {appointment.session.sessionType === 'in-person' 
-                      ? (appointment.session.hospital?.name || 'Hospital') 
-                      : 'Video Consultation'
-                    }
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.cardActions}>
-                {(appointment.session.sessionType === 'online' || appointment.session.sessionType === 'video') && (
-                  <VideoCallButton
-                    style={[styles.actionButton, styles.videoCallButton]}
-                    title="Join Video Call"
-                    sessionId={appointment.sessionId}
-                    slotIndex={appointment.slotIndex}
-                  />
-                )}
-                
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.medicalRecordsButton]}
-                  onPress={() => handleViewMedicalRecords(appointment)}
-                >
-                  <Ionicons name="document-text-outline" size={16} color="#0066CC" />
-                  <Text style={[styles.actionButtonText, styles.medicalRecordsButtonText]}>
-                    View Medical Records
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        })
-      )}
-    </ScrollView>
-  ), [sortedAppointments, refreshing, onRefresh, isAppointmentOngoing, isAppointmentPast, handleViewMedicalRecords]);
-
   // Sessions Scene  
   const SessionsScene = useCallback(() => (
     <View style={styles.scene}>
@@ -608,9 +604,20 @@ export default function DoctorDashboardContent() {
             const totalSlots = session.timeSlots?.length || 0;
             const isPast = isSessionPast(session);
             const canCancel = !isPast && bookedSlots === 0; // Only show cancel if NOT past AND no bookings
+            const hasBookings = bookedSlots > 0; // Check if session has any bookings
 
             return (
-              <View key={session._id} style={[styles.sessionCard, isPast && styles.pastSessionCard]}>
+              <TouchableOpacity 
+                key={session._id} 
+                style={[
+                  styles.sessionCard, 
+                  isPast && styles.pastSessionCard,
+                  hasBookings && styles.clickableSessionCard
+                ]}
+                onPress={() => handleSessionPress(session)}
+                disabled={!hasBookings}
+                activeOpacity={hasBookings ? 0.7 : 1}
+              >
                 <View style={styles.cardHeader}>
                   <Text style={[styles.sessionDate, isPast && styles.pastSessionText]}>
                     {format(parseISO(session.date), 'EEE, MMM dd, yyyy')}
@@ -691,46 +698,32 @@ export default function DoctorDashboardContent() {
                     </TouchableOpacity>
                   </View>
                 )}
-              </View>
+                
+                {/* Add visual indicator if session has bookings */}
+                {hasBookings && (
+                  <View style={styles.clickableIndicator}>
+                    <Ionicons name="chevron-forward" size={20} color="#2563EB" />
+                  </View>
+                )}
+              </TouchableOpacity>
             );
           })
         )}
       </ScrollView>
     </View>
-  ), [sortedSessions, refreshing, onRefresh, modalVisible, getBookedSlotsCount, isSessionPast, handleCancelSession]);
-
-  const renderScene = ({ route }) => {
-    switch (route.key) {
-      case 'appointments':
-        return AppointmentsScene();
-      case 'sessions':
-        return SessionsScene();
-      default:
-        return null;
-    }
-  };
-
-  const renderTabBar = useCallback(props => (
-    <TabBar
-      {...props}
-      indicatorStyle={{ backgroundColor: '#2563EB' }}
-      style={{ backgroundColor: 'white', elevation: 0, shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}
-      labelStyle={{ color: '#1E293B', fontWeight: '500', textTransform: 'none' }}
-      activeColor="#2563EB"
-      inactiveColor="#64748B"
-    />
-  ), []);
+  ), [sortedSessions, refreshing, onRefresh, modalVisible, getBookedSlotsCount, isSessionPast, handleCancelSession, handleSessionPress]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <TabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        onIndexChange={setIndex}
-        initialLayout={initialLayout}
-        renderTabBar={renderTabBar}
-        style={styles.tabView}
-      />
+      <View style={styles.scene}>
+        <TabView
+          navigationState={{ index: tabIndex, routes }}
+          renderScene={renderScene}
+          renderTabBar={renderTabBar}
+          onIndexChange={setTabIndex}
+          initialLayout={{ width: Dimensions.get('window').width }}
+        />
+      </View>
       
       {/* Session Creation Modal - Moved outside TabView */}
       <Modal
@@ -983,7 +976,21 @@ const styles = StyleSheet.create({
   scene: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    padding: 16,
+    paddingTop: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 50,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#64748B',
+    fontWeight: '500',
   },
   createSessionHeader: {
     flexDirection: 'row',
@@ -1023,6 +1030,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    position: 'relative',
+  },
+  clickableSessionCard: {
+    borderColor: '#2563EB',
+    borderWidth: 2,
+    backgroundColor: '#F8FAFC',
+  },
+  clickableIndicator: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 20,
+    padding: 4,
   },
   cardHeader: {
     flexDirection: 'row',

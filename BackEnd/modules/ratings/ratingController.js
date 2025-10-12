@@ -3,38 +3,73 @@ import mongoose from "mongoose";
 
 // Create or update a review
 export const createOrUpdateReview = async (req, res) => {
-  const { doctorId, patientId, rating, comment } = req.body;
+  const { doctorId, patientId, rating, comment, appointmentId } = req.body;
 
   try {
-    const existingReview = await Rating.findOne({
-      doctor: doctorId,
-      patient: patientId,
-    });
+    let existingReview;
 
-    if (existingReview) {
-      // Update existing review
-      existingReview.rating = rating;
-      existingReview.comment = comment;
-      await existingReview.save();
-      return res
-        .status(200)
-        .json({
+    if (appointmentId) {
+      // For appointment-specific reviews, use the full appointmentId as unique identifier
+      // This supports composite IDs like "sessionId_startTime_endTime" which uniquely identify each time slot
+      existingReview = await Rating.findOne({
+        appointment: appointmentId,
+        patient: patientId,
+      });
+
+      if (existingReview) {
+        // Update existing review
+        existingReview.rating = rating;
+        existingReview.comment = comment;
+        await existingReview.save();
+        return res.status(200).json({
           message: "Review updated successfully",
           review: existingReview,
         });
+      }
+
+      // Create new review with full appointment ID (including time slot info)
+      const newReview = await Rating.create({
+        doctor: doctorId,
+        patient: patientId,
+        appointment: appointmentId,
+        rating,
+        comment,
+      });
+
+      return res
+        .status(201)
+        .json({ message: "Review created successfully", review: newReview });
+    } else {
+      // For backward compatibility, check by doctor and patient only
+      existingReview = await Rating.findOne({
+        doctor: doctorId,
+        patient: patientId,
+        appointment: { $exists: false },
+      });
+
+      if (existingReview) {
+        // Update existing review
+        existingReview.rating = rating;
+        existingReview.comment = comment;
+        await existingReview.save();
+        return res.status(200).json({
+          message: "Review updated successfully",
+          review: existingReview,
+        });
+      }
+
+      // Create new review without appointment reference
+      const newReview = await Rating.create({
+        doctor: doctorId,
+        patient: patientId,
+        rating,
+        comment,
+      });
+
+      res
+        .status(201)
+        .json({ message: "Review created successfully", review: newReview });
     }
-
-    // Create new review
-    const newReview = await Rating.create({
-      doctor: doctorId,
-      patient: patientId,
-      rating,
-      comment,
-    });
-
-    res
-      .status(201)
-      .json({ message: "Review created successfully", review: newReview });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
@@ -76,6 +111,24 @@ export const getDoctorAverageRating = async (req, res) => {
     } else {
       res.status(200).json({ avgRating: 0, totalReviews: 0 });
     }
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Get review for a specific appointment
+export const getAppointmentReview = async (req, res) => {
+  const { appointmentId, patientId } = req.params;
+
+  try {
+    // Use the full appointmentId as unique identifier for time slot
+    // This supports composite IDs like "sessionId_startTime_endTime" which uniquely identify each time slot
+    const review = await Rating.findOne({
+      appointment: appointmentId,
+      patient: patientId,
+    }).populate("patient", "name");
+
+    res.status(200).json(review);
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }

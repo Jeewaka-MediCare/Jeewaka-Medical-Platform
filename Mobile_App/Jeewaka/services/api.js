@@ -1,6 +1,7 @@
 import axios from "axios";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { auth } from "../config/firebase";
 
 // Function to determine the appropriate baseURL
 const getBaseUrl = () => {
@@ -12,16 +13,38 @@ const getBaseUrl = () => {
   }
 
   // Always use your specific backend server
-  return "http://172.18.74.57:5000";
+  return "http://10.14.138.57:5000";
 };
 
 const api = axios.create({
   baseURL: getBaseUrl(),
 });
 
-// Add request interceptor for debugging
+// Add request interceptor for authentication and debugging
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    // Add Firebase token to requests if user is authenticated
+    try {
+      if (auth.currentUser) {
+        const token = await auth.currentUser.getIdToken();
+        config.headers.Authorization = `Bearer ${token}`;
+        console.log(
+          `API Request with auth: ${config.method?.toUpperCase()} ${
+            config.baseURL
+          }${config.url}`
+        );
+      } else {
+        console.log(
+          `API Request without auth: ${config.method?.toUpperCase()} ${
+            config.baseURL
+          }${config.url}`
+        );
+      }
+    } catch (error) {
+      console.error("Error getting Firebase token:", error);
+      // Continue with request even if token retrieval fails
+    }
+
     console.log(
       `API Request: ${config.method?.toUpperCase()} ${config.baseURL}${
         config.url
@@ -35,7 +58,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for debugging
+// Add response interceptor for debugging and error handling
 api.interceptors.response.use(
   (response) => {
     console.log(`API Response: ${response.status} ${response.config.url}`);
@@ -46,6 +69,14 @@ api.interceptors.response.use(
     if (error.response) {
       console.error("Error Status:", error.response.status);
       console.error("Error Data:", error.response.data);
+
+      // Handle authentication errors globally
+      if (error.response.status === 401) {
+        console.warn(
+          "Authentication error detected - user may need to re-login"
+        );
+        // You could emit an event here or call a global logout function
+      }
     }
     return Promise.reject(error);
   }

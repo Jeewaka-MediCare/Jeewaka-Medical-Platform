@@ -36,7 +36,15 @@ export default function PaymentSuccess() {
 
   const handlePaymentSuccess = async () => {
     try {
-      console.log('PaymentSuccess - Confirming booking with backend...');
+      console.log('PaymentSuccess - Starting booking confirmation...');
+      console.log('PaymentSuccess - Parameters:', {
+        sessionId,
+        paymentIntentId,
+        slotIndex,
+        patientId,
+        user: user?._id,
+        userRole
+      });
       
       // Confirm the booking with payment details
       const result = await paymentService.handlePaymentSuccess(
