@@ -5,12 +5,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import '../styles/dialogWide.css';
+import '../styles/dialogWide.css'; // Ensure this is imported for the custom style
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { X, Plus, List, FileText } from 'lucide-react';
 import MedicalRecordsList from './MedicalRecordsList';
 import MedicalRecordViewer from './MedicalRecordViewer';
 import MedicalRecordEditor from './MedicalRecordEditor';
+import MedicalRecordHistoryDialog from './MedicalRecordHistoryDialog';
 import useAuthStore from '../store/authStore';
 
 /**
@@ -31,6 +34,10 @@ export default function MedicalRecordsModal({
   const [currentView, setCurrentView] = useState(initialView);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [activeTab, setActiveTab] = useState('records');
+
+  // Version history dialog state
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyRecordId, setHistoryRecordId] = useState(null);
 
   // Reset state when modal closes
   const handleClose = () => {
@@ -74,27 +81,21 @@ export default function MedicalRecordsModal({
 
   // Handle view history
   const handleViewHistory = (record) => {
-    // This could open a separate history modal or view
-    console.log('View history for:', record);
-    // TODO: Implement version history modal
+    setHistoryRecordId(record.recordId || record._id);
+    setHistoryDialogOpen(true);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+  <DialogContent className="dialog-wide w-full max-w-[70vw] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-              <FileText className="h-6 w-6 text-primary" />
-              Medical Records
-            </DialogTitle>
-            <Button variant="ghost" size="sm" onClick={handleClose}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+            <FileText className="h-6 w-6 text-primary" />
+            Medical Records
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto">
+  <div className="flex-1 overflow-y-auto w-full">
           {/* List View */}
           {currentView === 'list' && (
             <div className="space-y-4">
@@ -159,6 +160,13 @@ export default function MedicalRecordsModal({
             </div>
           )}
         </div>
+
+        {/* Version History Dialog */}
+        <MedicalRecordHistoryDialog
+          recordId={historyRecordId}
+          open={historyDialogOpen}
+          onClose={() => setHistoryDialogOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -201,7 +209,7 @@ export function MedicalRecordsModalTabs({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh]">
+  <DialogContent className="dialog-wide w-full max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-6 w-6 text-primary" />
@@ -210,13 +218,13 @@ export function MedicalRecordsModalTabs({
         </DialogHeader>
 
         <Tabs defaultValue="list" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="list">
+          <TabsList className="flex w-full gap-2">
+            <TabsTrigger value="list" className="flex-1 min-w-0 justify-center text-base py-3">
               <List className="h-4 w-4 mr-2" />
               All Records
             </TabsTrigger>
             {isDoctor && (
-              <TabsTrigger value="create">
+              <TabsTrigger value="create" className="flex-1 min-w-0 justify-center text-base py-3">
                 <Plus className="h-4 w-4 mr-2" />
                 Create New
               </TabsTrigger>

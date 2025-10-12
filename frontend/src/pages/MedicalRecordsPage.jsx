@@ -1,3 +1,4 @@
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { ChevronLeft, FileText, Calendar, User, Clock, Eye } from "lucide-react"
@@ -53,7 +54,7 @@ export default function MedicalRecordsPage() {
         }
 
         // Fetch medical records
-        const res = await api.get(`/api/patients/${backendPatientId}/records`)
+  const res = await api.get(`/api/medical-records/patients/${backendPatientId}/records`)
         console.log("Medical Records:", res.data)
         setRecords(res.data.records || [])
       } catch (err) {
@@ -109,13 +110,7 @@ export default function MedicalRecordsPage() {
               <CardHeader className="pb-3 bg-primary/5">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {record.title}
-                      {!record.isDeleted && (
-                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                          Active
-                        </Badge>
-                      )}
+                    <CardTitle className="text-lg flex items-center gap-2">  
                     </CardTitle>
                     {record.description && (
                       <p className="text-sm text-muted-foreground mt-1">
@@ -199,15 +194,27 @@ export default function MedicalRecordsPage() {
 
       {/* Medical Record Viewer Modal */}
       {selectedRecord && (
-        <MedicalRecordViewer
-          isOpen={viewerOpen}
-          onClose={() => {
-            setViewerOpen(false)
-            setSelectedRecord(null)
-          }}
-          record={selectedRecord}
-          readOnly={true}
-        />
+        <Dialog open={viewerOpen} onOpenChange={(open) => {
+          if (!open) {
+            setViewerOpen(false);
+            setSelectedRecord(null);
+          }
+        }}>
+          <DialogContent
+            className="w-full max-w-5xl sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[90vh] p-0 flex flex-col"
+            style={{ maxHeight: '90vh', minWidth: '320px' }}
+          >
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <MedicalRecordViewer
+                recordId={selectedRecord.recordId || selectedRecord._id}
+                onBack={() => {
+                  setViewerOpen(false);
+                  setSelectedRecord(null);
+                }}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </main>
   )

@@ -1,20 +1,19 @@
 "use client"
 
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Clock, Eye, Calendar, Plus, Video } from "lucide-react"
-
+import { Clock, Eye, Plus, Video, FileText } from "lucide-react"
 import { getStatusColor, getAppointmentStatusColor } from "../utils/helpers"
-
-
+import '../styles/dialogWide.css';
 
 export function TimeSlotCard({
   slot,
   session,
   onUpdateStatus,
   onViewReports,
-  onViewHistory,
+  onViewMedicalRecords,
   onAddObservation,
   onAddPrescription,
   onAddNote,
@@ -22,7 +21,7 @@ export function TimeSlotCard({
 
   return (
     <div
-      className={`p-6 border rounded-lg transition-all ${
+  className={`p-6 border rounded-lg w-full max-w-full transition-all ${
         slot.status === "booked" ? "border-blue-200 bg-blue-50" : "border-gray-200"
       }`}
     >
@@ -100,6 +99,14 @@ export function TimeSlotCard({
                       })}
                     </p>
                   </div>
+                      // If this component uses a DialogContent or modal, add the dialog-wide class to it.
+                      // If not, and this is a card, you can apply the class to the root div for a wide layout.
+
+                      // Example for a card layout:
+                      // <div className="dialog-wide ...otherClasses"> ... </div>
+
+                      // If you want to make this optional, add a prop like `wide` and apply the class conditionally.
+
                 )}
               </div>
               {(slot.paymentStatus || slot.paymentIntentId) && (
@@ -147,12 +154,12 @@ export function TimeSlotCard({
               <Eye className="h-4 w-4 mr-2" />
               View Reports
             </Button>
-            <Button size="sm" variant="outline" className="flex-1" onClick={() => onViewHistory({ 
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => onViewMedicalRecords({ 
               name: slot.patientId?.name || slot.patientName, 
               id: slot.patientId?._id || slot.patientId 
             })}>
-              <Calendar className="h-4 w-4 mr-2" />
-              View History
+              <FileText className="h-4 w-4 mr-2" />
+              Medical Records
             </Button>
           </div>
 

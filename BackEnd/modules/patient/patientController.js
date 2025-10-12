@@ -1,12 +1,79 @@
 import Patient from "./patientModel.js";
 import Session from "../session/sessionModel.js";
 import Doctor from "../doctor/doctorModel.js";
+import Record from "../records/recordModel.js";
+import Version from "../records/versionModel.js";
 
 // Create a patient
 export const createPatient = async (req, res) => {
   try {
+    // Create the patient first
     const patient = new Patient(req.body);
     await patient.save();
+
+    // Create an initial medical record for the patient
+    try {
+      const initialRecord = new Record({
+        patientId: patient._id,
+        title: "Medical History",
+        description: "Initial medical record created during patient registration",
+        tags: ["initial", "registration"],
+        createdBy: patient._id, // Patient creates their own initial record
+        lastModifiedBy: patient._id
+      });
+
+      await initialRecord.save();
+
+      // Create initial version with basic template
+      const initialContent = `# Medical History - ${patient.name}
+
+## Personal Information
+- **Name:** ${patient.name}
+- **Date of Birth:** ${patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'Not provided'}
+- **Gender:** ${patient.gender || 'Not provided'}
+- **Blood Type:** ${patient.bloodType || 'Not provided'}
+- **Phone:** ${patient.phone || 'Not provided'}
+- **Email:** ${patient.email || 'Not provided'}
+
+## Medical History
+*This section will be updated by healthcare providers during consultations*
+
+### Current Medications
+- None reported
+
+### Known Allergies
+- ${patient.allergies && patient.allergies.length > 0 ? patient.allergies.join(', ') : 'None reported'}
+
+### Previous Medical Conditions
+- None reported
+
+### Family Medical History
+- Not documented
+
+### Emergency Contact
+- ${patient.emergencyContact || 'Not provided'}
+
+---
+*Record created on: ${new Date().toLocaleDateString()}*
+*This is an initial medical record. Healthcare providers will update this during consultations.*`;
+
+      const initialVersion = await Version.createNewVersion(
+        initialRecord._id,
+        initialContent,
+        patient._id,
+        "Initial medical record created during patient registration"
+      );
+
+      // Update record with current version
+      initialRecord.currentVersionId = initialVersion._id;
+      await initialRecord.save();
+
+      console.log(`Initial medical record created for patient ${patient._id}`);
+    } catch (recordError) {
+      console.error(`Failed to create initial medical record for patient ${patient._id}:`, recordError);
+      // Don't fail the patient creation if medical record creation fails
+    }
+
     res.status(201).json(patient);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -13,8 +13,31 @@ class MedicalRecordsController {
     
     try {
       const { patientId, title, description, content, tags = [] } = req.body;
-      const doctorId = req.user.id; // Assuming auth middleware sets this
-      
+      // Find doctor by Firebase UID (uuid)
+      let doctor = null;
+      if (req.user && req.user.uid) {
+        doctor = await Doctor.findOne({ uuid: req.user.uid });
+      }
+      if (!doctor) {
+        return res.status(401).json({ error: 'Doctor profile not found for this user.' });
+      }
+      const doctorId = doctor._id;
+
+      // Validate patientId is a valid ObjectId
+      if (!patientId || !/^[0-9a-fA-F]{24}$/.test(patientId)) {
+        await Audit.logAction({
+          action: 'CREATE_RECORD',
+          resourceType: 'RECORD',
+          resourceId: 'N/A',
+          patientId,
+          performedBy: doctorId,
+          success: false,
+          errorMessage: 'Invalid patientId',
+          duration: Date.now() - startTime
+        });
+        return res.status(400).json({ error: 'Invalid patientId. Please contact support.' });
+      }
+
       // Validate patient exists
       const patient = await Patient.findById(patientId);
       if (!patient) {
@@ -30,7 +53,7 @@ class MedicalRecordsController {
         });
         return res.status(404).json({ error: 'Patient not found' });
       }
-      
+
       // Create the record
       const record = new Record({
         patientId,
@@ -40,7 +63,7 @@ class MedicalRecordsController {
         createdBy: doctorId,
         lastModifiedBy: doctorId
       });
-      
+
       await record.save();
       
       // Create initial version if content provided
@@ -112,9 +135,18 @@ class MedicalRecordsController {
     try {
       const { patientId } = req.params;
       const { page = 1, limit = 10, includeDeleted = false } = req.query;
-      const userId = req.user.id;
-      const userType = req.user.type; // 'DOCTOR' or 'PATIENT'
-      
+      let userId = req.user.id;
+      let performedBy = null;
+      let userType = req.user.type || req.user.role || '';
+      if (typeof userType === 'string') userType = userType.toUpperCase();
+      // If doctor, resolve ObjectId
+      if (userType === 'DOCTOR' && req.user && req.user.uid) {
+        const doctor = await Doctor.findOne({ uuid: req.user.uid });
+        if (doctor) performedBy = doctor._id;
+      } else if (userType === 'PATIENT') {
+        performedBy = userId;
+      }
+
       // Access control
       if (userType === 'PATIENT' && userId !== patientId) {
         await Audit.logAction({
@@ -122,7 +154,7 @@ class MedicalRecordsController {
           resourceType: 'PATIENT',
           resourceId: patientId,
           patientId,
-          performedBy: userId,
+          performedBy,
           performedByType: userType,
           success: false,
           errorMessage: 'Unauthorized access attempt',
@@ -158,7 +190,7 @@ class MedicalRecordsController {
         resourceType: 'PATIENT',
         resourceId: patientId,
         patientId,
-        performedBy: userId,
+        performedBy,
         performedByType: userType,
         details: {
           recordsReturned: records.length,
@@ -205,9 +237,18 @@ class MedicalRecordsController {
     
     try {
       const { recordId } = req.params;
-      const userId = req.user.id;
-      const userType = req.user.type;
-      
+      let userId = req.user.id;
+      let performedBy = null;
+      let userType = req.user.type || req.user.role || '';
+      if (typeof userType === 'string') userType = userType.toUpperCase();
+      // If doctor, resolve ObjectId
+      if (userType === 'DOCTOR' && req.user && req.user.uid) {
+        const doctor = await Doctor.findOne({ uuid: req.user.uid });
+        if (doctor) performedBy = doctor._id;
+      } else if (userType === 'PATIENT') {
+        performedBy = userId;
+      }
+
       const record = await Record.findOne({ recordId, isDeleted: false })
         .populate([
           { path: 'patientId', select: 'name email uuid dob sex' },
@@ -215,11 +256,11 @@ class MedicalRecordsController {
           { path: 'lastModifiedBy', select: 'name specialization' },
           { path: 'currentVersionId' }
         ]);
-      
+
       if (!record) {
         return res.status(404).json({ error: 'Record not found' });
       }
-      
+
       // Access control
       if (userType === 'PATIENT' && userId !== record.patientId._id.toString()) {
         await Audit.logAction({
@@ -227,7 +268,7 @@ class MedicalRecordsController {
           resourceType: 'RECORD',
           resourceId: recordId,
           patientId: record.patientId._id,
-          performedBy: userId,
+          performedBy,
           performedByType: userType,
           success: false,
           errorMessage: 'Unauthorized access attempt',
@@ -249,7 +290,7 @@ class MedicalRecordsController {
         resourceType: 'RECORD',
         resourceId: recordId,
         patientId: record.patientId._id,
-        performedBy: userId,
+        performedBy,
         performedByType: userType,
         details: {
           recordTitle: record.title,
@@ -279,14 +320,23 @@ class MedicalRecordsController {
     try {
       const { recordId } = req.params;
       const { content, changeDescription = '', title, description, tags } = req.body;
-      const doctorId = req.user.id;
-      const userType = req.user.type;
-      
-      // Only doctors can edit
+      // Find doctor by Firebase UID (uuid)
+      let doctor = null;
+      if (req.user && req.user.uid) {
+        doctor = await Doctor.findOne({ uuid: req.user.uid });
+      }
+      if (!doctor) {
+        return res.status(401).json({ error: 'Doctor profile not found for this user.' });
+      }
+      const doctorId = doctor._id;
+      // Robust user type/role check
+      let userType = req.user.type || req.user.role || '';
+      console.log('[MedicalRecordsController.updateRecord] userType:', userType);
+      if (typeof userType === 'string') userType = userType.toUpperCase();
       if (userType !== 'DOCTOR') {
         return res.status(403).json({ error: 'Only doctors can edit records' });
       }
-      
+
       const record = await Record.findOne({ recordId, isDeleted: false });
       if (!record) {
         return res.status(404).json({ error: 'Record not found' });
@@ -326,7 +376,6 @@ class MedicalRecordsController {
             doctorId,
             changeDescription
           );
-          
           // Update record with new current version
           record.currentVersionId = newVersion._id;
           record.lastModifiedBy = doctorId;
@@ -369,7 +418,7 @@ class MedicalRecordsController {
         { path: 'patientId', select: 'name email uuid' },
         { path: 'lastModifiedBy', select: 'name specialization' }
       ]);
-      
+
       res.json({
         success: true,
         record,
@@ -379,17 +428,22 @@ class MedicalRecordsController {
       });
       
     } catch (error) {
+      // Try to resolve doctorId for audit log, fallback to null
+      let doctorId = null;
+      if (req.user && req.user.uid) {
+        const doctor = await Doctor.findOne({ uuid: req.user.uid });
+        if (doctor) doctorId = doctor._id;
+      }
       await Audit.logAction({
         action: 'UPDATE_RECORD',
         resourceType: 'RECORD',
         resourceId: req.params.recordId,
         patientId: null, // We might not have access to this on error
-        performedBy: req.user.id,
+        performedBy: doctorId,
         success: false,
         errorMessage: error.message,
         duration: Date.now() - startTime
       });
-      
       res.status(500).json({ 
         error: 'Failed to update record',
         details: error.message 
@@ -448,49 +502,60 @@ class MedicalRecordsController {
   // Get version history for a record
   static async getVersionHistory(req, res) {
     const startTime = Date.now();
-    
+
     try {
       const { recordId } = req.params;
       const { limit = 10 } = req.query;
-      const userId = req.user.id;
-      const userType = req.user.type;
-      
+      let userId = req.user.id;
+      let userType = req.user.type;
+
       const record = await Record.findOne({ recordId, isDeleted: false });
       if (!record) {
         return res.status(404).json({ error: 'Record not found' });
       }
-      
+
       // Access control
       if (userType === 'PATIENT' && userId !== record.patientId.toString()) {
         return res.status(403).json({ error: 'Unauthorized access' });
       }
-      
+
+      // Fix: If doctor, get Doctor ObjectId for audit log
+      let performedBy = userId;
+      let performedByType = userType;
+      if ((userType === 'DOCTOR' || userType === 'doctor') && req.user && req.user.uid) {
+        const doctor = await Doctor.findOne({ uuid: req.user.uid });
+        if (doctor) {
+          performedBy = doctor._id;
+          performedByType = 'DOCTOR';
+        }
+      }
+
       const versions = await Version.getVersionHistory(record._id, parseInt(limit));
-      
+
       // Log audit trail
       await Audit.logAction({
         action: 'VIEW_VERSION',
         resourceType: 'RECORD',
         resourceId: recordId,
         patientId: record.patientId,
-        performedBy: userId,
-        performedByType: userType,
+        performedBy,
+        performedByType,
         details: {
           recordTitle: record.title,
           versionsReturned: versions.length
         },
         duration: Date.now() - startTime
       });
-      
+
       res.json({
         success: true,
         versions
       });
-      
+
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to fetch version history',
-        details: error.message 
+        details: error.message
       });
     }
   }

@@ -49,13 +49,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import '../styles/dialogWide.css';
 
 // Import components
 import { SessionCard } from "../components/SessionCard";
 import { CreateSessionDialog } from "../components/CreateSessionDialog";
 import { TimeSlotCard } from "../components/TimeSlotCard";
 import { PatientReportsDialog } from "../components/PatientReportsDialog";
-import { PatientHistoryDialog } from "../components/PatientHistoryDialog";
+import MedicalRecordsModal from "../components/MedicalRecordsModal";
 import api from "../services/api.js";
 import { toast } from "sonner";
 import useAuthStore from "../store/authStore.js";
@@ -76,7 +77,8 @@ export default function DoctorSessionManager() {
   // Dialog states
   const [isSessionDetailsOpen, setIsSessionDetailsOpen] = useState(false);
   const [selectedPatientForReports, setSelectedPatientForReports] = useState(null);
-  const [selectedPatientForHistory, setSelectedPatientForHistory] = useState(null);
+  const [selectedPatientForMedicalRecords, setSelectedPatientForMedicalRecords] = useState(null);
+  const [isMedicalRecordsOpen, setIsMedicalRecordsOpen] = useState(false);
   const [isAddObservationOpen, setIsAddObservationOpen] = useState(false);
   const [isAddPrescriptionOpen, setIsAddPrescriptionOpen] = useState(false);
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
@@ -251,8 +253,9 @@ export default function DoctorSessionManager() {
     setSelectedPatientForReports(patient);
   };
 
-  const handleViewHistory = (patient) => {
-    setSelectedPatientForHistory(patient);
+  const handleViewMedicalRecords = (patient) => {
+    setSelectedPatientForMedicalRecords(patient);
+    setIsMedicalRecordsOpen(true);
   };
 
   const handleAddNote = (patient) => {
@@ -478,7 +481,7 @@ export default function DoctorSessionManager() {
         {/* Dialogs */}
         {/* Session Details Modal */}
         <Dialog open={isSessionDetailsOpen} onOpenChange={setIsSessionDetailsOpen}>
-          <DialogContent className="max-w-6xl max-h-[95vh] w-[95vw] overflow-y-auto">
+          <DialogContent className="dialog-wide w-full max-w-[70vw] max-h-[95vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2">
                 <span>Session Details</span>
@@ -539,7 +542,7 @@ export default function DoctorSessionManager() {
                         session={selectedSession}
                         onUpdateStatus={handleUpdateAppointmentStatus}
                         onViewReports={handleViewReports}
-                        onViewHistory={handleViewHistory}
+                        onViewMedicalRecords={handleViewMedicalRecords}
                         onAddNote={handleAddNote}
                       />
                     ))}
@@ -556,10 +559,14 @@ export default function DoctorSessionManager() {
           onClose={() => setSelectedPatientForReports(null)}
         />
 
-        <PatientHistoryDialog
-          patient={selectedPatientForHistory}
-          isOpen={!!selectedPatientForHistory}
-          onClose={() => setSelectedPatientForHistory(null)}
+        <MedicalRecordsModal
+          isOpen={isMedicalRecordsOpen}
+          onClose={() => {
+            setIsMedicalRecordsOpen(false);
+            setSelectedPatientForMedicalRecords(null);
+          }}
+          patientId={selectedPatientForMedicalRecords?.id}
+          initialView="list"
         />
       </div>
     </div>

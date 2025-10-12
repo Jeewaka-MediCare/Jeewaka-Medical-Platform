@@ -113,8 +113,7 @@ versionSchema.statics.getVersionHistory = function(recordId, limit = 10) {
     .sort({ versionNumber: -1 })
     .limit(limit)
     .populate('createdBy', 'name specialization')
-    .populate('approvedBy', 'name specialization')
-    .select('-content'); // Exclude content for performance in history view
+    .populate('approvedBy', 'name specialization'); // Content included for frontend diff
 };
 
 // Static method to create new version with auto-incrementing version number
