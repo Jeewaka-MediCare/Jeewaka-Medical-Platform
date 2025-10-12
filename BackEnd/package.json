@@ -24,6 +24,7 @@
     "@google-cloud/language": "^7.2.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.74.0",
+    "artillery": "^2.0.26",
     "aws-sdk": "^2.1692.0",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
@@ -37,8 +38,8 @@
     "stripe": "^18.5.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10",
     "jest": "^29.0.0",
+    "nodemon": "^3.1.10",
     "supertest": "^6.3.0"
   },
   "jest": {
