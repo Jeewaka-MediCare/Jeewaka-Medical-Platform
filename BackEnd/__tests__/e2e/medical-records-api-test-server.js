@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { connectDB } from '../shared/database.js';
-import medicalRecordsRouter from '../modules/records/recordsRoutes.js';
+import { connectDB } from '../../shared/database.js';
+import medicalRecordsRouter from '../../modules/records/recordsRoutes.js';
 
 // Load environment variables
 dotenv.config();

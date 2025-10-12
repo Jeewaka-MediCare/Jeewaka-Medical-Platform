@@ -3,7 +3,7 @@ import {
     analyzeSentiment, 
     extractEntities, 
     testVertexAIAuthentication 
-} from '../utils/vertexAI.js';
+} from '../../utils/vertexAI.js';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '../.env' });

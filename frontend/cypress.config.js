@@ -13,6 +13,7 @@ module.exports = {
       DOCTOR_PASSWORD: process.env.CYPRESS_DOCTOR_PASSWORD
     }
   },
-  video: false,
+    video: false,
+    trashAssetsBeforeRuns: false,
   screenshotOnRunFailure: true
 };
