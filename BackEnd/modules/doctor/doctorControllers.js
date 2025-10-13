@@ -5,6 +5,7 @@ import { generateVertexEmbedding } from '../../utils/vertexAI.js';
 import Session from '../session/sessionModel.js';
 import Rating from '../ratings/ratingModel.js';
 import mongoose from 'mongoose';
+import adminVerificationSchema from '../doctorCertificates/doctorCertificateModel.js';
 
 
 // Initialize Gemini AI
@@ -45,7 +46,10 @@ export const createDoctor = async (req, res) => {
 // Get all doctors
 export const getDoctors = async (req, res) => {
   try {
-    const doctors = await Doctor.find();
+    //const doctors = await Doctor.find();
+    const doctors = await adminVerificationSchema.find().populate('doctorId');
+    console.log("doctors",doctors)
+
     res.json(doctors);
   } catch (error) {
     res.status(500).json({ error: error.message });
