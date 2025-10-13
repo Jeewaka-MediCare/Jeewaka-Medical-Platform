@@ -71,14 +71,16 @@ export const getAllVerifications = async (req, res) => {
   })
   .lean();               // plain JS objects
 
-const verifications = verificationsRaw.map(v => {
-  const {
-    doctorId: { _id: doctorId, ...doctorFields }, // ⬅ rename _id → doctorId
-    ...rest
-  } = v;
 
-  return { ...rest, doctorId, ...doctorFields };
-});
+const verifications = verificationsRaw
+  .filter(v => v.doctorId) // skip if doctorId is null (broken reference)
+  .map(v => {
+    const {
+      doctorId: { _id: doctorId, ...doctorFields },
+      ...rest
+    } = v;
+    return { ...rest, doctorId, ...doctorFields };
+  });
 
 res.status(200).json(verifications);
 

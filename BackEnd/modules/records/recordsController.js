@@ -143,6 +143,13 @@ class MedicalRecordsController {
       if (userType === 'DOCTOR' && req.user && req.user.uid) {
         const doctor = await Doctor.findOne({ uuid: req.user.uid });
         if (doctor) performedBy = doctor._id;
+      } else if (userType === 'PATIENT' && req.user && req.user.uid) {
+        // Resolve patient ObjectId from Firebase UID
+        const patient = await Patient.findOne({ uuid: req.user.uid });
+        if (patient && patient._id) {
+          userId = patient._id.toString();
+          performedBy = patient._id;
+        }
       } else if (userType === 'PATIENT') {
         performedBy = userId;
       }
@@ -245,6 +252,13 @@ class MedicalRecordsController {
       if (userType === 'DOCTOR' && req.user && req.user.uid) {
         const doctor = await Doctor.findOne({ uuid: req.user.uid });
         if (doctor) performedBy = doctor._id;
+      } else if (userType === 'PATIENT' && req.user && req.user.uid) {
+        // Resolve patient ObjectId from Firebase UID
+        const patient = await Patient.findOne({ uuid: req.user.uid });
+        if (patient && patient._id) {
+          userId = patient._id.toString();
+          performedBy = patient._id;
+        }
       } else if (userType === 'PATIENT') {
         performedBy = userId;
       }
