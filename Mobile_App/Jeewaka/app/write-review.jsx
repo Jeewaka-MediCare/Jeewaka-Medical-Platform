@@ -125,7 +125,7 @@ export default function WriteReview() {
         options={{
           title: existingReview ? 'Update Review' : 'Write Review',
           headerStyle: {
-            backgroundColor: '#2563EB',
+            backgroundColor: '#008080',
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
@@ -152,7 +152,7 @@ export default function WriteReview() {
           <View style={styles.content}>
             {/* Doctor Info Header */}
             <View style={styles.doctorInfoCard}>
-              <Ionicons name="medical" size={32} color="#2563EB" />
+              <Ionicons name="medical" size={32} color="#008080" />
               <View style={styles.doctorInfo}>
                 <Text style={styles.doctorName}>{doctorName || 'Doctor'}</Text>
                 <Text style={styles.appointmentInfo}>
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2563EB',
+    color: '#008080',
   },
   commentSection: {
     backgroundColor: '#fff',
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   submitButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',

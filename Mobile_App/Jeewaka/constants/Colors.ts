@@ -24,3 +24,26 @@ export const Colors = {
     tabIconSelected: tintColorDark,
   },
 };
+
+// Teal-based color palette for consistent theming
+export const TealTheme = {
+  primary: '#008080',      // Main teal
+  primaryLight: '#4DB8B8', // Lighter teal
+  primaryDark: '#005A5A',  // Darker teal
+  secondary: '#20B2AA',    // Light sea green
+  accent: '#48CCCC',       // Bright teal
+  background: '#F0FDFF',   // Very light teal background
+  surface: '#E6FFFE',      // Light teal surface
+  error: '#EF4444',        // Red for errors
+  warning: '#F59E0B',      // Amber for warnings
+  success: '#10B981',      // Emerald for success
+  info: '#00B2B2',         // Teal info color
+  text: {
+    primary: '#1E293B',    // Dark slate
+    secondary: '#64748B',  // Slate
+    light: '#94A3B8',      // Light slate
+    white: '#FFFFFF',
+  },
+  border: '#E2E8F0',       // Light gray border
+  disabled: '#D1D5DB',     // Gray for disabled states
+};

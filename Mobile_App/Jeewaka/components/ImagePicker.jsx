@@ -137,7 +137,7 @@ const takePhoto = async () => {
 
           {uploading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#2563EB" />
+              <ActivityIndicator size="large" color="#008080" />
               <Text style={styles.uploadingText}>Processing image...</Text>
             </View>
           ) : (
@@ -147,7 +147,7 @@ const takePhoto = async () => {
                 onPress={takePhoto}
               >
                 <View style={styles.modalOptionIcon}>
-                  <Ionicons name="camera" size={24} color="#2563EB" />
+                  <Ionicons name="camera" size={24} color="#008080" />
                 </View>
                 <View style={styles.modalOptionText}>
                   <Text style={styles.modalOptionTitle}>Take Photo</Text>
@@ -161,7 +161,7 @@ const takePhoto = async () => {
                 onPress={pickImageFromLibrary}
               >
                 <View style={styles.modalOptionIcon}>
-                  <Ionicons name="images" size={24} color="#2563EB" />
+                  <Ionicons name="images" size={24} color="#008080" />
                 </View>
                 <View style={styles.modalOptionText}>
                   <Text style={styles.modalOptionTitle}>Choose from Gallery</Text>
