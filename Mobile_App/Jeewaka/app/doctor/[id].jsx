@@ -460,7 +460,7 @@ export default function DoctorDetails() {
                   <View style={styles.qualificationsContainer}>
                     {doctor.qualifications.filter(qual => qual && qual.trim()).map((qualification, index) => (
                       <View key={index} style={styles.qualificationBadge}>
-                        <MaterialCommunityIcons name="certificate" size={16} color="#2563EB" />
+                        <MaterialCommunityIcons name="certificate" size={16} color="#008080" />
                         <Text style={styles.qualificationText}>{qualification}</Text>
                       </View>
                     ))}
@@ -476,7 +476,7 @@ export default function DoctorDetails() {
                 
                 <View style={styles.professionalInfoGrid}>
                   <View style={styles.infoCard}>
-                    <MaterialCommunityIcons name="clock-outline" size={20} color="#2563EB" />
+                    <MaterialCommunityIcons name="clock-outline" size={20} color="#008080" />
                     <Text style={styles.infoCardLabel}>Experience</Text>
                     <Text style={styles.infoCardValue}>
                       {doctor?.yearsOfExperience ? `${doctor.yearsOfExperience} years` : 'Not specified'}
@@ -484,7 +484,7 @@ export default function DoctorDetails() {
                   </View>
 
                   <View style={styles.infoCard}>
-                    <MaterialCommunityIcons name="card-account-details" size={20} color="#2563EB" />
+                    <MaterialCommunityIcons name="card-account-details" size={20} color="#008080" />
                     <Text style={styles.infoCardLabel}>Registration</Text>
                     <Text style={styles.infoCardValue}>
                       {doctor?.regNo || 'Not specified'}
@@ -492,7 +492,7 @@ export default function DoctorDetails() {
                   </View>
 
                   <View style={styles.infoCard}>
-                    <MaterialCommunityIcons name="translate" size={20} color="#2563EB" />
+                    <MaterialCommunityIcons name="translate" size={20} color="#008080" />
                     <Text style={styles.infoCardLabel}>Languages</Text>
                     <Text style={styles.infoCardValue}>
                       {doctor?.languagesSpoken && doctor.languagesSpoken.length > 0 
@@ -502,7 +502,7 @@ export default function DoctorDetails() {
                   </View>
 
                   <View style={styles.infoCard}>
-                    <MaterialCommunityIcons name="gender-male-female" size={20} color="#2563EB" />
+                    <MaterialCommunityIcons name="gender-male-female" size={20} color="#008080" />
                     <Text style={styles.infoCardLabel}>Gender</Text>
                     <Text style={styles.infoCardValue}>
                       {doctor?.gender || 'Not specified'}
@@ -594,7 +594,7 @@ export default function DoctorDetails() {
                     onPress={() => setShowPastSessions(true)}
                   >
                     <Text style={styles.pastSessionsButtonText}>See Past Sessions</Text>
-                    <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+                    <Ionicons name="chevron-forward" size={16} color="#008080" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#2563EB',
+    borderBottomColor: '#008080',
   },
   tabText: {
     fontSize: 16,
@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     fontWeight: '500',
-    color: '#2563EB',
+    color: '#008080',
   },
   contentContainer: {
     paddingHorizontal: 16,
@@ -844,11 +844,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#E0F2F1',
   },
   qualificationText: {
     fontSize: 14,
-    color: '#2563EB',
+    color: '#008080',
     fontWeight: '500',
     marginLeft: 6,
   },
@@ -944,7 +944,7 @@ const styles = StyleSheet.create({
     color: '#1E293B',
   },
   sessionTypeBadge: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -968,7 +968,7 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   bookButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -1000,7 +1000,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
   },
   pastSessionsButtonText: {
-    color: '#2563EB',
+    color: '#008080',
     fontSize: 14,
     fontWeight: '500',
     marginRight: 4,

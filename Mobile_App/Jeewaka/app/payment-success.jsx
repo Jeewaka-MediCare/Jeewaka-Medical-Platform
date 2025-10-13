@@ -111,7 +111,7 @@ export default function PaymentSuccess() {
         />
         
         <View style={styles.processingContainer}>
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color="#008080" />
           <Text style={styles.processingTitle}>Confirming Your Booking</Text>
           <Text style={styles.processingText}>
             Please wait while we process your payment and confirm your appointment...
@@ -236,14 +236,6 @@ export default function PaymentSuccess() {
                 </Text>
               </View>
             )}
-          </View>
-
-          {/* Information Note */}
-          <View style={styles.infoContainer}>
-            <Ionicons name="information-circle-outline" size={20} color="#2563EB" />
-            <Text style={styles.infoText}>
-              You will receive a confirmation email with your appointment details and a calendar invite.
-            </Text>
           </View>
 
           {/* Action Buttons */}
@@ -379,21 +371,6 @@ const styles = StyleSheet.create({
     flex: 2,
     textAlign: 'right',
   },
-  infoContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#EFF6FF',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 24,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#1E40AF',
-    marginLeft: 8,
-    lineHeight: 20,
-  },
   actionContainer: {
     gap: 12,
     marginTop: 8,
@@ -405,12 +382,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   retryButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
   },
   homeButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: '#008080',
   },
   actionButtonText: {
     color: 'white',
@@ -418,12 +395,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   homeButtonText: {
-    color: '#2563EB',
+    color: '#008080',
     fontSize: 16,
     fontWeight: '600',
   },
   primaryButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -441,13 +418,13 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: '#008080',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#2563EB',
+    color: '#008080',
     fontSize: 16,
     fontWeight: '600',
   },

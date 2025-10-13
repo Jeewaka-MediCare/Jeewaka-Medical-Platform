@@ -433,7 +433,7 @@ export default function DoctorSessionContent() {
         {/* Add visual indicator if session has bookings */}
         {hasBookings && (
           <View style={styles.clickableIndicator}>
-            <Ionicons name="chevron-forward" size={20} color="#2563EB" />
+            <Ionicons name="chevron-forward" size={20} color="#008080" />
           </View>
         )}
       </TouchableOpacity>
@@ -455,7 +455,7 @@ export default function DoctorSessionContent() {
       
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color="#008080" />
           <Text style={styles.loadingText}>Loading sessions...</Text>
         </View>
       ) : (
@@ -481,7 +481,7 @@ export default function DoctorSessionContent() {
     <View style={styles.scene}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color="#008080" />
           <Text style={styles.loadingText}>Loading sessions...</Text>
         </View>
       ) : (
@@ -516,10 +516,10 @@ export default function DoctorSessionContent() {
   const renderTabBar = useCallback(props => (
     <TabBar
       {...props}
-      indicatorStyle={{ backgroundColor: '#2563EB' }}
+      indicatorStyle={{ backgroundColor: '#008080' }}
       style={{ backgroundColor: 'white', elevation: 0, shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}
       labelStyle={{ color: '#1E293B', fontWeight: '500', textTransform: 'none' }}
-      activeColor="#2563EB"
+      activeColor="#008080"
       inactiveColor="#64748B"
     />
   ), []);
@@ -702,7 +702,7 @@ export default function DoctorSessionContent() {
                 {/* Add visual indicator if session has bookings */}
                 {hasBookings && (
                   <View style={styles.clickableIndicator}>
-                    <Ionicons name="chevron-forward" size={20} color="#2563EB" />
+                    <Ionicons name="chevron-forward" size={20} color="#008080" />
                   </View>
                 )}
               </TouchableOpacity>
@@ -1000,7 +1000,7 @@ const styles = StyleSheet.create({
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1033,7 +1033,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   clickableSessionCard: {
-    borderColor: '#2563EB',
+    borderColor: '#008080',
     borderWidth: 2,
     backgroundColor: '#F8FAFC',
   },
@@ -1065,7 +1065,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   statusBadge: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 16,
@@ -1262,8 +1262,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   sessionTypeButtonActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: '#008080',
+    borderColor: '#008080',
   },
   sessionTypeText: {
     marginLeft: 8,
@@ -1275,7 +1275,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   createSessionButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -1310,7 +1310,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalCreateButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 8,

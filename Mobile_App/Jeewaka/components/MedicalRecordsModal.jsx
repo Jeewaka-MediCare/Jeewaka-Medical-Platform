@@ -158,7 +158,7 @@ export default function MedicalRecordsModal({
 
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color="#008080" />
           <Text style={styles.loadingText}>Loading medical records...</Text>
         </View>
       ) : records.length === 0 ? (
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     margin: 20,
     padding: 15,
     borderRadius: 10,
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 10,
-    color: '#2563EB',
+    color: '#008080',
     fontWeight: '500',
   },
   moreTagsText: {
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   saveButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     marginLeft: 10,
   },
   saveButtonText: {
@@ -662,6 +662,6 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2563EB',
+    color: '#008080',
   },
 });

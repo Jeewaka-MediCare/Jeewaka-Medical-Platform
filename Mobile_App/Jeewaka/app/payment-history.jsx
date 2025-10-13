@@ -189,7 +189,7 @@ export default function PaymentHistory() {
             activeOpacity={0.7}
           >
             <Text style={styles.viewMoreText}>View More</Text>
-            <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+            <Ionicons name="chevron-forward" size={16} color="#008080" />
           </TouchableOpacity>
         </View>
       </View>
@@ -274,7 +274,7 @@ export default function PaymentHistory() {
       {/* Export Button */}
       <View style={styles.exportContainer}>
         <TouchableOpacity style={styles.exportButton}>
-          <Ionicons name="download-outline" size={16} color="#2563EB" />
+          <Ionicons name="download-outline" size={16} color="#008080" />
           <Text style={styles.exportText}>Export</Text>
         </TouchableOpacity>
       </View>
@@ -286,7 +286,7 @@ export default function PaymentHistory() {
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2563EB" />
+            <ActivityIndicator size="large" color="#008080" />
             <Text style={styles.loadingText}>Loading payment history...</Text>
           </View>
         ) : payments.length === 0 ? (
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   amountNumber: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2563EB',
+    color: '#008080',
     marginBottom: 4,
   },
   statLabel: {
@@ -469,11 +469,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: '#008080',
     gap: 4,
   },
   exportText: {
-    color: '#2563EB',
+    color: '#008080',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   },
   viewMoreText: {
     fontSize: 12,
-    color: '#2563EB',
+    color: '#008080',
     fontWeight: '500',
     marginRight: 2,
   },
@@ -626,8 +626,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   filterOptionActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: '#008080',
+    borderColor: '#008080',
   },
   filterOptionText: {
     fontSize: 14,

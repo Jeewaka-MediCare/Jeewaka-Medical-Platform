@@ -37,7 +37,7 @@ export default function HomePage() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#008080" />
         <Text style={styles.loadingText}>Loading...</Text>
       </SafeAreaView>
     );
@@ -47,7 +47,7 @@ export default function HomePage() {
   if (user) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#008080" />
         <Text style={styles.loadingText}>Redirecting...</Text>
       </SafeAreaView>
     );
@@ -102,7 +102,7 @@ export default function HomePage() {
         <View style={styles.featuresList}>
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
-              <Ionicons name="search" size={24} color="#3B82F6" />
+              <Ionicons name="search" size={24} color="#008080" />
             </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Find Doctors</Text>
@@ -114,7 +114,7 @@ export default function HomePage() {
 
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
-              <Ionicons name="calendar" size={24} color="#3B82F6" />
+              <Ionicons name="calendar" size={24} color="#008080" />
             </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Book Appointments</Text>
@@ -126,7 +126,7 @@ export default function HomePage() {
 
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
-              <Ionicons name="videocam" size={24} color="#3B82F6" />
+              <Ionicons name="videocam" size={24} color="#008080" />
             </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Video Consultations</Text>
@@ -138,7 +138,7 @@ export default function HomePage() {
 
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
-              <Ionicons name="shield-checkmark" size={24} color="#3B82F6" />
+              <Ionicons name="shield-checkmark" size={24} color="#008080" />
             </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Secure & Private</Text>
@@ -157,7 +157,7 @@ export default function HomePage() {
     <View style={styles.page}>
       <View style={styles.ctaSection}>
         <View style={styles.ctaIconContainer}>
-          <Ionicons name="rocket" size={80} color="#3B82F6" />
+          <Ionicons name="rocket" size={80} color="#008080" />
         </View>
 
         <Text style={styles.ctaTitle}>Ready to Get Started?</Text>
@@ -238,7 +238,7 @@ export default function HomePage() {
             style={styles.navButton}
             onPress={handlePreviousPage}
           >
-            <Ionicons name="chevron-back" size={24} color="#3B82F6" />
+            <Ionicons name="chevron-back" size={24} color="#008080" />
             <Text style={styles.navButtonText}>Back</Text>
           </TouchableOpacity>
         )}
@@ -248,7 +248,7 @@ export default function HomePage() {
         {currentPage < 2 && (
           <TouchableOpacity style={styles.navButton} onPress={handleNextPage}>
             <Text style={styles.navButtonText}>Next</Text>
-            <Ionicons name="chevron-forward" size={24} color="#3B82F6" />
+            <Ionicons name="chevron-forward" size={24} color="#008080" />
           </TouchableOpacity>
         )}
       </View>
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#3B82F6",
+    backgroundColor: "#008080",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     borderRadius: 12,
-    backgroundColor: "#3B82F6",
+    backgroundColor: "#008080",
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: {
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontSize: 14,
-    color: "#3B82F6",
+    color: "#008080",
     fontWeight: "500",
   },
   footer: {
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   activeIndicator: {
-    backgroundColor: "#3B82F6",
+    backgroundColor: "#008080",
     width: 24,
     borderRadius: 12,
   },
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   },
   navButtonText: {
     fontSize: 16,
-    color: "#3B82F6",
+    color: "#008080",
     fontWeight: "500",
   },
   navSpacer: {

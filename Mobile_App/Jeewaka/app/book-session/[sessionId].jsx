@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sessionTypeBadge: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 16,
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   selectedSlot: {
     backgroundColor: '#EBF5FF',
-    borderColor: '#2563EB',
+    borderColor: '#008080',
   },
   timeSlotText: {
     fontSize: 14,
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
   },
   selectedSlotText: {
-    color: '#2563EB',
+    color: '#008080',
   },
   bookedText: {
     fontSize: 12,
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2563EB',
+    color: '#008080',
   },
   footer: {
     position: 'absolute',
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   confirmButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',

@@ -201,9 +201,9 @@ const styles = StyleSheet.create({
   },
   qualifications: {
     fontSize: 12,
-    color: '#2563EB',
+    color: '#008080',
     fontWeight: '600',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#E6FFFE',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   feeAmount: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#2563EB',
+    color: '#008080',
   },
   bioSection: {
     paddingHorizontal: 16,
