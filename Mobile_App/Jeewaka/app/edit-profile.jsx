@@ -479,7 +479,7 @@ export default function EditProfile() {
                     {spec}
                   </Text>
                   {formData.specialization === spec && (
-                    <Ionicons name="checkmark" size={20} color="#2563EB" />
+                    <Ionicons name="checkmark" size={20} color="#008080" />
                   )}
                 </TouchableOpacity>
               ))}
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   saveButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
   },
   selectedOption: {
     backgroundColor: '#F0F9FF',
-    borderColor: '#2563EB',
+    borderColor: '#008080',
     borderWidth: 1,
     borderRadius: 8,
     marginHorizontal: 4,
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectedOptionText: {
-    color: '#2563EB',
+    color: '#008080',
     fontWeight: '600',
   },
   // Array Input Styles
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   addButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 8,

@@ -381,7 +381,7 @@ export default function SessionAppointments() {
           <RefreshControl 
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#2563EB']}
+            colors={['#008080']}
           />
         }
       >
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   },
   sessionSummaryStats: {
     fontSize: 12,
-    color: '#2563EB',
+    color: '#008080',
     fontWeight: '500',
   },
   content: {
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   bookedSlotCard: {
-    borderColor: '#2563EB',
+    borderColor: '#008080',
     borderWidth: 2,
   },
   ongoingSlotCard: {
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusBadge: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,

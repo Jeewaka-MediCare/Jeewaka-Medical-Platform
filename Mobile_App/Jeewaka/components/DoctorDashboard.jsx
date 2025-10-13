@@ -350,7 +350,7 @@ export default function DoctorDashboard() {
           <Text style={styles.statLabel}>Rating</Text>
         </View>
         <View style={styles.statCard}>
-          <MaterialCommunityIcons name="comment-multiple" size={24} color="#2563EB" />
+          <MaterialCommunityIcons name="comment-multiple" size={24} color="#008080" />
           <Text style={styles.statValue}>{totalReviews}</Text>
           <Text style={styles.statLabel}>Reviews</Text>
         </View>
@@ -370,7 +370,7 @@ export default function DoctorDashboard() {
             style={styles.viewEarningsButton}
             onPress={handleViewEarnings}
           >
-            <MaterialCommunityIcons name="eye" size={16} color="#2563EB" />
+            <MaterialCommunityIcons name="eye" size={16} color="#008080" />
             <Text style={styles.viewEarningsText}>View Earnings</Text>
           </TouchableOpacity>
         </View>
@@ -388,7 +388,7 @@ export default function DoctorDashboard() {
           </View>
         </View>
         <View style={styles.totalEarningsRow}>
-          <MaterialCommunityIcons name="cash-multiple" size={20} color="#2563EB" />
+          <MaterialCommunityIcons name="cash-multiple" size={20} color="#008080" />
           <Text style={styles.totalEarningsLabel}>Total Earnings ({getSelectedTimeRangeLabel()}): </Text>
           <Text style={styles.totalEarningsValue}>LKR {(totalEarnings / 100).toLocaleString()}</Text>
         </View>
@@ -553,9 +553,9 @@ export default function DoctorDashboard() {
                     initialSpacing={40}
                     endSpacing={40}
                     adjustToWidth={false}
-                    color="#60A5FA"
+                    color="#4DB6AC"
                     thickness={3}
-                    startFillColor="rgba(96, 165, 250, 0.4)"
+                    startFillColor="#008080"
                     endFillColor="rgba(147, 197, 253, 0.1)"
                     startOpacity={0.4}
                     endOpacity={0.1}
@@ -594,7 +594,7 @@ export default function DoctorDashboard() {
                 hideDataPoints={false}
                 dataPointsHeight={8}
                 dataPointsWidth={8}
-                dataPointsColor="#3B82F6"
+                dataPointsColor="#008080"
                 dataPointsRadius={4}
                 focusEnabled={true}
                 showStripOnFocus={true}
@@ -775,7 +775,7 @@ export default function DoctorDashboard() {
                     styles.profileProgressFill, 
                     { 
                       width: `${percentage}%`,
-                      backgroundColor: isComplete ? "#10B981" : "#2563EB"
+                      backgroundColor: isComplete ? "#10B981" : "#008080"
                     }
                   ]} 
                 />
@@ -789,7 +789,7 @@ export default function DoctorDashboard() {
             <TouchableOpacity 
               style={[
                 styles.profileActionButton,
-                { backgroundColor: isComplete ? "#10B981" : "#2563EB" }
+                { backgroundColor: isComplete ? "#10B981" : "#008080" }
               ]}
               onPress={navigateToProfile}
             >
@@ -812,7 +812,7 @@ export default function DoctorDashboard() {
         
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="medical-bag" size={20} color="#2563EB" />
+            <MaterialCommunityIcons name="medical-bag" size={20} color="#008080" />
             <Text style={styles.infoLabel}>Specialization</Text>
           </View>
           <Text style={styles.infoValue}>
@@ -827,7 +827,7 @@ export default function DoctorDashboard() {
 
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="certificate" size={20} color="#2563EB" />
+            <MaterialCommunityIcons name="certificate" size={20} color="#008080" />
             <Text style={styles.infoLabel}>Qualifications</Text>
           </View>
           <Text style={styles.infoValue}>
@@ -840,7 +840,7 @@ export default function DoctorDashboard() {
 
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="card-account-details" size={20} color="#2563EB" />
+            <MaterialCommunityIcons name="card-account-details" size={20} color="#008080" />
             <Text style={styles.infoLabel}>Registration Number</Text>
           </View>
           <Text style={styles.infoValue}>
@@ -850,7 +850,7 @@ export default function DoctorDashboard() {
 
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="translate" size={20} color="#2563EB" />
+            <MaterialCommunityIcons name="translate" size={20} color="#008080" />
             <Text style={styles.infoLabel}>Languages</Text>
           </View>
           <Text style={styles.infoValue}>
@@ -863,7 +863,7 @@ export default function DoctorDashboard() {
 
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="cash" size={20} color="#2563EB" />
+            <MaterialCommunityIcons name="cash" size={20} color="#008080" />
             <Text style={styles.infoLabel}>Consultation Fee</Text>
           </View>
           <Text style={styles.infoValue}>
@@ -950,11 +950,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   profileCompletionIncomplete: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#F59E0B',
+    backgroundColor: '#d1f4f4ff',
+    borderColor: '#008080',
   },
   profileCompletionComplete: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: '#91e2e2ff',
     borderColor: '#10B981',
   },
   profileCompletionHeader: {
@@ -980,16 +980,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   missingFieldTag: {
-    backgroundColor: '#FCD34D',
+    backgroundColor: '#39d3d3ff',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: '#008080',
   },
   missingFieldText: {
     fontSize: 12,
-    color: '#92400E',
+    color: '#1e6d6dff',
     fontWeight: '600',
   },
   profileProgressContainer: {
@@ -1131,7 +1131,7 @@ const styles = StyleSheet.create({
   },
   totalEarningsValue: {
     fontSize: 16,
-    color: '#2563EB',
+    color: '#008080',
     fontWeight: 'bold',
   },
   viewEarningsButton: {
@@ -1143,11 +1143,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#E0F2F1',
   },
   viewEarningsText: {
     fontSize: 12,
-    color: '#2563EB',
+    color: '#008080',
     fontWeight: '500',
   },
   // Chart styles
@@ -1346,7 +1346,7 @@ const styles = StyleSheet.create({
   },
   viewAllReviewsButton: {
     fontSize: 14,
-    color: '#2563EB',
+    color: '#008080',
     fontWeight: '600',
     paddingHorizontal: 12,
     paddingVertical: 6,

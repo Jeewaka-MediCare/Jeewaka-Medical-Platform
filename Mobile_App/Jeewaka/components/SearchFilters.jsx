@@ -50,7 +50,7 @@ export const SearchFilters = ({ onSearch }) => {
         style={styles.filterButton}
         onPress={() => setShowFilters(!showFilters)}
       >
-        <Ionicons name="filter" size={20} color="#2563EB" />
+        <Ionicons name="filter" size={20} color="#008080" />
         <Text style={styles.filterText}>Filters</Text>
       </TouchableOpacity>
       
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 14,
     fontWeight: '500',
-    color: '#2563EB',
+    color: '#008080',
   },
   filtersContainer: {
     marginTop: 16,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   applyButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
