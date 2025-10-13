@@ -183,7 +183,7 @@ export default function DoctorViewPage() {
     //   comment: reviewData.comment,
     //   createdAt: new Date().toISOString(),
     // }
-    //todo: please add zuzstang login user id for current patient id
+    //todo: please add zuzstang login user id for current patient id uncomment above comment
 
     const res = api.post('/api/review', review_object);
     if(res.data.succuess){
