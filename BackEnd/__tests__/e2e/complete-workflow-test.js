@@ -14,7 +14,7 @@
 
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-import admin from '../config/fireBaseAdmin.js';
+import admin from '../../config/fireBaseAdmin.js';
 
 const BASE_URL = 'http://localhost:5000';
 const api = axios.create({ baseURL: BASE_URL });

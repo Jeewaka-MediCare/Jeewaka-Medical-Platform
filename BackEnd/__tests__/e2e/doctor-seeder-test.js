@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
-import { connectDB } from "../shared/database.js";
-import Doctor from "../modules/doctor/doctorModel.js";
-import { generateVertexEmbedding } from "../utils/vertexAI.js";
+import { connectDB } from "../../shared/database.js";
+import Doctor from "../../modules/doctor/doctorModel.js";
+import { generateVertexEmbedding } from "../../utils/vertexAI.js";
 import { v4 as uuidv4 } from 'uuid';
 
 // Load environment variables from the BackEnd directory

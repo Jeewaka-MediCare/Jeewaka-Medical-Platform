@@ -9,13 +9,13 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '..', '.env') });
 
 // Import models and services
-import Patient from '../modules/patient/patientModel.js';
-import Doctor from '../modules/doctor/doctorModel.js';
-import Record from '../modules/records/recordModel.js';
-import Version from '../modules/records/versionModel.js';
-import Audit from '../modules/records/auditModel.js';
-import supabaseStorage from '../services/supabaseStorageService.js';
-import { connectDB } from '../shared/database.js';
+import Patient from '../../modules/patient/patientModel.js';
+import Doctor from '../../modules/doctor/doctorModel.js';
+import Record from '../../modules/records/recordModel.js';
+import Version from '../../modules/records/versionModel.js';
+import Audit from '../../modules/records/auditModel.js';
+import supabaseStorage from '../../services/supabaseStorageService.js';
+import { connectDB } from '../../shared/database.js';
 
 // Test data
 const testPatient = {
