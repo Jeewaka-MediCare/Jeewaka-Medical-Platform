@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, Trash2, Clock } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
@@ -7,7 +6,6 @@ import api from '../services/api';
 
 
 export default function AdminVerificationPending() {
-  const navigate = useNavigate();
     const location = useLocation();
     console.log("Location state:", location.state);
   const initialDoctor = (location.state && location.state[0]) || {};
@@ -15,27 +13,6 @@ export default function AdminVerificationPending() {
   const [doctorData, setDoctorData] = useState(initialDoctor);
 
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  // Sync uploadedFiles with doctorData.certificates on mount and when certificates change
-  useEffect(() => {
-    if (doctorData.certificates && doctorData.certificates.length > 0) {
-      // Use a unique id for each file (index + url) to avoid duplicate keys/names
-      setUploadedFiles(
-        doctorData.certificates.map((url, idx) => {
-          let filename = url.split('/').pop() || '';
-          if (filename.includes('?')) filename = filename.split('?')[0];
-          return {
-            id: `${idx}-${filename}`,
-            name: filename,
-            url,
-            uploadedAt: doctorData.updatedAt || new Date().toISOString(),
-            raw: { url },
-          };
-        })
-      );
-    } else {
-      setUploadedFiles([]);
-    }
-  }, [doctorData.certificates, doctorData.updatedAt]);
   const [uploading, setUploading] = useState(false);
 
   const handleFileUpload = async (e) => {
@@ -168,18 +145,8 @@ export default function AdminVerificationPending() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Top bar with login redirection button */}
-      <div className="w-full flex justify-end items-center h-16 px-6 bg-white/80 shadow-sm sticky top-0 z-20">
-        <button
-          onClick={() => navigate('/login')}
-          style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
-          className="px-6 py-2 rounded-lg font-semibold shadow hover:brightness-90 transition-colors"
-        >
-          Back to Login
-        </button>
-      </div>
-      <div className="max-w-5xl mx-auto py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8 px-4">
+      <div className="max-w-5xl mx-auto">
         
         {/* Verification Status Card */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
@@ -232,41 +199,25 @@ export default function AdminVerificationPending() {
           </div>
         </div>
 
-        {/* Info Panel */}
-        <div className="mt-6 bg-white rounded-lg shadow p-6">
-          <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-            <CheckCircle className="text-green-500 mr-2" size={22} />
-            Verification Process
-          </h3>
-          <div className="space-y-2 text-sm text-gray-600">
-            <p>→ Upload all your medical certificates and licenses</p>
-            <p>→ Admin team will review your documents within 24-48 hours</p>
-            <p>→ You'll receive an email notification once verified</p>
-            <p>→ After verification, your profile will be activated</p>
-          </div>
-        </div>
-
         {/* Admin Comment Section */}
-        <div className="mt-6">
-          {doctorData.commentFromAdmin ? (
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-5 mb-6 rounded-r-lg shadow">
-              <div className="flex items-start">
-                <AlertCircle className="text-blue-500 mr-3 flex-shrink-0 mt-1" size={24} />
-                <div>
-                  <h3 className="font-semibold text-blue-800 mb-1">Message from Admin</h3>
-                  <p className="text-blue-700">{doctorData.commentFromAdmin}</p>
-                </div>
+        {doctorData.commentFromAdmin ? (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-5 mb-6 rounded-r-lg shadow">
+            <div className="flex items-start">
+              <AlertCircle className="text-blue-500 mr-3 flex-shrink-0 mt-1" size={24} />
+              <div>
+                <h3 className="font-semibold text-blue-800 mb-1">Message from Admin</h3>
+                <p className="text-blue-700">{doctorData.commentFromAdmin}</p>
               </div>
             </div>
-          ) : (
-            <div className="bg-gray-100 border-l-4 border-gray-400 p-5 mb-6 rounded-r-lg">
-              <div className="flex items-center text-gray-600">
-                <Clock className="mr-2" size={20} />
-                <p className="text-sm">No comments from admin yet</p>
-              </div>
+          </div>
+        ) : (
+          <div className="bg-gray-100 border-l-4 border-gray-400 p-5 mb-6 rounded-r-lg">
+            <div className="flex items-center text-gray-600">
+              <Clock className="mr-2" size={20} />
+              <p className="text-sm">No comments from admin yet</p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Certificate Upload Section */}
         <div className="bg-white rounded-xl shadow-lg p-8">
@@ -300,10 +251,7 @@ export default function AdminVerificationPending() {
                 disabled={uploading}
                 className="hidden"
               />
-              <span
-                style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
-                className="px-8 py-3 rounded-lg cursor-pointer hover:brightness-90 inline-block font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
+              <span className="bg-blue-600 text-white px-8 py-3 rounded-lg cursor-pointer hover:bg-blue-700 inline-block font-medium transition-colors disabled:bg-gray-400">
                 {uploading ? "Processing..." : "Choose Files"}
               </span>
             </label>
@@ -366,17 +314,26 @@ export default function AdminVerificationPending() {
             <button
               onClick={handleSaveCertificates}
               disabled={doctorData.certificates.length === 0 || uploading}
-              style={doctorData.certificates.length === 0 || uploading
-                ? { backgroundColor: '#94a3b8', color: '#fff', cursor: 'not-allowed' }
-                : { backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
-              className={`px-10 py-3 rounded-lg font-semibold shadow-lg transition-colors hover:shadow-xl ${doctorData.certificates.length === 0 || uploading ? '' : 'hover:brightness-90'}`}
+              className="bg-blue-600 text-white px-10 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
             >
               Save Certificates
             </button>
           </div>
         </div>
 
-        
+        {/* Info Panel */}
+        <div className="mt-6 bg-white rounded-lg shadow p-6">
+          <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+            <CheckCircle className="text-green-500 mr-2" size={22} />
+            Verification Process
+          </h3>
+          <div className="space-y-2 text-sm text-gray-600">
+            <p>→ Upload all your medical certificates and licenses</p>
+            <p>→ Admin team will review your documents within 24-48 hours</p>
+            <p>→ You'll receive an email notification once verified</p>
+            <p>→ After verification, your profile will be activated</p>
+          </div>
+        </div>
       </div>
     </div>
   );

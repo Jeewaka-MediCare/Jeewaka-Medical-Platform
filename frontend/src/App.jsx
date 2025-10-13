@@ -108,8 +108,12 @@ function App() {
             <Route path="/doctor-overview" element={<DoctorOverviewPage />} />
             <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
             <Route path="/doctor-profile-setting" element={<DoctorProfileSetting />} />
-            <Route path="/admin-verification-pending" element={<AdminVerificationPending />} />
           </Route>
+        </Route>
+
+        {/* Doctor pending verification page - protected but no DoctorLayout */}
+        <Route element={<ProtectedRoute allowedRoles={["doctor"]} />}>
+          <Route path="/admin-verification-pending" element={<AdminVerificationPending />} />
         </Route>
 
         {/* Patient routes */}

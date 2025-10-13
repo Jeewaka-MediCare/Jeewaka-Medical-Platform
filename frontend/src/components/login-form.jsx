@@ -59,7 +59,12 @@ export function LoginForm({ className, ...props }) {
       if (role === "doctor") {
         const res2 = await api.get(`/api/admin-verification/${user._id}`);
         console.log("Admin verification status (raw):", res2.data);
-        const verification = Array.isArray(res2.data) ? res2.data[0] : res2.data;
+        let verification = Array.isArray(res2.data) ? res2.data[0] : res2.data;
+        // Always enforce doctorId is the doctor's MongoDB _id
+        verification = {
+          ...verification,
+          doctorId: user._id
+        };
         console.log("Verification object used for redirect:", verification);
         if (!verification || verification.isVerified === false || verification.isVerified === "false") {
           console.log("Redirecting to pending page. isVerified:", verification && verification.isVerified);
