@@ -28,9 +28,12 @@ const useAuthStore = create(
           // Fetch backend profile data
           try {
             let res;
+
             if (role === "doctor") {
               console.log('Fetching doctor profile for uid:', user.uid);
               res = await api.get(`/api/doctor/uuid/${user.uid}`);
+              const res2 = await api.get(`/api/admin-verification/${res.data._id}`);
+              mergedUserData = { ...user,  role: "doctor", adminVerified: res2.data.isVerified };
               mergedUserData = { ...user, ...res.data, role: "doctor" };
               console.log('Doctor profile loaded:', res.data._id);
             } else if (role === "patient") {

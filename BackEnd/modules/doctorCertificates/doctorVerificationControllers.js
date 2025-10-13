@@ -122,6 +122,29 @@ export const uploadDoctorDocument = async (req, res) => {
   }
 };
 
+export const getVerificationByDoctorId = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+
+    if (!doctorId) {
+      return res.status(400).json({ message: "Doctor ID is required" });
+    }
+
+    const verification = await adminVerificationSchema.find({"doctorId":doctorId});
+
+    if (!verification) {
+      
+      return res.status(404).json({ message: "Verification not found" });
+
+
+    }
+    res.status(200).json(verification);
+  } catch (error) {
+    console.error("Error getting verification:", error);
+    res.status(500).json({ message: "Failed to get verification", error: error.message });
+  }
+};
+
 // Get all documents for a doctor
 export const getDoctorDocuments = async (req, res) => {
   try {

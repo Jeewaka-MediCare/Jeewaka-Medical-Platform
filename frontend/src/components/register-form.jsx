@@ -195,6 +195,13 @@ export function SignupForm({ className, ...props }) {
           };
 
           const res = await api.post("/api/doctor", req);
+          const saved_doctor = res.data.doctor;
+          const doctorVerificationReq = {
+            doctorId: saved_doctor._id,
+
+          }
+          const res2 = await api.post("/api/admin-verification", doctorVerificationReq);
+        
         } else {
           await createUserWithEmailAndPassword(auth, patientForm.email, patientForm.password);
           //const uuid = firebaseUser.user.uid;
@@ -222,12 +229,12 @@ export function SignupForm({ className, ...props }) {
         }
 
         // Success! Profile created in both Firebase and MongoDB
-        console.log("✅ Registration successful!");
-        console.log("User type:", userType);
-        console.log("Firebase UID:", userType === "doctor" ? doctorForm.email : patientForm.email);
+        // console.log("✅ Registration successful!");
+        // console.log("User type:", userType);
+        // console.log("Firebase UID:", userType === "doctor" ? doctorForm.email : patientForm.email);
         
-        // Show success message
-        alert(`✅ Registration successful! Your ${userType} account has been created. Please log in.`);
+        // // Show success message
+        // alert(`✅ Registration successful! Your ${userType} account has been created. Please log in.`);
         
         // Redirect to login page so they can log in properly and load their profile
         navigate("/login")

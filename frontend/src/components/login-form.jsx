@@ -13,6 +13,7 @@ import { z } from "zod";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from '../store/authStore';
+import api from "../services/api";
 
 export function LoginForm({ className, ...props }) {
   const navigate = useNavigate();
@@ -54,8 +55,17 @@ export function LoginForm({ className, ...props }) {
     
     if (loginResult.success) {
       // Navigate based on role
-      const { role } = loginResult;
+      const { role , user } = loginResult;
       if (role === "doctor") {
+        const res2 = await api.get(`/api/admin-verification/${user._id}`);
+        console.log("Admin verification status:", res2.data);
+        if(res2.data[0].isVerified=== "false" || res2.data[0].isVerified=== false){
+          navigate("/admin-verification-pending", { state: res2.data });
+
+          return;
+        }
+      
+        
         navigate("/doctor-dashboard");
       } else if (role === "patient") {
         navigate("/patient-dashboard");

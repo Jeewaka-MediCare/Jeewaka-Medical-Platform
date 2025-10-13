@@ -23,6 +23,7 @@ import PatientLayout from "./Layout.jsx/patientLayout";
 import LandingPage from "./pages/LandingPage";
 import { AuthProvider } from "./components/AuthProvider";
 import { Toaster } from "./components/ui/sonner";
+import AdminVerificationPending from "./pages/AdminVerificationPending";
 
 function App() {
   useEffect(() => {
@@ -107,6 +108,7 @@ function App() {
             <Route path="/doctor-overview" element={<DoctorOverviewPage />} />
             <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
             <Route path="/doctor-profile-setting" element={<DoctorProfileSetting />} />
+            <Route path="/admin-verification-pending" element={<AdminVerificationPending />} />
           </Route>
         </Route>
 

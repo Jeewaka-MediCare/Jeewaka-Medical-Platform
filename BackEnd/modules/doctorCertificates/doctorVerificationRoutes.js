@@ -6,7 +6,8 @@ import {
   uploadDoctorDocument,
   getDoctorDocuments,
   deleteDoctorDocument,
-  uploadMiddleware
+  uploadMiddleware,
+  getVerificationByDoctorId
 } from "./doctorVerificationControllers.js";
 import { authMiddleware, requireRole } from "../../middleware/authMiddleware.js";
 
@@ -18,8 +19,7 @@ const adminVerificationRouter = express.Router();
 
 // Submit verification (doctors can submit their own credentials)
 adminVerificationRouter.post('/', 
-  authMiddleware, 
-  requireRole(['doctor']), 
+  
   createVerification
 );
 
@@ -28,6 +28,10 @@ adminVerificationRouter.get('/',
   authMiddleware, 
   requireRole(['admin']), 
   getAllVerifications
+);
+adminVerificationRouter.get('/:doctorId', 
+
+  getVerificationByDoctorId
 );
 
 // Update verification status (admin only - approve/reject doctors)

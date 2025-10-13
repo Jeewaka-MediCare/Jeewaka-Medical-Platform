@@ -8,7 +8,7 @@ const doctorCertificateSchema = new mongoose.Schema({
   },
   certificates: {
     type: [String], // list of strings (cloud links)
-    required: true,
+    default: [],
   },
   commentFromAdmin: {
     type: String,
