@@ -200,94 +200,131 @@ const seedDatabase = async () => {
     await Doctor.deleteMany({});
     console.log("Cleared existing doctor data");
 
-    // Process doctors and generate embeddings
-    const doctorsWithDetails = doctors.map(async (doctor) => {
-      console.log(`Processing doctor: ${doctor.name}`);
-      
-      // Generate random details
-      const yearsOfExperience = Math.floor(Math.random() * 25) + 5; // 5-30 years
-      const selectedSubSpecs = subSpecializations[doctor.specialization] || [];
-      const doctorSubSpecs = selectedSubSpecs.slice(0, Math.floor(Math.random() * 3) + 1);
-      const doctorQualifications = qualifications
-        .sort(() => 0.5 - Math.random())
-        .slice(0, Math.floor(Math.random() * 4) + 2); // 2-5 qualifications
-      const doctorLanguages = languages
-        .sort(() => 0.5 - Math.random())
-        .slice(0, Math.floor(Math.random() * 3) + 2); // 2-4 languages
-      
-      const doctorDetails = {
-        name: doctor.name,
-        email: generateEmail(doctor.name),
-        phone: generatePhone(),
-        uuid: uuidv4(),
-        gender: doctor.gender,
-        profile: doctor.gender === "Male" ? MALE_PROFILE : FEMALE_PROFILE,
-        dob: generateDOB(),
-        specialization: doctor.specialization,
-        subSpecializations: doctorSubSpecs,
-        regNo: generateRegNo(),
-        qualifications: doctorQualifications,
-        yearsOfExperience: yearsOfExperience,
-        languagesSpoken: doctorLanguages,
-        consultationFee: getConsultationFee(doctor.specialization),
-        sessions: []
-      };
+    // Process doctors and generate embeddings ONE BY ONE
+    console.log(`\n📊 Starting to process ${doctors.length} doctors individually...`);
+    let successCount = 0;
+    let failedCount = 0;
+    const createdDoctorIds = [];
 
-      // Generate bio
-      doctorDetails.bio = generateBio(doctorDetails);
-
-      // Generate comprehensive embedding for searchability using all relevant fields
-      const embeddingText = `
-        Name: ${doctorDetails.name}
-        Email: ${doctorDetails.email}
-        Phone: ${doctorDetails.phone}
-        UUID: ${doctorDetails.uuid}
-        Gender: ${doctorDetails.gender}
-        Date of Birth: ${doctorDetails.dob.toISOString().split('T')[0]}
-        Specialization: ${doctorDetails.specialization}
-        Sub-specializations: ${doctorDetails.subSpecializations.join(', ')}
-        Registration Number: ${doctorDetails.regNo}
-        Qualifications: ${doctorDetails.qualifications.join(', ')}
-        Years of Experience: ${doctorDetails.yearsOfExperience} years
-        Languages Spoken: ${doctorDetails.languagesSpoken.join(', ')}
-        Bio: ${doctorDetails.bio}
-        Consultation Fee: ${doctorDetails.consultationFee} LKR
-        Location: ${doctor.city}
-      `.trim();
-      
+    for (let i = 0; i < doctors.length; i++) {
+      const doctor = doctors[i];
       try {
-        const embedding = await generateVertexEmbedding(embeddingText);
-        doctorDetails.embedding = embedding;
-        console.log(`✅ Generated embedding for ${doctor.name}`);
+        console.log(`\n[${i + 1}/${doctors.length}] Processing doctor: ${doctor.name}`);
+        
+        // Generate random details
+        const yearsOfExperience = Math.floor(Math.random() * 25) + 5; // 5-30 years
+        const selectedSubSpecs = subSpecializations[doctor.specialization] || [];
+        const doctorSubSpecs = selectedSubSpecs.slice(0, Math.floor(Math.random() * 3) + 1);
+        const doctorQualifications = qualifications
+          .sort(() => 0.5 - Math.random())
+          .slice(0, Math.floor(Math.random() * 4) + 2); // 2-5 qualifications
+        const doctorLanguages = languages
+          .sort(() => 0.5 - Math.random())
+          .slice(0, Math.floor(Math.random() * 3) + 2); // 2-4 languages
+        
+        const doctorDetails = {
+          name: doctor.name,
+          email: generateEmail(doctor.name),
+          phone: generatePhone(),
+          uuid: uuidv4(),
+          gender: doctor.gender,
+          profile: doctor.gender === "Male" ? MALE_PROFILE : FEMALE_PROFILE,
+          dob: generateDOB(),
+          specialization: doctor.specialization,
+          subSpecializations: doctorSubSpecs,
+          regNo: generateRegNo(),
+          qualifications: doctorQualifications,
+          yearsOfExperience: yearsOfExperience,
+          languagesSpoken: doctorLanguages,
+          consultationFee: getConsultationFee(doctor.specialization),
+          sessions: []
+        };
+
+        // Generate bio
+        doctorDetails.bio = generateBio(doctorDetails);
+
+        // Generate comprehensive embedding for searchability using all relevant fields
+        const embeddingText = `
+          Name: ${doctorDetails.name}
+          Email: ${doctorDetails.email}
+          Phone: ${doctorDetails.phone}
+          UUID: ${doctorDetails.uuid}
+          Gender: ${doctorDetails.gender}
+          Date of Birth: ${doctorDetails.dob.toISOString().split('T')[0]}
+          Specialization: ${doctorDetails.specialization}
+          Sub-specializations: ${doctorDetails.subSpecializations.join(', ')}
+          Registration Number: ${doctorDetails.regNo}
+          Qualifications: ${doctorDetails.qualifications.join(', ')}
+          Years of Experience: ${doctorDetails.yearsOfExperience} years
+          Languages Spoken: ${doctorDetails.languagesSpoken.join(', ')}
+          Bio: ${doctorDetails.bio}
+          Consultation Fee: ${doctorDetails.consultationFee} LKR
+          Location: ${doctor.city}
+        `.trim();
+        
+        try {
+          const embedding = await generateVertexEmbedding(embeddingText);
+          doctorDetails.embedding = embedding;
+          console.log(`   ✅ Generated embedding (${embedding.length} dimensions)`);
+        } catch (error) {
+          if (error.message.includes('RESOURCE_EXHAUSTED') || error.message.includes('Quota exceeded')) {
+            console.warn(`   ⚠️ Quota exhausted for ${doctor.name}. Waiting 1m 20s before retry...`);
+            await new Promise(resolve => setTimeout(resolve, 80000)); // 80 seconds = 1m 20s
+            
+            // Retry after waiting
+            try {
+              console.log(`   🔄 Retrying embedding generation for ${doctor.name}...`);
+              const embedding = await generateVertexEmbedding(embeddingText);
+              doctorDetails.embedding = embedding;
+              console.log(`   ✅ Generated embedding after retry (${embedding.length} dimensions)`);
+            } catch (retryError) {
+              console.error(`   ❌ Retry failed for ${doctor.name}: ${retryError.message}`);
+              throw retryError;
+            }
+          } else {
+            throw error; // Re-throw other types of errors
+          }
+        }
+
+        // Save individual doctor to database
+        const createdDoctor = await Doctor.create(doctorDetails);
+        createdDoctorIds.push(createdDoctor._id);
+        successCount++;
+        console.log(`   ✅ Saved to database (ID: ${createdDoctor._id})`);
+
       } catch (error) {
-        // Abort entire seeding if embedding cannot be generated for a doctor
-        console.error(`❌ Failed to generate embedding for ${doctor.name}:`, error.message);
-        throw new Error(`Embedding generation failed for ${doctor.name}. Aborting seeding process.`);
+        failedCount++;
+        console.error(`   ❌ Failed to process ${doctor.name}: ${error.message}`);
+        
+        // If it's a quota error, stop the entire process
+        if (error.message.includes('RESOURCE_EXHAUSTED') || error.message.includes('Quota exceeded')) {
+          break;
+        }
+        
+        // For other errors, continue with next doctor
+        console.log(`   ⏭️ Continuing with next doctor...`);
       }
+    }
 
-      return doctorDetails;
-    });
-
-    const doctorsToCreate = await Promise.all(doctorsWithDetails);
+    // Final summary
+    const totalInDatabase = await Doctor.countDocuments();
+    console.log("\n" + "=".repeat(60));
+    console.log("📊 DOCTOR SEEDING SUMMARY");
+    console.log("=".repeat(60));
+    console.log(`✅ Successfully processed: ${successCount} doctors`);
+    console.log(`❌ Failed to process: ${failedCount} doctors`);
+    console.log(`📊 Total doctors now in database: ${totalInDatabase}`);
+    console.log(`🆔 Created doctor IDs: [${createdDoctorIds.slice(0, 5).join(', ')}${createdDoctorIds.length > 5 ? '...' : ''}]`);
     
-    // Insert doctors into database
-    const createdDoctors = await Doctor.insertMany(doctorsToCreate);
-    console.log(`✅ Created ${createdDoctors.length} doctors`);
-    
-    console.log("\n=== DOCTOR SEEDER SUMMARY ===");
-    console.log(`Total Doctors Created: ${createdDoctors.length}`);
-    console.log("Specializations covered:");
-    
-    const specializationCounts = {};
-    createdDoctors.forEach(doc => {
-      specializationCounts[doc.specialization] = (specializationCounts[doc.specialization] || 0) + 1;
-    });
-    
-    Object.entries(specializationCounts).forEach(([spec, count]) => {
-      console.log(`  ${spec}: ${count} doctors`);
-    });
-
-    console.log("\nDatabase seeded successfully with doctors!");
+    if (successCount > 0) {
+      console.log("\n🎉 Seeding completed with some success!");
+      console.log("💡 To continue seeding remaining doctors, you can:");
+      console.log("   1. Wait for quota reset (usually 24 hours)");
+      console.log("   2. Request quota increase from Google Cloud Console");
+      console.log("   3. Modify the seeder to start from position", successCount + failedCount + 1);
+    } else {
+      console.log("\n⚠️ No doctors were successfully seeded.");
+    }
     process.exit(0);
     
   } catch (error) {

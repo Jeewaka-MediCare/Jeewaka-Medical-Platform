@@ -9,6 +9,8 @@ import useAuthStore from '../../store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { debugNetworkInfo } from '../../services/networkTest';
 import UserDropdown from '../../components/UserSidebar';
+import DoctorDashboard from '../../components/DoctorDashboard';
+import LandingPage from '../../components/LandingPage';
 
 export default function Home() {
   const { user, userRole, loading: authLoading, logout } = useAuthStore();
@@ -90,11 +92,15 @@ export default function Home() {
     }
   };
 
-  // Load doctors on component mount
+  // Load doctors on component mount - ONLY for patients
   useEffect(() => {
     debugNetworkInfo(); // Debug network configuration
-    fetchDoctors();
-  }, []);
+    
+    // Only fetch doctors if user is a patient (not doctor, not logged out)
+    if (user && userRole === 'patient') {
+      fetchDoctors();
+    }
+  }, [user, userRole]); // Add user as dependency to handle login/logout
 
   // Handle filter search
   const handleSearch = (newFilters) => {
@@ -125,7 +131,8 @@ export default function Home() {
   const handleLogout = async () => {
     setSidebarVisible(false);
     await logout();
-    router.push('/login');
+    // Stay on current page (index.jsx) which will show LandingPage for logged-out users
+    // Removed: router.push('/login');
   };
 
   return (
@@ -154,37 +161,47 @@ export default function Home() {
         }}
       />
       
-      <View style={styles.content}>
-        <EnhancedSearchFilters 
-          onSearch={handleSearch} 
-          onAISearch={handleAISearch}
-        />
-        
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>
-            {searchType === 'ai' ? 'AI Search Results' : 'Find Doctors'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {searchType === 'ai' 
-              ? 'Results based on your symptoms and needs' 
-              : 'Book appointments with top specialists'
+      {/* Conditional rendering based on user authentication and role */}
+      {!user ? (
+        // User is logged out - show landing page
+        <LandingPage />
+      ) : userRole === 'doctor' ? (
+        // User is a doctor - show doctor dashboard
+        <DoctorDashboard />
+      ) : (
+        // User is a patient - show doctor list
+        <View style={styles.content}>
+          <EnhancedSearchFilters 
+            onSearch={handleSearch} 
+            onAISearch={handleAISearch}
+          />
+          
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>
+              {searchType === 'ai' ? 'AI Search Results' : 'Find Doctors'}
+            </Text>
+            <Text style={styles.subtitle}>
+              {searchType === 'ai' 
+                ? 'Results based on your symptoms and needs' 
+                : 'Book appointments with top specialists'
+              }
+            </Text>
+          </View>
+          
+          <DoctorList 
+            doctors={doctors} 
+            loading={loading} 
+            error={error} 
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#008080']}
+              />
             }
-          </Text>
+          />
         </View>
-        
-        <DoctorList 
-          doctors={doctors} 
-          loading={loading} 
-          error={error} 
-          refreshControl={
-            <RefreshControl 
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#2563EB']}
-            />
-          }
-        />
-      </View>
+      )}
       
       <UserDropdown
         visible={sidebarVisible}

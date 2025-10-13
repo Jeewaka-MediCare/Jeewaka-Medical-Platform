@@ -10,16 +10,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { z } from "zod";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
- import { signInWithEmailAndPassword } from "firebase/auth";
- import { auth } from "./firebase";
- import api from "../services/api";
- import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from '../store/authStore';
+import api from "../services/api";
+
 export function LoginForm({ className, ...props }) {
   const navigate = useNavigate();
-  const { setUser, setUserRole, setLoading, logout } = useAuthStore();
+  const { login, loading } = useAuthStore();
+  
   // Zod schema for validation
   const schema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
@@ -28,22 +27,8 @@ export function LoginForm({ className, ...props }) {
       .min(6, { message: "Password must be at least 6 characters" }),
   });
 
-  // useEffect(() => {
-  //   setLoading(true);
-  //   const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-  //     if (currentUser) {
-  //       setUser(currentUser);
-  //     } else {
-  //       logout();
-  //     }
-  //     setLoading(false);
-  //   });
-  //   return () => unsubscribe();
-  // }, [setUser, setLoading, logout]);
-
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
-  const [loading, setLocalLoading] = useState(false); // Local loading state
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.id]: e.target.value });
@@ -51,7 +36,8 @@ export function LoginForm({ className, ...props }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLocalLoading(true);
+    
+    // Validate form
     const result = schema.safeParse(form);
     if (!result.success) {
       const fieldErrors = {};
@@ -59,145 +45,44 @@ export function LoginForm({ className, ...props }) {
         fieldErrors[err.path[0]] = err.message;
       });
       setErrors(fieldErrors);
-      setLocalLoading(false);
-    } else {
-      setErrors({});
-      // Proceed with login logic
-      console.log("Login form values:", form);
-      try {
-        // Sign in user with Firebase Auth
-        console.log('🔐 LoginForm - Login attempt with:', form);
-        console.log('🔐 LoginForm - localStorage before login:', {
-          userData: localStorage.getItem('userData'),
-          userRole: localStorage.getItem('userRole')
-        });
-
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          form.email,
-          form.password
-        );
-        const user = userCredential.user;
-        const uid = user.uid;
-        // Get Firebase custom claims (must be set server-side)
-        const idTokenResult = await user.getIdTokenResult();
-        const role = idTokenResult.claims.role;
-        console.log("🔐 LoginForm - User UID:", uid);
-        console.log("🔐 LoginForm - User role from token:", role);
-
-        // Store COMPLETE Firebase user object and role in localStorage
-        console.log('🔐 LoginForm - Storing complete Firebase user object');
-        localStorage.setItem("userData", JSON.stringify(user)); // Store complete Firebase user
-        localStorage.setItem("userRole", role || "patient");
-
-        console.log('🔐 LoginForm - Stored complete Firebase userData:', user);
-        console.log('🔐 LoginForm - Stored userRole:', role || "patient");
-
-        // Set user in Zustand store immediately
-        setUser(user);
-        setUserRole(role || "patient");
-
-        let res;
-        try {
-          if (role === "doctor") {
-            console.log('🔐 LoginForm - Fetching doctor data from API');
-            res = await api.get(`/api/doctor/uuid/${uid}`);
-            console.log("🔐 LoginForm - Doctor API response:", res.data);
-
-            // Merge Firebase user with backend doctor data
-            const mergedUserData = {
-              ...user, // Complete Firebase user object
-              ...res.data, // Backend doctor data
-              role: "doctor"
-            };
-            localStorage.setItem("userData", JSON.stringify(mergedUserData));
-            console.log('🔐 LoginForm - Merged doctor data stored:', mergedUserData);
-
-            // Update Zustand store with merged data
-            setUser(mergedUserData);
-            setUserRole("doctor");
-          } else if (role === "patient") {
-            console.log('🔐 LoginForm - Fetching patient data from API');
-            res = await api.get(`/api/patient/uuid/${uid}`);
-            console.log("🔐 LoginForm - Patient API response:", res.data);
-
-            // Merge Firebase user with backend patient data
-            const mergedUserData = {
-              ...user, // Complete Firebase user object
-              ...res.data, // Backend patient data
-              role: "patient"
-            };
-            localStorage.setItem("userData", JSON.stringify(mergedUserData));
-            console.log('🔐 LoginForm - Merged patient data stored:', mergedUserData);
-
-            // Update Zustand store with merged data
-            setUser(mergedUserData);
-            setUserRole("patient");
-          } else if (role === "admin") {
-            console.log('🔐 LoginForm - Fetching admin data from API');
-            res = await api.get(`/api/admin/uuid/${uid}`);
-            console.log("🔐 LoginForm - Admin API response:", res.data);
-
-            // Merge Firebase user with backend admin data
-            const mergedUserData = {
-              ...user, // Complete Firebase user object
-              ...res.data, // Backend admin data
-              role: "admin"
-            };
-            localStorage.setItem("userData", JSON.stringify(mergedUserData));
-            console.log('🔐 LoginForm - Merged admin data stored:', mergedUserData);
-
-            // Update Zustand store with merged data
-            setUser(mergedUserData);
-            setUserRole("admin");
-          } else {
-            console.log('🔐 LoginForm - Unknown role, using Firebase user data only');
-            res = {
-              data: {
-                name: user.displayName || user.email || "Unknown",
-                email: user.email,
-                role: role || "patient",
-              },
-            };
-          }
-        } catch (apiError) {
-          console.error('🔐 LoginForm - API call failed:', apiError);
-          console.log('🔐 LoginForm - Using Firebase user data only due to API error');
-
-          // Use Firebase user data only if API fails
-          const fallbackUserData = {
-            ...user,
-            name: user.displayName || user.email || "Unknown",
-            email: user.email,
-            role: role || "patient"
-          };
-          localStorage.setItem("userData", JSON.stringify(fallbackUserData));
-          setUser(fallbackUserData);
-          setUserRole(role || "patient");
-
-          res = { data: fallbackUserData };
+      return;
+    }
+    
+    setErrors({});
+    
+    // Use centralized login method
+    const loginResult = await login(form.email, form.password);
+    
+    if (loginResult.success) {
+      // Navigate based on role
+      const { role , user } = loginResult;
+      if (role === "doctor") {
+        const res2 = await api.get(`/api/admin-verification/${user._id}`);
+        console.log("Admin verification status (raw):", res2.data);
+        let verification = Array.isArray(res2.data) ? res2.data[0] : res2.data;
+        // Always enforce doctorId is the doctor's MongoDB _id
+        verification = {
+          ...verification,
+          doctorId: user._id
+        };
+        console.log("Verification object used for redirect:", verification);
+        if (!verification || verification.isVerified === false || verification.isVerified === "false") {
+          console.log("Redirecting to pending page. isVerified:", verification && verification.isVerified);
+          navigate("/admin-verification-pending", { state: [verification] });
+          return;
         }
-        // Only store if data is valid
-        if (res && res.data) {
-          // Only navigate after storage
-          if (role === "doctor") {
-            navigate("/doctor-dashboard");
-          } else if (role === "patient") {
-            navigate("/patient-dashboard");
-          } else if (role === "admin") {
-            navigate("/admin-dashboard");
-          }
-          else {
-            navigate("/");
-          }
-        } else {
-          //setError("Failed to retrieve user data.")
-          alert("Failed to retrieve user data.");
-        }
-      } catch (err) {
-        console.error(err);
+        console.log("Redirecting to doctor dashboard. isVerified:", verification && verification.isVerified);
+        navigate("/doctor-dashboard");
+      } else if (role === "patient") {
+        navigate("/patient-dashboard");
+      } else if (role === "admin") {
+        navigate("/admin-dashboard");
+      } else {
+        navigate("/");
       }
-      setLocalLoading(false);
+    } else {
+      // Show error message
+      alert(`Login failed: ${loginResult.error}`);
     }
   };
 

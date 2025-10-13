@@ -22,30 +22,18 @@ import { BookingConfirmationDialog } from "@/components/booking-confirmation-dia
 import { WriteReviewDialog } from "@/components/write-review-dialog";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
+import useAuthStore from "../store/authStore";
 
 export default function DoctorViewPage() {
+  // Use Zustand auth store instead of localStorage
+  const { user, userRole } = useAuthStore();
   console.log('🔐 DoctorViewPage - Component rendered');
-  console.log('🔐 DoctorViewPage - localStorage state on render:', {
-    userData: localStorage.getItem("userData"),
-    userRole: localStorage.getItem("userRole")
-  });
-
-  // Safe parse of userData from localStorage
-  let parsedUserData = null;
-  try {
-    const raw = localStorage.getItem("userData");
-    parsedUserData = raw ? JSON.parse(raw) : null;
-  } catch (err) {
-    console.warn('🔐 DoctorViewPage - Failed to parse userData from localStorage', err);
-    parsedUserData = null;
-  }
-  console.log('🔐 DoctorViewPage - Parsed userData:', parsedUserData);
+  console.log('🔐 DoctorViewPage - authStore state:', { user: user?._id, userRole });
 
   const [data, setData] = useState(null);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
-  const [loggedInUser, setLoggedInUser] = useState(null);
   const location = useLocation();
   const params = useParams();
   const navigate = useNavigate();
@@ -53,16 +41,11 @@ export default function DoctorViewPage() {
 
   useEffect(() => {
     console.log('🔐 DoctorViewPage - useEffect triggered');
-    console.log('🔐 DoctorViewPage - localStorage state in useEffect:', {
-      userData: localStorage.getItem("userData"),
-      userRole: localStorage.getItem("userRole")
+    console.log('🔐 DoctorViewPage - authStore user data:', { 
+      userId: user?._id, 
+      userName: user?.name, 
+      userRole 
     });
-
-    const userRaw = localStorage.getItem("userData");
-    let user = null;
-    try { user = userRaw ? JSON.parse(userRaw) : null } catch (e) { user = null }
-    console.log("🔐 DoctorViewPage - Parsed userData in useEffect:", user);
-    setLoggedInUser(user);
 
     const doctorIdFromState = passedData && passedData.doctor && passedData.doctor._id;
     const doctorId = doctorIdFromState || params.id;
@@ -113,17 +96,16 @@ export default function DoctorViewPage() {
 
     const { sessionId, timeSlotIndex, timeSlot } = selectedBooking;
 
-    console.log('🔐 DoctorViewPage - Booking attempt - localStorage state:', {
-      userData: localStorage.getItem("userData"),
-      userRole: localStorage.getItem("userRole")
+    console.log('🔐 DoctorViewPage - Booking attempt - authStore state:', {
+      userId: user?._id,
+      userRole: userRole
     });
 
-    const user = JSON.parse(localStorage.getItem("userData"));
     console.log("🔐 DoctorViewPage - User data for booking:", user);
     const patientId = user._id;
     console.log("🔐 DoctorViewPage - patientId for booking:", patientId);
 
-    if (loggedInUser) {
+    if (user) {
       const payload = {
         patientId: patientId,
         status: "booked",
@@ -276,7 +258,7 @@ export default function DoctorViewPage() {
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-primary text-primary-foreground px-6 py-4 rounded-md shadow">
-                  <p className="text-xl font-semibold">${doctor.consultationFee}</p>
+                  <p className="text-xl font-semibold">LKR {doctor.consultationFee}</p>
                   <p className="text-primary-foreground text-sm">Consultation Fee</p>
                 </div>
                 <div className="bg-accent text-accent-foreground px-6 py-4 rounded-md shadow">

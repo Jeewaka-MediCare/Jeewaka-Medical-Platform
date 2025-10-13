@@ -34,11 +34,12 @@ export default function AdminDashboard() {
   const [mockPatients, setMockPatients] = useState([])
   const [mockAdmins, setMockAdmins] = useState([])
    const [isDialogOpen, setIsDialogOpen] = useState(false)
-
+ const [doctors, setDoctors] = useState([])
   useEffect(() => {
     const getDoctorVerifications = async () => {
       const res = await api.get('/api/admin-verification')
-      console.log(res.data)
+      console.log( "verfication requests", res.data)
+      setDoctors(res.data)
     }
     getDoctorVerifications()
 
@@ -78,15 +79,45 @@ export default function AdminDashboard() {
 
   },[])
 
-  const handleVerifyDoctor = (doctorId, isVerified) => {
-    // TODO: Call API to update doctor verification status
-    // API: PUT /api/admin/doctors/${doctorId}/verify
-    // Body: { isVerified, commentFromAdmin: verificationComment }
-    const res = api.put(`/api/admin-verification/${doctorId}`, { isVerified, commentFromAdmin: verificationComment })
+  const handleVerifyDoctor = async (doctorId, isVerified) => {
+    if (!doctorId) {
+      alert('Doctor ID is required to update verification status');
+      return;
+    }
 
-    console.log(`Verifying doctor ${doctorId}:`, { isVerified, comment: verificationComment })
-    setIsVerificationDialogOpen(false)
-    setVerificationComment("")
+    try {
+      const payload = { isVerified, commentFromAdmin: verificationComment };
+      const res = await api.put(`/api/admin-verification/${doctorId}`, payload);
+
+      if (res && res.status === 200) {
+        const message = res.data?.message || 'Verification status updated';
+        alert(message);
+
+        // Update local doctors list to reflect new status/comment
+        setDoctors(prev => prev.map(d => {
+          // match by either _id or doctorId field
+          if (d._id === doctorId || d.doctorId === doctorId) {
+            return {
+              ...d,
+              isVerified: !!isVerified,
+              commentFromAdmin: verificationComment || d.commentFromAdmin
+            };
+          }
+          return d;
+        }));
+
+        setIsVerificationDialogOpen(false);
+        setVerificationComment("");
+        setSelectedDoctor(null);
+        console.log(`Verifying doctor ${doctorId}:`, { isVerified, comment: verificationComment });
+      } else {
+        alert('Failed to update verification status');
+      }
+    } catch (error) {
+      console.error('Error updating verification status:', error);
+      const msg = error?.response?.data?.message || error.message || 'Failed to update verification status';
+      alert(msg);
+    }
   }
 
   const handleDeletePatient = (patientId) => {
@@ -204,11 +235,11 @@ export default function AdminDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockDoctors.map((doctor) => (
+                  {doctors.map((doctor) => (
                     <TableRow key={doctor._id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <Avatar>
+                          {/* <Avatar>
                             <AvatarImage src={doctor.profile || "/placeholder.svg"} />
                             <AvatarFallback>
                               {doctor.name
@@ -216,7 +247,7 @@ export default function AdminDashboard() {
                                 .map((n) => n[0])
                                 .join("")}
                             </AvatarFallback>
-                          </Avatar>
+                          </Avatar> */}
                           <div>
                             <p className="font-medium">{doctor.name}</p>
                             <p className="text-sm text-muted-foreground">{doctor.email}</p>
@@ -327,7 +358,7 @@ export default function AdminDashboard() {
                               <DialogFooter>
                                 <Button
                                   variant="outline"
-                                  onClick={() => handleVerifyDoctor(selectedDoctor?._id, false)}
+                                  onClick={() => handleVerifyDoctor(selectedDoctor?.doctorId, false)}
                                 >
                                   <XCircle className="h-4 w-4 mr-2" />
                                   Reject

@@ -1,19 +1,37 @@
-import express from 'express';
+import express from "express";
 import {
   createOrUpdateReview,
   getDoctorReviews,
   getDoctorAverageRating,
-} from './ratingController.js';
+  getAppointmentReview,
+} from "./ratingController.js";
+import { authMiddleware } from "../../middleware/authMiddleware.js";
 
 const ratingRouter = express.Router();
 
-// POST or PUT a review (create or update)
-ratingRouter.post('/', createOrUpdateReview);
+// ============================================
+// PUBLIC ROUTES - View Ratings
+// ============================================
 
-// GET all reviews for a doctor
-ratingRouter.get('/doctor/:doctorId', getDoctorReviews);
+// GET all reviews for a doctor (public - anyone can read reviews)
+ratingRouter.get("/doctor/:doctorId", getDoctorReviews);
 
-// GET average rating for a doctor
-ratingRouter.get('/doctor/:doctorId/average', getDoctorAverageRating);
+// GET average rating for a doctor (public - display on doctor cards)
+ratingRouter.get("/doctor/:doctorId/average", getDoctorAverageRating);
+
+// GET review for a specific appointment and patient (requires authentication)
+ratingRouter.get(
+  "/appointment/:appointmentId/patient/:patientId",
+  authMiddleware,
+  getAppointmentReview
+);
+
+// ============================================
+// AUTHENTICATED ROUTES - Submit Reviews
+// ============================================
+
+// POST or PUT a review (requires authentication - prevents spam reviews)
+// Users must be logged in to post reviews
+ratingRouter.post("/", authMiddleware, createOrUpdateReview);
 
 export default ratingRouter;

@@ -121,6 +121,7 @@ const getIncompleteFields = (data) => {
 }
 
 export default function DoctorProfileUpdate() {
+  const { user } = useAuthStore();
   
   const [formData, setFormData] = useState(initialData)
   const [originalData, setOriginalData] = useState(initialData)
@@ -138,13 +139,12 @@ export default function DoctorProfileUpdate() {
   }, [formData])
 
   useEffect(() =>{
-    const loggedInUser = JSON.parse(localStorage.getItem('userData'))
-    console.log(loggedInUser)
-    if (loggedInUser) {
-      setFormData(loggedInUser)
-      setOriginalData(loggedInUser)
+    console.log('DoctorProfileSetting - Current user from authStore:', user);
+    if (user) {
+      setFormData(user)
+      setOriginalData(user)
     }
-  } , [])
+  } , [user])
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -721,7 +721,7 @@ export default function DoctorProfileUpdate() {
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="fee" className="text-sm font-semibold text-gray-700">
-                    Consultation Fee ($)
+                    Consultation Fee (LKR)
                   </Label>
                   <Input
                     id="fee"

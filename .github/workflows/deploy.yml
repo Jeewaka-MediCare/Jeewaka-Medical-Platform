@@ -1,0 +1,248 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+  
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: |
+          frontend/package-lock.json
+          BackEnd/package-lock.json
+    
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Install backend dependencies
+      working-directory: ./BackEnd
+      run: npm ci
+    
+    - name: Run frontend tests
+      working-directory: ./frontend
+      run: npm test -- --run
+      
+    - name: Run backend tests
+      working-directory: ./BackEnd
+      run: npm test
+      env:
+        MONGODB_URI: mongodb://localhost:27017/jeewaka-test
+        JWT_SECRET: test-secret-key-for-testing-only
+    
+    - name: Build frontend
+      working-directory: ./frontend
+      run: npm run build
+    
+    - name: Run frontend linting
+      working-directory: ./frontend
+      run: npm run lint
+      
+    - name: Security audit
+      run: |
+        cd frontend && npm audit --audit-level moderate
+        cd ../BackEnd && npm audit --audit-level moderate
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  deploy:
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Build and test Docker images
+      run: |
+        docker build -f frontend/Dockerfile.prod -t jeewaka-frontend:${{ github.sha }} ./frontend
+        docker build -f BackEnd/Dockerfile.prod -t jeewaka-backend:${{ github.sha }} ./BackEnd
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+    
+    - name: Deploy to EC2
+      env:
+        PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        HOSTNAME: ${{ secrets.EC2_HOSTNAME }}
+        USER_NAME: ${{ secrets.EC2_USER_NAME }}
+        
+        # Database Secrets
+        MONGO_URI: ${{ secrets.MONGO_URI }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+        
+        # Google Cloud Secrets
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GOOGLE_CLOUD_PROJECT_ID: ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}
+        GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+        
+        # Firebase Secrets
+        FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+        FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+        
+        # Stripe Secrets
+        STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+        STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+        
+        # Supabase Secrets
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        SUPABASE_MEDICAL_RECORDS_BUCKET: ${{ secrets.SUPABASE_MEDICAL_RECORDS_BUCKET }}
+        ENABLE_SUPABASE_BACKUP: ${{ secrets.ENABLE_SUPABASE_BACKUP }}
+        
+        # Frontend Secrets
+        VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
+      run: |
+        echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+        
+        # Create .env.production file with secrets on EC2
+        cat > .env.production << EOF
+        # Production Environment Configuration
+        # Generated from GitHub Secrets
+        
+        # Database Configuration
+        MONGO_URI=${MONGO_URI}
+        
+        # Server Configuration
+        NODE_ENV=production
+        PORT=5000
+        
+        # Security
+        JWT_SECRET=${JWT_SECRET}
+        SESSION_SECRET=${SESSION_SECRET}
+        
+        # Google Cloud / Vertex AI Configuration
+        GEMINI_API_KEY=${GEMINI_API_KEY}
+        GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+        GOOGLE_APPLICATION_CREDENTIALS=/app/service-account-key.json
+        
+        # Firebase Configuration
+        FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+        FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+        FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+        
+        # Stripe Configuration
+        STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+        STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+        STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+        
+        # Supabase Configuration
+        SUPABASE_URL=${SUPABASE_URL}
+        SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+        SUPABASE_MEDICAL_RECORDS_BUCKET=${SUPABASE_MEDICAL_RECORDS_BUCKET}
+        ENABLE_SUPABASE_BACKUP=${ENABLE_SUPABASE_BACKUP}
+        
+        # Frontend Configuration
+        VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
+        VITE_API_URL=http://backend:5000/api
+        VITE_BACKEND_URL=http://backend:5000
+        
+        # t3.micro Memory Optimizations
+        NODE_OPTIONS=--max-old-space-size=384 --optimize-for-size
+        EOF
+        
+        # Create Google Cloud service account key file
+        echo "${GOOGLE_SERVICE_ACCOUNT_KEY}" | base64 -d > service-account-key.json
+        
+        # Copy files to EC2
+        scp -o StrictHostKeyChecking=no -i private_key \
+          .env.production service-account-key.json docker-compose.micro.yml scripts/deploy-micro.sh \
+          ${USER_NAME}@${HOSTNAME}:/opt/jeewaka-medical-platform/
+        
+        # Copy service account key to BackEnd directory on EC2
+        scp -o StrictHostKeyChecking=no -i private_key \
+          service-account-key.json \
+          ${USER_NAME}@${HOSTNAME}:/opt/jeewaka-medical-platform/BackEnd/
+        
+        # Deploy on EC2
+        ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} \
+          'cd /opt/jeewaka-medical-platform && \
+           git pull origin main && \
+           chmod +x scripts/deploy-micro.sh && \
+           ./scripts/deploy-micro.sh'
+    
+    - name: Health check
+      env:
+        HOSTNAME: ${{ secrets.EC2_HOSTNAME }}
+      run: |
+        sleep 60  # Wait for services to start
+        
+        # Check if application is responding
+        if curl -f http://${HOSTNAME}:80/health; then
+          echo "✅ Deployment successful - Application is healthy"
+        else
+          echo "❌ Deployment failed - Application health check failed"
+          exit 1
+        fi
+    
+    - name: Notify Slack on success
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: '🚀 Jeewaka Medical Platform deployed successfully!'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    
+    - name: Notify Slack on failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: '❌ Jeewaka Medical Platform deployment failed!'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

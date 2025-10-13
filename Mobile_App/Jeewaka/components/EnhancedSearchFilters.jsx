@@ -211,7 +211,7 @@ export const EnhancedSearchFilters = ({ onSearch, onAISearch }) => {
         <View style={styles.suggestionsContainer}>
           {loadingSuggestions ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#2563EB" />
+              <ActivityIndicator size="small" color="#008080" />
               <Text style={styles.loadingText}>Getting suggestions...</Text>
             </View>
           ) : (
@@ -252,7 +252,7 @@ export const EnhancedSearchFilters = ({ onSearch, onAISearch }) => {
             style={styles.filterToggleButton}
             onPress={() => setShowFilters(!showFilters)}
           >
-            <Ionicons name="filter" size={18} color="#2563EB" />
+            <Ionicons name="filter" size={18} color="#008080" />
             <Text style={styles.filterToggleText}>Filters</Text>
           </TouchableOpacity>
         )}
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 0,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeSearchType: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
   },
   inactiveSearchType: {
     backgroundColor: 'transparent',
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingVertical: 6,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   aiSearchButton: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#06c2c2ff',
   },
   searchButtonText: {
     color: 'white',
@@ -472,14 +472,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: '#008080',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
     minWidth: 90,
   },
   filterToggleText: {
-    color: '#2563EB',
+    color: '#008080',
     fontSize: 16,
     fontWeight: '500',
     marginLeft: 4,
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   applyButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
   },
   applyText: {
     color: 'white',

@@ -146,7 +146,7 @@ export default function PatientDashboard() {
         <RefreshControl 
           refreshing={refreshing}
           onRefresh={onRefresh}
-          colors={['#2563EB']}
+          colors={['#008080']}
         />
       }
     >
@@ -250,7 +250,7 @@ export default function PatientDashboard() {
         <RefreshControl 
           refreshing={refreshing}
           onRefresh={onRefresh}
-          colors={['#2563EB']}
+          colors={['#008080']}
         />
       }
     >
@@ -345,10 +345,10 @@ export default function PatientDashboard() {
   const renderTabBar = props => (
     <TabBar
       {...props}
-      indicatorStyle={{ backgroundColor: '#2563EB' }}
+      indicatorStyle={{ backgroundColor: '#008080' }}
       style={{ backgroundColor: 'white', elevation: 0, shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}
       labelStyle={{ color: '#1E293B', fontWeight: '500', textTransform: 'none' }}
-      activeColor="#2563EB"
+      activeColor="#008080"
       inactiveColor="#64748B"
     />
   );
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   statusBadge: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 16,
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
     color: '#10B981',
   },
   videoCallButton: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#E0F2F1',
   },
   emptyState: {
     flex: 1,
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   emptyActionButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,

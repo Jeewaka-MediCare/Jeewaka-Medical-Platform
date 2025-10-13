@@ -8,7 +8,7 @@ export const DoctorList = ({ doctors, loading, error }) => {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#2563EB" />
+        <ActivityIndicator size="large" color="#008080" />
       </View>
     );
   }

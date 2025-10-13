@@ -37,13 +37,30 @@ export const reviewService = {
     }
   },
 
-  // Check if a patient has already reviewed a doctor
+  // Get review for a specific appointment
+  getAppointmentReview: async (appointmentId, patientId) => {
+    try {
+      const response = await api.get(
+        `/api/ratings/appointment/${appointmentId}/patient/${patientId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "ReviewService - Error fetching appointment review:",
+        error
+      );
+      return null;
+    }
+  },
+
+  // Check if a patient has already reviewed a doctor (legacy method)
   checkExistingReview: async (doctorId, patientId) => {
     try {
       const reviews = await reviewService.getDoctorReviews(doctorId);
       const existingReview = reviews.find(
         (review) =>
-          review.patient === patientId || review.patient._id === patientId
+          review.patient &&
+          (review.patient === patientId || review.patient._id === patientId)
       );
       return existingReview || null;
     } catch (error) {

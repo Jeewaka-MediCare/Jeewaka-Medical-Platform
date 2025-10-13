@@ -17,7 +17,9 @@ import { format, parseISO } from 'date-fns';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
 import VideoCallButton from '../../components/VideoCallButton';
-import DoctorDashboardContent from '../../components/DoctorDashboardContent';
+import DoctorSessionContent from '../../components/DoctorSessionContent';
+import PaymentDetailsModal from '../../components/PaymentDetailsModal';
+import paymentService from '../../services/paymentService';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
@@ -35,6 +37,9 @@ export default function Appointments() {
   const [pastAppointments, setPastAppointments] = useState([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [loadingPaymentId, setLoadingPaymentId] = useState(null);
 
   // Fetch patient appointments
   const fetchAppointments = async () => {
@@ -70,7 +75,12 @@ export default function Appointments() {
               doctor: session.doctorId,
               hospital: session.hospital,
               meetingLink: session.meetingLink,
-              type: session.type
+              type: session.type,
+              // Payment information from slot
+              paymentIntentId: slot.paymentIntentId,
+              paymentAmount: slot.paymentAmount,
+              paymentCurrency: slot.paymentCurrency,
+              paymentDate: slot.paymentDate,
             });
           }
         });
@@ -190,6 +200,103 @@ export default function Appointments() {
     router.push(`/doctor/${doctorId}`);
   };
 
+  // Handle view payment details
+  const handleViewPayment = async (appointment) => {
+    try {
+      setLoadingPaymentId(appointment._id);
+      console.log('Loading payment details for appointment:', appointment);
+      
+      // Check if appointment has payment information
+      if (!appointment.paymentIntentId) {
+        Alert.alert(
+          'No Payment Information',
+          'No payment information found for this appointment. The payment may still be processing or this appointment may not require payment.'
+        );
+        return;
+      }
+
+      // Fetch specific payment details using the payment intent ID
+      const response = await paymentService.getPaymentDetails(appointment.paymentIntentId);
+      
+      if (response.success && response.payment) {
+        console.log('Payment details loaded:', response.payment);
+        setSelectedPayment(response.payment);
+        setShowPaymentDetails(true);
+      } else {
+        // If getPaymentDetails doesn't work, create payment object from appointment data
+        const paymentFromAppointment = {
+          id: appointment.paymentIntentId,
+          amount: (appointment.paymentAmount || 0) * 100, // Convert to cents
+          currency: appointment.paymentCurrency || 'lkr',
+          status: 'succeeded', // If it's in the appointment, payment was successful
+          date: appointment.paymentDate,
+          created: appointment.paymentDate,
+          doctorName: appointment.doctor?.name || 'Unknown Doctor',
+          doctorSpecialization: appointment.doctor?.specialization || 'General',
+          appointmentDate: appointment.date,
+          appointmentTime: `${appointment.startTime} - ${appointment.endTime}`,
+          appointmentStatus: appointment.appointmentStatus || 'confirmed',
+          doctor: {
+            name: appointment.doctor?.name || 'Unknown Doctor',
+            specialization: appointment.doctor?.specialization || 'General'
+          },
+          appointment: {
+            date: appointment.date,
+            time: `${appointment.startTime} - ${appointment.endTime}`,
+            status: appointment.appointmentStatus || 'confirmed'
+          },
+          sessionId: appointment.sessionId,
+          slotIndex: appointment.slotIndex
+        };
+        
+        console.log('Using payment data from appointment:', paymentFromAppointment);
+        setSelectedPayment(paymentFromAppointment);
+        setShowPaymentDetails(true);
+      }
+    } catch (error) {
+      console.error('Error loading payment details:', error);
+      
+      // If API call fails but we have payment data in appointment, use that
+      if (appointment.paymentIntentId) {
+        const paymentFromAppointment = {
+          id: appointment.paymentIntentId,
+          amount: (appointment.paymentAmount || 0) * 100, // Convert to cents
+          currency: appointment.paymentCurrency || 'lkr',
+          status: 'succeeded', // If it's in the appointment, payment was successful
+          date: appointment.paymentDate,
+          created: appointment.paymentDate,
+          doctorName: appointment.doctor?.name || 'Unknown Doctor',
+          doctorSpecialization: appointment.doctor?.specialization || 'General',
+          appointmentDate: appointment.date,
+          appointmentTime: `${appointment.startTime} - ${appointment.endTime}`,
+          appointmentStatus: appointment.appointmentStatus || 'confirmed',
+          doctor: {
+            name: appointment.doctor?.name || 'Unknown Doctor',
+            specialization: appointment.doctor?.specialization || 'General'
+          },
+          appointment: {
+            date: appointment.date,
+            time: `${appointment.startTime} - ${appointment.endTime}`,
+            status: appointment.appointmentStatus || 'confirmed'
+          },
+          sessionId: appointment.sessionId,
+          slotIndex: appointment.slotIndex
+        };
+        
+        console.log('Using fallback payment data from appointment:', paymentFromAppointment);
+        setSelectedPayment(paymentFromAppointment);
+        setShowPaymentDetails(true);
+      } else {
+        Alert.alert(
+          'Error',
+          error.message || 'Failed to load payment information. Please try again.'
+        );
+      }
+    } finally {
+      setLoadingPaymentId(null);
+    }
+  };
+
   // If not logged in, show login prompt
   if (!loading && !user) {
     return (
@@ -229,10 +336,10 @@ export default function Appointments() {
   // If user is doctor, show doctor dashboard directly in appointments tab
   if (!loading && user && userRole === 'doctor') {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <Stack.Screen
           options={{
-            title: 'Dashboard',
+            title: 'My Sessions',
             headerShown: true,
             headerStyle: {
               backgroundColor: '#1E293B',
@@ -248,7 +355,7 @@ export default function Appointments() {
             headerTintColor: 'white',
           }}
         />
-        <DoctorDashboardContent />
+        <DoctorSessionContent />
       </SafeAreaView>
     );
   }
@@ -279,7 +386,7 @@ export default function Appointments() {
         <RefreshControl 
           refreshing={refreshing}
           onRefresh={onRefresh}
-          colors={['#2563EB']}
+          colors={['#008080']}
         />
       }
     >
@@ -366,11 +473,13 @@ export default function Appointments() {
                 )}
                 
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.cancelButton]}
-                  onPress={() => handleCancelAppointment(appointment._id)}
+                  style={[styles.actionButton, styles.paymentButton]}
+                  onPress={() => handleViewPayment(appointment)}
+                  disabled={loadingPaymentId === appointment._id}
                 >
-                  <Text style={[styles.actionButtonText, styles.cancelButtonText]}>
-                    Cancel
+                  <Ionicons name="card-outline" size={16} color="#008080" />
+                  <Text style={[styles.actionButtonText, styles.paymentButtonText]}>
+                    {loadingPaymentId === appointment._id ? 'Loading...' : 'View Payment'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -402,7 +511,7 @@ export default function Appointments() {
         <RefreshControl 
           refreshing={refreshing}
           onRefresh={onRefresh}
-          colors={['#2563EB']}
+          colors={['#008080']}
         />
       }
     >
@@ -499,10 +608,10 @@ export default function Appointments() {
   const renderTabBar = props => (
     <TabBar
       {...props}
-      indicatorStyle={{ backgroundColor: '#2563EB' }}
+      indicatorStyle={{ backgroundColor: '#008080' }}
       style={{ backgroundColor: 'white', elevation: 0, shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}
       labelStyle={{ color: '#1E293B', fontWeight: '500', textTransform: 'none' }}
-      activeColor="#2563EB"
+      activeColor="#008080"
       inactiveColor="#64748B"
     />
   );
@@ -532,6 +641,16 @@ export default function Appointments() {
         initialLayout={initialLayout}
         renderTabBar={renderTabBar}
         style={styles.tabView}
+      />
+
+      {/* Payment Details Modal */}
+      <PaymentDetailsModal
+        visible={showPaymentDetails}
+        onClose={() => {
+          setShowPaymentDetails(false);
+          setSelectedPayment(null);
+        }}
+        payment={selectedPayment}
       />
     </SafeAreaView>
   );
@@ -565,7 +684,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   loginButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -585,10 +704,10 @@ const styles = StyleSheet.create({
     width: '80%',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: '#008080',
   },
   registerButtonText: {
-    color: '#2563EB',
+    color: '#008080',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -636,7 +755,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   statusBadge: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 16,
@@ -687,11 +806,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1E293B',
   },
-  cancelButton: {
-    backgroundColor: '#FEE2E2',
+  paymentButton: {
+    backgroundColor: '#EFF6FF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  cancelButtonText: {
-    color: '#EF4444',
+  paymentButtonText: {
+    color: '#008080',
   },
   reviewButton: {
     backgroundColor: '#ECFDF5',
@@ -722,7 +844,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   emptyActionButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,

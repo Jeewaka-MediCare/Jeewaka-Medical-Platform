@@ -1,0 +1,133 @@
+{
+  "info": {
+    "_postman_id": "jeewaka-medical-platform-api-collection",
+    "name": "Jeewaka Medical Platform API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        { "name": "Set User Role", "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/role" } },
+        { "name": "Get User Role", "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/users/:uid/role" } },
+        { "name": "Update User Role", "request": { "method": "PUT", "url": "{{baseUrl}}/api/auth/users/:uid/role" } }
+      ]
+    },
+    {
+      "name": "Patients",
+      "item": [
+        { "name": "Create Patient", "request": { "method": "POST", "url": "{{baseUrl}}/api/patient/" } },
+        { "name": "Get Patient by UUID", "request": { "method": "GET", "url": "{{baseUrl}}/api/patient/uuid/:uuid" } },
+        { "name": "Get Patient Appointments", "request": { "method": "GET", "url": "{{baseUrl}}/api/patient/:patientId/appointments" } },
+        { "name": "Get Patient by ID", "request": { "method": "GET", "url": "{{baseUrl}}/api/patient/:id" } },
+        { "name": "Update Patient", "request": { "method": "PUT", "url": "{{baseUrl}}/api/patient/:id" } },
+        { "name": "List All Patients", "request": { "method": "GET", "url": "{{baseUrl}}/api/patient/" } },
+        { "name": "Delete Patient", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/patient/:id" } }
+      ]
+    },
+    {
+      "name": "Doctors",
+      "item": [
+        { "name": "List All Doctors", "request": { "method": "GET", "url": "{{baseUrl}}/api/doctor/" } },
+        { "name": "Get Doctor by ID", "request": { "method": "GET", "url": "{{baseUrl}}/api/doctor/:id" } },
+        { "name": "Update Doctor", "request": { "method": "PUT", "url": "{{baseUrl}}/api/doctor/:id" } },
+        { "name": "Delete Doctor", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/doctor/:id" } }
+      ]
+    },
+    {
+      "name": "Hospitals",
+      "item": [
+        { "name": "List Hospitals", "request": { "method": "GET", "url": "{{baseUrl}}/api/hospital/" } },
+        { "name": "Get Hospital by ID", "request": { "method": "GET", "url": "{{baseUrl}}/api/hospital/:hospitalId" } },
+        { "name": "Create Hospital", "request": { "method": "POST", "url": "{{baseUrl}}/api/hospital/" } },
+        { "name": "Update Hospital", "request": { "method": "PUT", "url": "{{baseUrl}}/api/hospital/:hospitalId" } },
+        { "name": "Delete Hospital", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/hospital/:hospitalId" } }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "item": [
+        { "name": "List Sessions", "request": { "method": "GET", "url": "{{baseUrl}}/api/session/" } },
+        { "name": "Doctor Stats", "request": { "method": "GET", "url": "{{baseUrl}}/api/session/doctor/:doctorId/statistics" } },
+        { "name": "Doctor Sessions", "request": { "method": "GET", "url": "{{baseUrl}}/api/session/doctor/:doctorId" } },
+        { "name": "Get Session by ID", "request": { "method": "GET", "url": "{{baseUrl}}/api/session/:sessionId" } },
+        { "name": "Book Session", "request": { "method": "POST", "url": "{{baseUrl}}/api/session/:sessionId/book" } },
+        { "name": "Create Session", "request": { "method": "POST", "url": "{{baseUrl}}/api/session/" } },
+        { "name": "Update Session", "request": { "method": "PATCH", "url": "{{baseUrl}}/api/session/:sessionId" } },
+        { "name": "Update Meeting ID", "request": { "method": "PATCH", "url": "{{baseUrl}}/api/session/:sessionId/meeting-id" } },
+        { "name": "Update Session Status", "request": { "method": "PATCH", "url": "{{baseUrl}}/api/session/:sessionId/status" } },
+        { "name": "Delete Session", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/session/:sessionId" } },
+        { "name": "Add Timeslot", "request": { "method": "POST", "url": "{{baseUrl}}/api/session/:sessionId/timeslot" } },
+        { "name": "Update Timeslot", "request": { "method": "PUT", "url": "{{baseUrl}}/api/session/:sessionId/timeslot/:slotIndex" } },
+        { "name": "Delete Timeslot", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/session/:sessionId/timeslot/:slotIndex" } }
+      ]
+    },
+    {
+      "name": "Medical Records",
+      "item": [
+        { "name": "Create Record", "request": { "method": "POST", "url": "{{baseUrl}}/api/medical-records/patients/:patientId/records" } },
+        { "name": "List Records for Patient", "request": { "method": "GET", "url": "{{baseUrl}}/api/medical-records/patients/:patientId/records" } },
+        { "name": "Get Record by ID", "request": { "method": "GET", "url": "{{baseUrl}}/api/medical-records/records/:recordId" } },
+        { "name": "Update Record", "request": { "method": "PUT", "url": "{{baseUrl}}/api/medical-records/records/:recordId" } },
+        { "name": "Delete Record", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/medical-records/records/:recordId" } },
+        { "name": "List Record Versions", "request": { "method": "GET", "url": "{{baseUrl}}/api/medical-records/records/:recordId/versions" } },
+        { "name": "Get Version Content", "request": { "method": "GET", "url": "{{baseUrl}}/api/medical-records/records/:recordId/versions/:versionNumber" } },
+        { "name": "Get Record Audit Trail", "request": { "method": "GET", "url": "{{baseUrl}}/api/medical-records/records/:recordId/audit" } },
+        { "name": "Get Patient Audit Trail", "request": { "method": "GET", "url": "{{baseUrl}}/api/medical-records/patients/:patientId/audit" } },
+        { "name": "Get Doctor Activity", "request": { "method": "GET", "url": "{{baseUrl}}/api/medical-records/doctors/:doctorId/activity" } },
+        { "name": "Backup Record", "request": { "method": "POST", "url": "{{baseUrl}}/api/medical-records/records/:recordId/backup" } },
+        { "name": "List Patient Backups", "request": { "method": "GET", "url": "{{baseUrl}}/api/medical-records/patients/:patientId/backups" } },
+        { "name": "Export Patient Records", "request": { "method": "POST", "url": "{{baseUrl}}/api/medical-records/patients/:patientId/export" } },
+        { "name": "Admin Backup Stats", "request": { "method": "GET", "url": "{{baseUrl}}/api/medical-records/admin/backup-stats/:patientId" } }
+      ]
+    },
+    {
+      "name": "Ratings",
+      "item": [
+        { "name": "Get Doctor Reviews", "request": { "method": "GET", "url": "{{baseUrl}}/api/ratings/doctor/:doctorId" } },
+        { "name": "Get Doctor Average Rating", "request": { "method": "GET", "url": "{{baseUrl}}/api/ratings/doctor/:doctorId/average" } },
+        { "name": "List All Ratings", "request": { "method": "GET", "url": "{{baseUrl}}/api/ratings/" } },
+        { "name": "Create/Update Review", "request": { "method": "POST", "url": "{{baseUrl}}/api/ratings/" } }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        { "name": "Create Payment Intent", "request": { "method": "POST", "url": "{{baseUrl}}/api/payments/create-intent" } },
+        { "name": "Get Payment History", "request": { "method": "GET", "url": "{{baseUrl}}/api/payments/history" } },
+        { "name": "Get Doctor Earnings", "request": { "method": "GET", "url": "{{baseUrl}}/api/payments/earnings" } },
+        { "name": "Get Earnings Stats", "request": { "method": "GET", "url": "{{baseUrl}}/api/payments/earnings/stats" } },
+        { "name": "Get Payment Details", "request": { "method": "GET", "url": "{{baseUrl}}/api/payments/:paymentId" } }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        { "name": "List Admins", "request": { "method": "GET", "url": "{{baseUrl}}/api/admin/" } },
+        { "name": "Add Admin Role", "request": { "method": "POST", "url": "{{baseUrl}}/api/admin/add-role" } },
+        { "name": "Remove Admin Role", "request": { "method": "POST", "url": "{{baseUrl}}/api/admin/remove-role" } }
+      ]
+    },
+    {
+      "name": "Doctor Card",
+      "item": [
+        { "name": "List Doctor Cards", "request": { "method": "GET", "url": "{{baseUrl}}/api/doctorCard/" } },
+        { "name": "Get Doctor Card by ID", "request": { "method": "GET", "url": "{{baseUrl}}/api/doctorCard/:doctorId" } }
+      ]
+    },
+    {
+      "name": "Doctor Verification",
+      "item": [
+        { "name": "Submit Verification", "request": { "method": "POST", "url": "{{baseUrl}}/api/admin-verification/" } },
+        { "name": "List Verifications", "request": { "method": "GET", "url": "{{baseUrl}}/api/admin-verification/" } },
+        { "name": "Update Verification", "request": { "method": "PUT", "url": "{{baseUrl}}/api/admin-verification/:doctorId" } },
+        { "name": "Upload Document", "request": { "method": "POST", "url": "{{baseUrl}}/api/admin-verification/documents/:doctorId" } },
+        { "name": "List Documents", "request": { "method": "GET", "url": "{{baseUrl}}/api/admin-verification/documents/:doctorId" } },
+        { "name": "Delete Document", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/admin-verification/documents/:doctorId/:filename" } }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" }
+  ]
+}

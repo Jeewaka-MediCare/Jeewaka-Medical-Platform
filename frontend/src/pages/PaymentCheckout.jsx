@@ -141,7 +141,7 @@ function CheckoutForm({ paymentData, onSuccess, onError }) {
         ) : (
           <>
             <CreditCard className="mr-2 h-4 w-4" />
-            Pay ${paymentData.amount}
+            Pay LKR {paymentData.amount}
           </>
         )}
       </Button>
@@ -306,7 +306,7 @@ export default function PaymentCheckout() {
               </div>
               <div className="flex justify-between">
                 <span>Amount:</span>
-                <span className="font-bold text-lg">${paymentData.amount}</span>
+                <span className="font-bold text-lg">LKR {paymentData.amount}</span>
               </div>
             </div>
           </div>

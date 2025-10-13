@@ -1,0 +1,17 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+scenarios:
+  - flow:
+      - get:
+          url: "/api/doctor/testid"
+      - get:
+          url: "/api/hospital/testid"
+      - get:
+          url: "/api/session/testid"
+      - get:
+          url: "/api/doctorCard/testid"
+      - get:
+          url: "/api/ratings/testid"

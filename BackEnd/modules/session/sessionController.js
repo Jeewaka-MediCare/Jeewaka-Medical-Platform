@@ -82,22 +82,79 @@ export const getSessions = async (req, res) => {
 // Get a single session by ID
 export const getSessionById = async (req, res) => {
   try {
-    const session = await Session.findById(req.params.sessionId);
+    const session = await Session.findById(req.params.sessionId)
+      .populate("hospital", "name location address")
+      .populate("timeSlots.patientId", "name email phone uuid");
     if (!session) return res.status(404).json({ error: "Session not found" });
+
+    // If user is authenticated and is a doctor, populate patient information in time slots      //new
+    if (req.user && req.user.role === "doctor") {
+      // Find the doctor by Firebase UID to get their MongoDB _id
+      const doctor = await Doctor.findOne({ uuid: req.user.uid });
+
+      if (doctor) {
+        // Additional security: Only populate patient data if doctor owns this session or is admin
+        const isDoctorOwner =
+          session.doctorId.toString() === doctor._id.toString();
+        const isAdmin = req.user.role === "admin";
+
+        if (isDoctorOwner || isAdmin) {
+          // Get all patient IDs from booked slots
+          const patientIds = session.timeSlots
+            .filter((slot) => slot.patientId && slot.status !== "available")
+            .map((slot) => slot.patientId);
+
+          // Fetch patient details for all unique patient IDs
+          const patients =
+            patientIds.length > 0
+              ? await Patient.find({ _id: { $in: patientIds } }).select(
+                  "name email phone uuid"
+                )
+              : [];
+
+          // Create a map for quick lookup
+          const patientsMap = new Map();
+          patients.forEach((patient) => {
+            patientsMap.set(patient._id.toString(), patient);
+          });
+
+          // Add patient information to time slots
+          const enhancedTimeSlots = session.timeSlots.map((slot) => ({
+            ...slot.toObject(),
+            patient: slot.patientId
+              ? patientsMap.get(slot.patientId.toString()) || null
+              : null,
+          }));
+
+          const sessionWithPatients = {
+            ...session.toObject(),
+            timeSlots: enhancedTimeSlots,
+          };
+
+          return res.json(sessionWithPatients);
+        }
+      }
+    }
+
+    // For non-authenticated users, non-doctors, or doctors who don't own this session
+    // Return session without patient details but with hospital information       //new
     res.json(session);
   } catch (err) {
+    console.error("Error fetching session:", err); //new
     res.status(400).json({ error: err.message });
   }
 };
 
-export const getSessionByDoctorId  = async (req, res) => {
+export const getSessionByDoctorId = async (req, res) => {
   try {
-    const sessions = await Session.find({ doctorId: req.params.doctorId });
+    const sessions = await Session.find({ doctorId: req.params.doctorId })
+      .populate("hospital", "name location address")
+      .populate("timeSlots.patientId", "name email phone uuid");
     res.json(sessions);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
-}
+};
 
 // Update a session
 export const updateSession = async (req, res) => {
@@ -166,9 +223,30 @@ export const updateAppointmentMeetingId = async (req, res) => {
 // Delete a session
 export const deleteSession = async (req, res) => {
   try {
-    const session = await Session.findByIdAndDelete(req.params.sessionId);
+    const session = await Session.findById(req.params.sessionId);
     if (!session) return res.status(404).json({ error: "Session not found" });
-    res.json({ message: "Session deleted" });
+
+    // Check if any time slots have bookings
+    const hasBookings = session.timeSlots.some(
+      (slot) => slot.patientId !== null || slot.status === "booked"
+    );
+
+    if (hasBookings) {
+      return res.status(400).json({
+        error:
+          "Cannot delete session with existing bookings. Please cancel all appointments first.",
+      });
+    }
+
+    // Delete the session
+    await Session.findByIdAndDelete(req.params.sessionId);
+
+    // Remove session from doctor's sessions array
+    await Doctor.findByIdAndUpdate(session.doctorId, {
+      $pull: { sessions: req.params.sessionId },
+    });
+
+    res.json({ message: "Session deleted successfully" });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -230,7 +308,15 @@ export const deleteTimeSlot = async (req, res) => {
 export const bookAppointment = async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const { slotIndex, patientId, paymentIntentId } = req.body;
+    const { slotIndex, paymentIntentId } = req.body;
+
+    // Get patientId from authenticated user (req.user set by authMiddleware)
+    const firebaseUid = req.user?.uid;
+
+    if (!firebaseUid) {
+      console.error("bookAppointment - No authenticated user");
+      return res.status(401).json({ error: "Authentication required" });
+    }
 
     if (!stripe) {
       return res.status(500).json({
@@ -248,7 +334,7 @@ export const bookAppointment = async (req, res) => {
       console.error("bookAppointment - Missing paymentIntentId", {
         sessionId,
         slotIndex,
-        patientId,
+        firebaseUid,
         paymentIntentId,
       });
       return res.status(400).json({ error: "Payment intent ID is required" });
@@ -268,37 +354,30 @@ export const bookAppointment = async (req, res) => {
     // Normalize slot index to integer for consistent usage
     const slotIdx = parseInt(slotIndex, 10);
 
-    if (!patientId) {
-      console.error("bookAppointment - Missing patientId", { patientId });
-      return res.status(400).json({ error: "patientId is required" });
+    // Look up patient by Firebase UID
+    console.log("bookAppointment - Looking up patient by Firebase UID", {
+      firebaseUid,
+    });
+    const patient = await Patient.findOne({ uuid: firebaseUid });
+
+    if (!patient) {
+      console.error("bookAppointment - No patient found for Firebase UID", {
+        firebaseUid,
+      });
+      return res.status(404).json({
+        error: "Patient profile not found",
+        message:
+          "Your account is not properly set up. Please complete your profile or contact support.",
+      });
     }
 
-    // Resolve patientId: accept either backend ObjectId or frontend UUID (firebase uid stored as Patient.uuid)
-    let resolvedPatientId = patientId;
-    try {
-      if (!mongoose.Types.ObjectId.isValid(patientId)) {
-        // Try to find by uuid field
-        const patientDoc = await Patient.findOne({ uuid: patientId });
-        if (!patientDoc) {
-          console.error(
-            "bookAppointment - No patient found for provided id/uuid",
-            { patientId }
-          );
-          return res
-            .status(400)
-            .json({ error: "Invalid patientId: no matching patient found" });
-        }
-        resolvedPatientId = patientDoc._id;
-        console.log("bookAppointment - Resolved patientId to _id", {
-          resolvedPatientId,
-        });
-      }
-    } catch (resolveErr) {
-      console.error("bookAppointment - Error resolving patientId:", resolveErr);
-      return res
-        .status(500)
-        .json({ error: "Internal error resolving patientId" });
-    }
+    const resolvedPatientId = patient._id;
+    console.log("bookAppointment - Patient resolved", {
+      firebaseUid,
+      patientMongoId: resolvedPatientId.toString(),
+      patientName: patient.name,
+      patientEmail: patient.email,
+    });
 
     // Verify payment status with Stripe (handle Stripe errors explicitly)
     let paymentIntent;
@@ -382,7 +461,7 @@ export const bookAppointment = async (req, res) => {
     // Update the time slot with booking details
     // Use the resolvedPatientId (may be an ObjectId) so Mongoose doesn't try to cast a Firebase uid string
     console.log("bookAppointment - Assigning patientId to slot", {
-      originalPatientId: patientId,
+      firebaseUid: req.user.uid,
       resolvedPatientId,
     });
     slot.patientId = resolvedPatientId;
@@ -411,6 +490,110 @@ export const bookAppointment = async (req, res) => {
     });
   } catch (error) {
     console.error("Error booking appointment:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get doctor statistics
+export const getDoctorStatistics = async (req, res) => {
+  console.log("🔍 getDoctorStatistics called");
+  console.log("🔍 Request params:", req.params);
+  console.log("🔍 Request URL:", req.originalUrl);
+
+  try {
+    const doctorId = req.params.doctorId;
+    console.log("🔍 Getting statistics for doctor:", doctorId);
+
+    // Validate doctorId format
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      return res.status(400).json({ error: "Invalid doctor ID format" });
+    }
+
+    // Get all sessions for the doctor
+    const sessions = await Session.find({ doctorId });
+    console.log(`Found ${sessions.length} sessions for doctor ${doctorId}`);
+
+    // Debug: log first session structure
+    if (sessions.length > 0) {
+      console.log(
+        "🔍 Sample session structure:",
+        JSON.stringify(sessions[0], null, 2)
+      );
+    }
+
+    // Get unique patients who have booked appointments
+    const uniquePatients = new Set();
+    let appointmentsToday = 0;
+    let completedSessions = 0;
+    let totalBookedSlots = 0;
+
+    const today = new Date();
+    const todayString = today.toDateString();
+
+    sessions.forEach((session) => {
+      console.log("🔍 Processing session:", {
+        id: session._id,
+        date: session.date,
+        slotsCount: session.timeSlots?.length || 0,
+      });
+
+      if (session.timeSlots) {
+        session.timeSlots.forEach((slot) => {
+          console.log("🔍 Processing slot:", {
+            startTime: slot.startTime,
+            appointmentStatus: slot.appointmentStatus,
+            patientId: slot.patientId ? slot.patientId.toString() : null,
+            sessionDate: session.date,
+          });
+
+          // Count unique patients (check both patientId and confirmed status)
+          if (slot.patientId && slot.patientId.toString() !== "null") {
+            uniquePatients.add(slot.patientId.toString());
+            totalBookedSlots++;
+            console.log(
+              "🔍 Added patient to count:",
+              slot.patientId.toString()
+            );
+          }
+
+          // Count today's appointments (confirmed appointments)
+          if (slot.appointmentStatus === "confirmed" && slot.patientId) {
+            // Use session date, not slot startTime for date comparison
+            const sessionDate = new Date(session.date);
+            const sessionDateString = sessionDate.toDateString();
+            console.log("🔍 Checking today appointment:", {
+              sessionDate: session.date,
+              sessionDateString,
+              todayString,
+              isToday: sessionDateString === todayString,
+            });
+
+            if (sessionDateString === todayString) {
+              appointmentsToday++;
+              console.log("🔍 Found today appointment:", slot.startTime);
+            }
+          }
+
+          // Count completed appointments (individual appointments that are completed)
+          if (slot.appointmentStatus === "completed") {
+            completedSessions++;
+          }
+        });
+      }
+    });
+
+    const statistics = {
+      totalPatients: uniquePatients.size,
+      appointmentsToday,
+      completedAppointments: completedSessions, // Renamed for clarity - these are completed individual appointments
+      totalSessions: sessions.length,
+      totalBookedSlots,
+    };
+
+    console.log("Calculated statistics:", statistics);
+    res.json(statistics);
+  } catch (error) {
+    console.error("Error fetching doctor statistics:", error);
     res.status(500).json({ error: error.message });
   }
 };

@@ -13,7 +13,8 @@ import patientRouter from "./modules/patient/patientRoute.js";
 import adminRouter from "./modules/admin/adminRoutes.js";
 import adminVerificationRouter from "./modules/doctorCertificates/doctorVerificationRoutes.js";
 import paymentsRouter from "./modules/payments/paymentsRoutes.js";
-import r from "./modules/finance/financeRoutes.js";
+import financeRouter from "./modules/finance/financeRoutes.js";
+import medicalRecordsRouter from "./modules/records/recordsRoutes.js";
 
 
 // Load environment variables
@@ -29,15 +30,14 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Register doctor routes
 app.use("/api/doctor", doctorRoutes);
-// Register patient routes
-app.use("/api/patient", patientRouter);
 
-// Register auth routes
-app.use("/api/auth", authRoutes);
-// Register hospital Routes
-app.use("/api/hospital", hospitalRouter);
-// Register session routes
-app.use("/api/session", sessionRouter);
+// Register payments routes
+app.use("/api/payments", paymentsRouter);
+
+// Register finance routes
+app.use("/api/finance", financeRouter);
+// Register medical records routes
+app.use("/api/medical-records", medicalRecordsRouter);
 //docotr Card routes
 app.use("/api/doctorCard", doctorCardRouter);
 // admin routes
@@ -48,11 +48,8 @@ app.use("/api/admin-verification", adminVerificationRouter);
 
 // Register rating/review routes
 app.use("/api/ratings", ratingRouter);
-
 // Register payments routes
 app.use("/api/payments", paymentsRouter);
-// Register finance routes
-app.use("/api", r);
 
 // Connect to MongoDB
 connectDB();

@@ -1,0 +1,44 @@
+# Production-optimized Dockerfile for Backend (t3.micro optimized)
+FROM node:20-alpine3.19
+
+# Install security updates and curl for health checks
+RUN apk update && apk upgrade && apk add --no-cache curl
+
+# Create app directory
+WORKDIR /app
+
+# Add non-root user for security
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodeuser -u 1001
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies with optimizations
+RUN npm ci --omit=dev --no-audit --no-fund && \
+    npm cache clean --force && \
+    rm -rf /tmp/* /var/tmp/*
+
+# Copy source code
+COPY . .
+
+# Remove unnecessary files to reduce image size
+RUN rm -rf tests/ docs/ *.md .git* && \
+    find . -name "*.test.js" -delete && \
+    find . -name "*.spec.js" -delete
+
+# Change ownership to non-root user
+RUN chown -R nodeuser:nodejs /app
+USER nodeuser
+
+# Health check optimized for t3.micro
+HEALTHCHECK --interval=120s --timeout=10s --start-period=60s --retries=2 \
+  CMD curl -f http://localhost:5000/health || exit 1
+
+# Set memory limits for Node.js (critical for t3.micro)
+ENV NODE_OPTIONS="--max-old-space-size=384 --optimize-for-size"
+ENV NODE_ENV=production
+
+EXPOSE 5000
+
+CMD ["node", "server.js"]

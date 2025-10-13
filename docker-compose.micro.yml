@@ -1,0 +1,110 @@
+# Lightweight configuration for t3.micro instances
+# Memory-optimized for 1GB RAM constraint
+
+services:
+  # Combined nginx + frontend service to save memory
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        - VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_BACKEND_URL=${VITE_BACKEND_URL}
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - jeewaka-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    volumes:
+      - ./ssl:/etc/nginx/ssl
+    env_file:
+      - .env.production
+    environment:
+      # Frontend environment variables
+      - VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
+      - VITE_API_URL=http://13.53.53.29:5000
+      - VITE_BACKEND_URL=http://13.53.53.29:5000
+
+  backend:
+    build:
+      context: ./BackEnd
+      dockerfile: Dockerfile.prod
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env.production
+    environment:
+      # Database Configuration
+      - MONGO_URI=${MONGO_URI}
+      
+      # Server Configuration
+      - NODE_ENV=production
+      - PORT=5000
+      
+      # Google Cloud / Vertex AI Configuration
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/service-account-key.json
+      
+      # Firebase Configuration
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      
+      # Stripe Configuration
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      
+      # Supabase Configuration
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_MEDICAL_RECORDS_BUCKET=${SUPABASE_MEDICAL_RECORDS_BUCKET}
+      - ENABLE_SUPABASE_BACKUP=${ENABLE_SUPABASE_BACKUP}
+      
+      # Security
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      
+      # Memory optimizations for t3.small (2GB RAM)
+      - NODE_OPTIONS=--max-old-space-size=768
+    restart: unless-stopped
+    networks:
+      - jeewaka-network
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 384M
+    volumes:
+      # Mount service account key for Google Cloud
+      - ./BackEnd/service-account-key.json:/app/service-account-key.json:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 120s
+      timeout: 15s
+      retries: 2
+      start_period: 60s
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+
+networks:
+  jeewaka-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1500

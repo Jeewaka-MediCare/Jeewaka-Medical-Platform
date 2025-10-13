@@ -98,9 +98,6 @@ function PaymentForm({ paymentData, onSuccess, onError }) {
           onFocus={() => setCardFocused(true)}
           onBlur={() => setCardFocused(false)}
         />
-        <Text style={styles.cardFieldHelper}>
-          Use test card: 4242 4242 4242 4242 for testing
-        </Text>
       </View>
 
       <TouchableOpacity
@@ -152,7 +149,7 @@ export default function PaymentCheckout() {
 
       const paymentRequest = {
         amount: parseFloat(amount),
-        currency: 'usd',
+        currency: 'lkr',
         metadata: {
           sessionId,
           slotIndex,
@@ -266,7 +263,7 @@ export default function PaymentCheckout() {
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2563EB" />
+            <ActivityIndicator size="large" color="#008080" />
             <Text style={styles.loadingText}>Preparing payment...</Text>
           </View>
         ) : error ? (
@@ -395,7 +392,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -466,7 +463,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#2563EB',
+    color: '#008080',
   },
   paymentForm: {
     backgroundColor: 'white',
@@ -530,8 +527,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   cardFieldFocused: {
-    borderColor: '#2563EB',
-    shadowColor: '#2563EB',
+    borderColor: '#008080',
+    shadowColor: '#008080',
     shadowOffset: {
       width: 0,
       height: 0,
@@ -548,15 +545,10 @@ const styles = StyleSheet.create({
     textColor: '#1F2937',
     fontSize: 16,
     placeholderColor: '#9CA3AF',
-    cursorColor: '#2563EB',
-  },
-  cardFieldHelper: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
+    cursorColor: '#008080',
   },
   payButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#008080',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

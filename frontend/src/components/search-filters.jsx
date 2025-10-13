@@ -28,7 +28,7 @@ export function SearchFilters({ onSearch, onFilter, specializations }) {
     const active= []
 
     if (filters.minFee !== undefined || filters.maxFee !== undefined) {
-      active.push(`Fee: $${filters.minFee || 0} - $${filters.maxFee || maxPossibleFee}`)
+      active.push(`Fee: LKR ${filters.minFee || 0} - LKR ${filters.maxFee || maxPossibleFee}`)
     }
 
     if (filters.minRating !== "") {
@@ -136,8 +136,8 @@ export function SearchFilters({ onSearch, onFilter, specializations }) {
                         }}
                       />
                       <div className="flex items-center justify-between">
-                        <p className="text-sm">${filters.minFee || minPossibleFee}</p>
-                        <p className="text-sm">${filters.maxFee || maxPossibleFee}</p>
+                        <p className="text-sm">LKR {filters.minFee || minPossibleFee}</p>
+                        <p className="text-sm">LKR {filters.maxFee || maxPossibleFee}</p>
                       </div>
                     </div>
                   </CollapsibleContent>
@@ -210,8 +210,8 @@ export function SearchFilters({ onSearch, onFilter, specializations }) {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Default">Default</SelectItem>
-                        <SelectItem value="fee-asc">Price: Low to High</SelectItem>
-                        <SelectItem value="fee-desc">Price: High to Low</SelectItem>
+                        <SelectItem value="fee-asc">Fee: Low to High</SelectItem>
+                        <SelectItem value="fee-desc">Fee: High to Low</SelectItem>
                         <SelectItem value="rating-desc">Rating: High to Low</SelectItem>
                         <SelectItem value="rating-asc">Rating: Low to High</SelectItem>
                         <SelectItem value="name-asc">Name: A to Z</SelectItem>
