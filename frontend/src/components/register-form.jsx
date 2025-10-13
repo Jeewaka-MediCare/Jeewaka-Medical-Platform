@@ -11,7 +11,7 @@ import { email, z } from "zod"
 import { useState } from "react"
 import { Eye, EyeOff, Loader2, UserCheck, Stethoscope } from "lucide-react"
 import { createUserWithEmailAndPassword } from "firebase/auth"
-import { auth } from "./firebase"
+import { auth } from "../services/firebase"
 import api from "../services/api"
 import { useNavigate } from "react-router-dom"
 

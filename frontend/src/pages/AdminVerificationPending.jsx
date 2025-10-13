@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, Trash2, Clock } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+
 import api from '../services/api';
+
 
 export default function AdminVerificationPending() {
     const location = useLocation();
@@ -13,7 +15,7 @@ export default function AdminVerificationPending() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
@@ -38,75 +40,104 @@ export default function AdminVerificationPending() {
     setUploading(true);
 
     const doctorId = doctorData && (doctorData._id || doctorData.doctorId);
-    if (!doctorId) {
-      alert('Doctor ID is required');
+    if (!doctorId || doctorId === 'undefined') {
+      alert('Doctor ID is missing. Please contact support.');
       setUploading(false);
       return;
     }
 
-    // upload files sequentially to simplify error handling and rate limits
-    (async () => {
-      try {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const form = new FormData();
-          form.append('document', file);
-          
-
-          // axios helper 'api' will attach auth token via interceptor
-          const res = await api.post(`/api/admin-verification/documents/${doctorId}`, form, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-
-          // axios returns data on res.data
-          const body = res.data;
-          const doc = body.document || {};
-
-          const newFile = {
-            id: Date.now() + i,
-            name: doc.filename || file.name,
-            url: doc.url || doc.path || '',
-            uploadedAt: doc.uploadedAt || new Date().toISOString(),
-            raw: doc
-          };
-
-          setUploadedFiles(prev => [...prev, newFile]);
-          setDoctorData(prev => ({
-            ...prev,
-            certificates: [...(prev.certificates || []), newFile.url],
-            updatedAt: new Date().toISOString()
-          }));
-        }
-        alert('Certificates uploaded successfully! Waiting for admin verification.');
-      } catch (error) {
-        console.error('Upload error', error);
-        const msg = error?.response?.data?.message || error.message || 'Failed to upload document';
-        alert(msg);
-      } finally {
-        setUploading(false);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const form = new FormData();
+        form.append('document', file);
+        // Upload to backend API
+        const res = await api.post(`/api/admin-verification/documents/${doctorId}`, form, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        const body = res.data;
+        const doc = body.document || {};
+        const newFile = {
+          id: Date.now() + i,
+          name: doc.filename || file.name,
+          url: doc.url || doc.path || '',
+          uploadedAt: doc.uploadedAt || new Date().toISOString(),
+          raw: doc
+        };
+        setUploadedFiles(prev => [...prev, newFile]);
+        setDoctorData(prev => ({
+          ...prev,
+          certificates: [...(prev.certificates || []), newFile.url],
+          updatedAt: new Date().toISOString()
+        }));
       }
-    })();
+      alert('Certificates uploaded successfully! Waiting for admin verification.');
+    } catch (error) {
+      console.error('Upload error', error);
+      const msg = error?.response?.data?.message || error.message || 'Failed to upload document';
+      alert(msg);
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const removeFile = (id) => {
+  const removeFile = async (id) => {
     const fileToRemove = uploadedFiles.find(f => f.id === id);
-    setUploadedFiles(prev => prev.filter(f => f.id !== id));
-    setDoctorData(prev => ({
-      ...prev,
-      certificates: prev.certificates.filter(url => url !== fileToRemove.url),
-      updatedAt: new Date().toISOString()
-    }));
+    if (!fileToRemove) return;
+    const doctorId = doctorData && (doctorData._id || doctorData.doctorId);
+    if (!doctorId || doctorId === 'undefined') {
+      alert('Doctor ID is missing. Please contact support.');
+      return;
+    }
+    try {
+      // Call backend API to delete the file
+      await api.delete(`/api/admin-verification/documents/${doctorId}/${encodeURIComponent(fileToRemove.name)}`);
+      setUploadedFiles(prev => prev.filter(f => f.id !== id));
+      setDoctorData(prev => ({
+        ...prev,
+        certificates: prev.certificates.filter(url => url !== fileToRemove.url),
+        updatedAt: new Date().toISOString()
+      }));
+    } catch (error) {
+      alert('Failed to delete file from storage.');
+    }
   };
 
-  const handleSaveCertificates = () => {
+  const handleSaveCertificates = async () => {
     if (doctorData.certificates.length === 0) {
       alert("Please upload at least one certificate");
       return;
     }
-    console.log("Saving certificates:", doctorData);
-    alert("Certificates uploaded successfully! Waiting for admin verification.");
+    try {
+      const doctorId = doctorData && (doctorData._id || doctorData.doctorId);
+      if (!doctorId || doctorId === 'undefined') {
+        alert('Doctor ID is missing. Please contact support.');
+        return;
+      }
+      // Check if verification exists
+      let exists = false;
+      try {
+        await api.get(`/api/admin-verification/${doctorId}`);
+        exists = true;
+      } catch (err) {
+        exists = false;
+      }
+      if (exists) {
+        await api.put(`/api/admin-verification/${doctorId}`, {
+          certificates: doctorData.certificates
+        });
+      } else {
+        await api.post(`/api/admin-verification/`, {
+          doctorId,
+          certificates: doctorData.certificates
+        });
+      }
+      alert("Certificates saved successfully! Waiting for admin verification.");
+    } catch (error) {
+      alert("Failed to save certificates to backend.");
+    }
   };
 
   const formatDate = (dateString) => {
@@ -239,7 +270,13 @@ export default function AdminVerificationPending() {
                       <FileText className="text-white" size={24} />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-800">{file.name}</p>
+                      <a
+                        href={file.url}
+                        download={file.name}
+                        className="font-semibold text-blue-700 hover:underline break-all"
+                      >
+                        {file.name}
+                      </a>
                       <p className="text-xs text-gray-500 break-all">{file.url}</p>
                       <p className="text-xs text-gray-400 mt-1">
                         Uploaded: {formatDate(file.uploadedAt)}

@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { auth } from "./firebase";
+import { auth } from "../services/firebase";
 import useAuthStore from "../store/authStore";
 
 export default function ProtectedRoute({ allowedRoles }) {

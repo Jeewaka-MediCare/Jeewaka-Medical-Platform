@@ -58,14 +58,15 @@ export function LoginForm({ className, ...props }) {
       const { role , user } = loginResult;
       if (role === "doctor") {
         const res2 = await api.get(`/api/admin-verification/${user._id}`);
-        console.log("Admin verification status:", res2.data);
-        if(res2.data[0].isVerified=== "false" || res2.data[0].isVerified=== false){
-          navigate("/admin-verification-pending", { state: res2.data });
-
+        console.log("Admin verification status (raw):", res2.data);
+        const verification = Array.isArray(res2.data) ? res2.data[0] : res2.data;
+        console.log("Verification object used for redirect:", verification);
+        if (!verification || verification.isVerified === false || verification.isVerified === "false") {
+          console.log("Redirecting to pending page. isVerified:", verification && verification.isVerified);
+          navigate("/admin-verification-pending", { state: [verification] });
           return;
         }
-      
-        
+        console.log("Redirecting to doctor dashboard. isVerified:", verification && verification.isVerified);
         navigate("/doctor-dashboard");
       } else if (role === "patient") {
         navigate("/patient-dashboard");

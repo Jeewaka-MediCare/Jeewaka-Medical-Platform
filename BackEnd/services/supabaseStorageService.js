@@ -35,7 +35,9 @@ class SupabaseStorageService {
     }
     
     this.supabase = createClient(supabaseUrl, supabaseKey);
-    this.bucketName = process.env.SUPABASE_MEDICAL_RECORDS_BUCKET || 'medical-records';
+  // Use a dedicated env variable for verification documents bucket, fallback to 'verification-documents'
+    this.verificationDocsBucket = process.env.SUPABASE_VERIFICATION_DOCS_BUCKET || 'verification-documents';
+    this.medicalRecordsBucket = process.env.SUPABASE_MEDICAL_RECORDS_BUCKET || 'medical-records';
     this.backupEnabled = process.env.ENABLE_SUPABASE_BACKUP === 'true';
     this.initialized = true;
     
@@ -53,38 +55,34 @@ class SupabaseStorageService {
       console.warn('Supabase backup is disabled');
       return null;
     }
-
     try {
-      // Create folder path for doctor documents
-      const folderPath = `verification-documents/${doctorId}`;
+      const folderPath = `${doctorId}`;
       const filePath = `${folderPath}/${filename}`;
-      
-      // Upload file to Supabase storage
       const { data, error } = await this.supabase.storage
-        .from(this.bucketName)
+        .from(this.verificationDocsBucket)
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true // Allow overwriting existing files
+          upsert: true
         });
-
       if (error) {
         console.error('Error uploading doctor document:', error);
         throw new Error(`Failed to upload document: ${error.message}`);
       }
-
-      // Get public URL for the uploaded file
-      const { data: urlData } = this.supabase.storage
-        .from(this.bucketName)
-        .getPublicUrl(filePath);
-
+      // Generate a signed URL (default: 1 week)
+      const { data: signedData, error: signedError } = await this.supabase.storage
+        .from(this.verificationDocsBucket)
+        .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 1 week expiry
+      if (signedError) {
+        console.error('Error generating signed URL:', signedError);
+        throw new Error(`Failed to generate signed URL: ${signedError.message}`);
+      }
       return {
         path: filePath,
-        url: urlData.publicUrl,
+        url: signedData.signedUrl,
         doctorId,
         filename,
         uploadedAt: new Date().toISOString()
       };
-
     } catch (error) {
       console.error('Doctor document upload failed:', error);
       throw error;
@@ -99,27 +97,33 @@ class SupabaseStorageService {
       console.warn('Supabase backup is disabled');
       return [];
     }
-
     try {
-      const folderPath = `verification-documents/${doctorId}`;
-      
+      const folderPath = `${doctorId}`;
       const { data, error } = await this.supabase.storage
-        .from(this.bucketName)
+        .from(this.verificationDocsBucket)
         .list(folderPath);
-
       if (error) {
         console.error('Error listing doctor documents:', error);
         throw new Error(`Failed to list documents: ${error.message}`);
       }
-
-      return data.map(file => ({
-        name: file.name,
-        path: `${folderPath}/${file.name}`,
-        size: file.metadata?.size || 0,
-        lastModified: file.updated_at,
-        url: this.supabase.storage.from(this.bucketName).getPublicUrl(`${folderPath}/${file.name}`).data.publicUrl
-      }));
-
+      // For each file, generate a signed URL (1 week expiry)
+      const filesWithSignedUrls = await Promise.all(
+        data.map(async file => {
+          const filePath = `${folderPath}/${file.name}`;
+          const { data: signedData, error: signedError } = await this.supabase.storage
+            .from(this.verificationDocsBucket)
+            .createSignedUrl(filePath, 60 * 60 * 24 * 7);
+          return {
+            name: file.name,
+            path: filePath,
+            size: file.metadata?.size || 0,
+            lastModified: file.updated_at,
+            url: signedData?.signedUrl || null,
+            error: signedError?.message || null
+          };
+        })
+      );
+      return filesWithSignedUrls;
     } catch (error) {
       console.error('Failed to list doctor documents:', error);
       throw error;
@@ -134,21 +138,16 @@ class SupabaseStorageService {
       console.warn('Supabase backup is disabled');
       return null;
     }
-
     try {
-      const filePath = `verification-documents/${doctorId}/${filename}`;
-      
+      const filePath = `${doctorId}/${filename}`;
       const { error } = await this.supabase.storage
-        .from(this.bucketName)
+        .from(this.verificationDocsBucket)
         .remove([filePath]);
-
       if (error) {
         console.error('Error deleting doctor document:', error);
         throw new Error(`Failed to delete document: ${error.message}`);
       }
-
       return { message: 'Document deleted successfully', path: filePath };
-
     } catch (error) {
       console.error('Failed to delete doctor document:', error);
       throw error;
@@ -160,45 +159,42 @@ class SupabaseStorageService {
    */
   async ensureBucketExists() {
     try {
+      // Ensure both buckets exist
       const { data: buckets, error } = await this.supabase.storage.listBuckets();
-      
       if (error) {
         console.error('Error listing buckets:', error);
         return;
       }
-      
-      const bucketExists = buckets.some(bucket => bucket.name === this.bucketName);
-      
-      if (!bucketExists) {
-        await this.createBucket();
-      } else {
-        console.log(`✅ Supabase bucket '${this.bucketName}' exists`);
+      const bucketsToCheck = [this.verificationDocsBucket, this.medicalRecordsBucket];
+      for (const bucketName of bucketsToCheck) {
+        const bucketExists = buckets.some(bucket => bucket.name === bucketName);
+        if (!bucketExists) {
+          await this.createBucket(bucketName);
+        } else {
+          console.log(`✅ Supabase bucket '${bucketName}' exists`);
+        }
       }
-      
     } catch (error) {
-      console.error('Error checking Supabase bucket:', error);
+      console.error('Error checking Supabase buckets:', error);
     }
   }
   
   /**
    * Create Supabase storage bucket
    */
-  async createBucket() {
+  async createBucket(bucketName) {
     try {
-      const { data, error } = await this.supabase.storage.createBucket(this.bucketName, {
+      const { data, error } = await this.supabase.storage.createBucket(bucketName, {
         public: false, // Private bucket - requires authentication
         fileSizeLimit: 52428800, // 50MB limit per file
         allowedMimeTypes: ['application/json', 'text/markdown', 'text/plain']
       });
-      
       if (error) {
         console.error('Error creating bucket:', error);
         throw error;
       }
-      
-      console.log(`✅ Created Supabase bucket '${this.bucketName}'`);
+      console.log(`✅ Created Supabase bucket '${bucketName}'`);
       return data;
-      
     } catch (error) {
       console.error('Error in createBucket:', error);
       throw error;
@@ -284,28 +280,19 @@ class SupabaseStorageService {
    * @returns {Object} Backup result with storage path and metadata
    */
   async backupRecord(record, version, patient, triggeredBy) {
-    // Ensure client is initialized (in case env vars loaded after import)
     if (!this.initialized) {
       this.initializeClient();
     }
-    
     if (!this.backupEnabled) {
       console.log('⏭️ Supabase backup is disabled');
       return null;
     }
-    
     const startTime = Date.now();
-    
     try {
-      // Validate inputs
       if (!patient || !patient.name || !patient.uuid) {
         throw new Error('Patient information (name and uuid) is required for backup');
       }
-      
-      // Ensure user folder structure exists
       await this.ensureUserFolderExists(patient.name, patient.uuid);
-      
-      // Create backup object with full metadata
       const backupData = {
         backup: {
           timestamp: new Date().toISOString(),
@@ -345,27 +332,20 @@ class SupabaseStorageService {
           approvedAt: version.approvedAt
         }
       };
-      
-      // Convert to JSON
       const backupJson = JSON.stringify(backupData, null, 2);
       const backupBuffer = Buffer.from(backupJson, 'utf-8');
-      
-      // Generate backup path with user folder
       const backupPath = this.generateBackupPath(
         patient.name,
         patient.uuid,
         record.recordId,
         version.versionNumber
       );
-      
       console.log(`📤 Uploading backup to: ${backupPath}`);
-      
-      // Upload to Supabase Storage
       const { data, error } = await this.supabase.storage
-        .from(this.bucketName)
+        .from(this.medicalRecordsBucket)
         .upload(backupPath, backupBuffer, {
           contentType: 'application/json',
-          upsert: false, // Don't overwrite if exists
+          upsert: false,
           metadata: {
             recordId: record.recordId,
             versionNumber: version.versionNumber.toString(),
@@ -376,24 +356,20 @@ class SupabaseStorageService {
             originalSize: version.contentSize.toString()
           }
         });
-      
       if (error) {
         console.error('❌ Supabase upload error:', error);
         throw error;
       }
-      
       const duration = Date.now() - startTime;
-      
       console.log(`✅ Backup uploaded successfully in ${duration}ms`);
       console.log(`   Path: ${backupPath}`);
       console.log(`   Size: ${backupBuffer.length} bytes`);
-      
       return {
         success: true,
         storagePath: data.path,
         storageId: data.id,
         storageProvider: 'supabase',
-        bucket: this.bucketName,
+        bucket: this.medicalRecordsBucket,
         userFolder: this.generateUserFolderPath(patient.name, patient.uuid),
         sizeBytes: backupBuffer.length,
         uploadDuration: duration,
@@ -404,11 +380,9 @@ class SupabaseStorageService {
           contentHash: version.contentHash
         }
       };
-      
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`❌ Backup failed after ${duration}ms:`, error);
-      
       return {
         success: false,
         error: error.message,

@@ -61,25 +61,25 @@ export const getAllVerifications = async (req, res) => {
 }
 export const updateVerificationStatus = async (req, res) => {
     const { doctorId } = req.params; // doctor ID from route
-  const updates = req.body;         // fields to update
+    const updates = req.body;         // fields to update
 
-  try {
-    // Find the document by doctorId and update
-    const updatedCertificate = await DoctorCertificate.findOneAndUpdate(
-      { doctorId },
-      { $set: updates },
-      { new: true, runValidators: true } // return updated doc
-    );
+    try {
+        // Find the document by doctorId and update
+        const updatedCertificate = await adminVerificationSchema.findOneAndUpdate(
+            { doctorId },
+            { $set: updates },
+            { new: true, runValidators: true } // return updated doc
+        );
 
-    if (!updatedCertificate) {
-      return res.status(404).json({ message: "Doctor certificate not found" });
+        if (!updatedCertificate) {
+            return res.status(404).json({ message: "Doctor certificate not found" });
+        }
+
+        res.status(200).json(updatedCertificate);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error updating certificate", error });
     }
-
-    res.status(200).json(updatedCertificate);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error updating certificate", error });
-  }
 }
 
 // Upload doctor verification document
@@ -130,13 +130,9 @@ export const getVerificationByDoctorId = async (req, res) => {
       return res.status(400).json({ message: "Doctor ID is required" });
     }
 
-    const verification = await adminVerificationSchema.find({"doctorId":doctorId});
-
-    if (!verification) {
-      
+    const verification = await adminVerificationSchema.find({ doctorId });
+    if (!verification || verification.length === 0) {
       return res.status(404).json({ message: "Verification not found" });
-
-
     }
     res.status(200).json(verification);
   } catch (error) {

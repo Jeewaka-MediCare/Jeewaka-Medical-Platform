@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { auth } from '../components/firebase';
+import { auth } from '../services/firebase';
 import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import api from '../services/api';
 

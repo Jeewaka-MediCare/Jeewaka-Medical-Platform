@@ -37,7 +37,7 @@ adminVerificationRouter.get('/:doctorId',
 // Update verification status (admin only - approve/reject doctors)
 adminVerificationRouter.put('/:doctorId', 
   authMiddleware, 
-  requireRole(['admin']), 
+  requireRole(['doctor', 'admin']), 
   updateVerificationStatus
 );
 
