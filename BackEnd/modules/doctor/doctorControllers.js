@@ -1,11 +1,14 @@
 import Doctor from './doctorModel.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { generateVertexEmbedding } from '../../utils/vertexAI.js';
+import { registrationEmail } from '../email/templates/registrationEmail.js';
+import { sendEmail } from '../email/emailService.js';
 
 import Session from '../session/sessionModel.js';
 import Rating from '../ratings/ratingModel.js';
 import mongoose from 'mongoose';
 import adminVerificationSchema from '../doctorCertificates/doctorCertificateModel.js';
+import { sendRegistrationEmail } from '../email/emailService.js';
 
 
 // Initialize Gemini AI
@@ -18,6 +21,7 @@ export const createDoctor = async (req, res) => {
   try {
     const data = req.body;
 
+    const { email, name } = Array.isArray(data) ? data[0] : data;
     // Check if the request body is an array or single object
     if (Array.isArray(data)) {
       // Insert multiple doctors
@@ -31,6 +35,14 @@ export const createDoctor = async (req, res) => {
       // Insert a single doctor
       const newDoctor = new Doctor(data);
       const savedDoctor = await newDoctor.save();
+      const email = savedDoctor.email;
+      const name = savedDoctor.name;
+      try {
+        await sendRegistrationEmail(savedDoctor.email, savedDoctor.name, 'doctor');
+      } catch (emailError) {
+        console.error('⚠️ Doctor created but failed to send email:', emailError.message);
+      }
+
       return res.status(201).json({
         message: "Doctor inserted successfully.",
         doctor: savedDoctor
