@@ -13,13 +13,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import useAuthStore from '../../store/authStore';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isSameDay, isWithinInterval } from 'date-fns';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
 import VideoCallButton from '../../components/VideoCallButton';
 import DoctorSessionContent from '../../components/DoctorSessionContent';
 import PaymentDetailsModal from '../../components/PaymentDetailsModal';
 import paymentService from '../../services/paymentService';
+import AppointmentFilters from '../../components/AppointmentFilters';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
@@ -35,11 +36,15 @@ export default function Appointments() {
   
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [pastAppointments, setPastAppointments] = useState([]);
+  const [filteredUpcomingAppointments, setFilteredUpcomingAppointments] = useState([]);
+  const [filteredPastAppointments, setFilteredPastAppointments] = useState([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [loadingPaymentId, setLoadingPaymentId] = useState(null);
+  const [currentFilters, setCurrentFilters] = useState({});
+  const [availableHospitals, setAvailableHospitals] = useState([]);
 
   // Fetch patient appointments
   const fetchAppointments = async () => {
@@ -153,6 +158,19 @@ export default function Appointments() {
       
       setUpcomingAppointments(sortedUpcoming);
       setPastAppointments(sortedPast);
+      
+      // Extract unique hospitals for filter dropdown - only from in-person appointments
+      const hospitals = [...new Set(appointments
+        .filter(apt => {
+          // Check if appointment is in-person using multiple criteria
+          const isInPerson = apt.type === 'in-person' || 
+                            (apt.hospital && apt.hospital.name);
+          return isInPerson && apt.hospital?.name;
+        })
+        .map(apt => apt.hospital.name)
+      )];
+      setAvailableHospitals(hospitals);
+      
     } catch (error) {
       console.error('Error fetching appointments:', error);
       Alert.alert('Error', 'Failed to load appointments');
@@ -161,6 +179,108 @@ export default function Appointments() {
       setRefreshing(false);
     }
   };
+
+  // Filter appointments based on current filters
+  const filterAppointments = (appointments, filters) => {
+    return appointments.filter(appointment => {
+      // Doctor name filter
+      if (filters.doctorName && filters.doctorName.trim()) {
+        const doctorName = appointment.doctor?.name?.toLowerCase() || '';
+        if (!doctorName.includes(filters.doctorName.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Hospital name filter (only for in-person appointments)
+      if (filters.hospitalName && filters.hospitalName.trim()) {
+        const hospitalName = appointment.hospital?.name?.toLowerCase() || '';
+        if (!hospitalName.includes(filters.hospitalName.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Appointment type filter
+      if (filters.appointmentType) {
+        // Check both the type field and hospital presence for better accuracy
+        const isInPerson = appointment.type === 'in-person' || 
+                          (appointment.hospital && appointment.hospital.name);
+        const isVideo = appointment.type === 'video' || 
+                       appointment.type === 'online' || 
+                       (!appointment.hospital || !appointment.hospital.name);
+        
+        if (filters.appointmentType === 'in-person' && !isInPerson) {
+          return false;
+        }
+        if (filters.appointmentType === 'video' && !isVideo) {
+          return false;
+        }
+      }
+
+      // Date filter
+      if (filters.selectedDate) {
+        try {
+          const appointmentDate = parseISO(appointment.date.split('T')[0]);
+          const filterDate = new Date(filters.selectedDate);
+          
+          // Normalize both dates to compare only the date part
+          appointmentDate.setHours(0, 0, 0, 0);
+          filterDate.setHours(0, 0, 0, 0);
+          
+          if (appointmentDate.getTime() !== filterDate.getTime()) {
+            return false;
+          }
+        } catch (error) {
+          console.error('Error filtering by date:', error);
+          return false;
+        }
+      }
+
+      // Date range filter
+      if (filters.startDate && filters.endDate) {
+        try {
+          const appointmentDate = parseISO(appointment.date.split('T')[0]);
+          
+          // Normalize dates to start of day for accurate comparison
+          const startDate = new Date(filters.startDate);
+          startDate.setHours(0, 0, 0, 0);
+          
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999); // End of day to include the end date
+          
+          const normalizedAppointmentDate = new Date(appointmentDate);
+          normalizedAppointmentDate.setHours(12, 0, 0, 0); // Noon to avoid timezone issues
+          
+          if (normalizedAppointmentDate < startDate || normalizedAppointmentDate > endDate) {
+            return false;
+          }
+        } catch (error) {
+          console.error('Error filtering by date range:', error);
+          return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  // Handle filter changes
+  const handleFiltersChange = (filters) => {
+    setCurrentFilters(filters);
+    setFilteredUpcomingAppointments(filterAppointments(upcomingAppointments, filters));
+    setFilteredPastAppointments(filterAppointments(pastAppointments, filters));
+  };
+
+  // Handle section change from filters (when date filter changes section)
+  const handleSectionChange = (section) => {
+    const newIndex = section === 'upcoming' ? 0 : 1;
+    setIndex(newIndex);
+  };
+
+  // Update filtered appointments when original appointments change
+  useEffect(() => {
+    setFilteredUpcomingAppointments(filterAppointments(upcomingAppointments, currentFilters));
+    setFilteredPastAppointments(filterAppointments(pastAppointments, currentFilters));
+  }, [upcomingAppointments, pastAppointments, currentFilters]);
 
   // Handle refresh
   const onRefresh = () => {
@@ -390,8 +510,8 @@ export default function Appointments() {
         />
       }
     >
-      {upcomingAppointments.length > 0 ? (
-        upcomingAppointments.map((appointment) => {
+      {filteredUpcomingAppointments.length > 0 ? (
+        filteredUpcomingAppointments.map((appointment) => {
           const isOngoing = isAppointmentOngoing(appointment);
           
           return (
@@ -489,16 +609,29 @@ export default function Appointments() {
       ) : (
         <View style={styles.emptyState}>
           <Ionicons name="calendar-outline" size={64} color="#94A3B8" />
-          <Text style={styles.emptyTitle}>No Upcoming Appointments</Text>
-          <Text style={styles.emptyText}>
-            You don't have any upcoming appointments. Book a consultation with a doctor.
+          <Text style={styles.emptyTitle}>
+            {Object.keys(currentFilters).some(key => 
+              currentFilters[key] && currentFilters[key] !== ''
+            ) ? 'No Matching Appointments' : 'No Upcoming Appointments'}
           </Text>
-          <TouchableOpacity
-            style={styles.emptyActionButton}
-            onPress={() => router.push('/')}
-          >
-            <Text style={styles.emptyActionText}>Find Doctors</Text>
-          </TouchableOpacity>
+          <Text style={styles.emptyText}>
+            {Object.keys(currentFilters).some(key => 
+              currentFilters[key] && currentFilters[key] !== ''
+            ) 
+              ? 'No appointments match your current filters. Try adjusting your search criteria.'
+              : 'You don\'t have any upcoming appointments. Book a consultation with a doctor.'
+            }
+          </Text>
+          {!Object.keys(currentFilters).some(key => 
+            currentFilters[key] && currentFilters[key] !== ''
+          ) && (
+            <TouchableOpacity
+              style={styles.emptyActionButton}
+              onPress={() => router.push('/')}
+            >
+              <Text style={styles.emptyActionText}>Find Doctors</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </ScrollView>
@@ -515,8 +648,8 @@ export default function Appointments() {
         />
       }
     >
-      {pastAppointments.length > 0 ? (
-        pastAppointments.map((appointment) => (
+      {filteredPastAppointments.length > 0 ? (
+        filteredPastAppointments.map((appointment) => (
           <View key={appointment._id} style={styles.appointmentCard}>
             <View style={styles.cardHeader}>
               <Text style={styles.appointmentDate}>
@@ -591,9 +724,18 @@ export default function Appointments() {
       ) : (
         <View style={styles.emptyState}>
           <Ionicons name="document-text-outline" size={64} color="#94A3B8" />
-          <Text style={styles.emptyTitle}>No Past Appointments</Text>
+          <Text style={styles.emptyTitle}>
+            {Object.keys(currentFilters).some(key => 
+              currentFilters[key] && currentFilters[key] !== ''
+            ) ? 'No Matching Appointments' : 'No Past Appointments'}
+          </Text>
           <Text style={styles.emptyText}>
-            You don't have any past appointments. Once you complete a consultation, it will appear here.
+            {Object.keys(currentFilters).some(key => 
+              currentFilters[key] && currentFilters[key] !== ''
+            ) 
+              ? 'No past appointments match your current filters. Try adjusting your search criteria.'
+              : 'You don\'t have any past appointments. Once you complete a consultation, it will appear here.'
+            }
           </Text>
         </View>
       )}
@@ -632,6 +774,14 @@ export default function Appointments() {
           },
           headerTintColor: 'white',
         }}
+      />
+      
+      {/* Appointment Filters */}
+      <AppointmentFilters
+        onFiltersChange={handleFiltersChange}
+        onSectionChange={handleSectionChange}
+        currentSection={index === 0 ? 'upcoming' : 'past'}
+        hospitals={availableHospitals}
       />
       
       <TabView

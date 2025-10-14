@@ -14,13 +14,17 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format, isWithinInterval, isSameDay } from 'date-fns';
 import useAuthStore from '../store/authStore';
 import paymentService from '../services/paymentService';
 import PaymentDetailsModal from '../components/PaymentDetailsModal';
+import pdfExportService from '../services/pdfExportService';
 
 export default function PaymentHistory() {
   const { user, userRole } = useAuthStore();
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -32,13 +36,37 @@ export default function PaymentHistory() {
   const [successfulPayments, setSuccessfulPayments] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  
+  // Date filter states
+  const [showDateFilterModal, setShowDateFilterModal] = useState(false);
+  const [dateFilterType, setDateFilterType] = useState('single'); // 'single' or 'range'
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [showSingleDatePicker, setShowSingleDatePicker] = useState(false);
+
+  // Component mount effect
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
 
   // Load payment history on component mount
   useEffect(() => {
-    if (user && userRole === 'patient') {
+    if (isMounted && user && userRole === 'patient') {
       loadPaymentHistory();
     }
-  }, [user, userRole]);
+  }, [isMounted, user, userRole]);
+
+  // Reload payment history when date filters change
+  useEffect(() => {
+    if (isMounted && user && userRole === 'patient') {
+      loadPaymentHistory();
+    }
+  }, [isMounted, selectedDate, startDate, endDate, dateFilterType]);
 
   // Load payment history with filters
   const loadPaymentHistory = async (filters = {}) => {
@@ -59,11 +87,78 @@ export default function PaymentHistory() {
       
       if (response.success) {
         console.log('Payment history loaded successfully:', response.payments);
-        setPayments(response.payments || []);
-        setTotalPayments(response.payments?.length || 0);
         
-        // Calculate statistics
-        const successful = response.payments?.filter(p => p.status === 'succeeded') || [];
+        // Apply date filtering on client side
+        let filteredPayments = response.payments || [];
+        
+        if (selectedDate && dateFilterType === 'single') {
+          console.log('Applying single date filter:', {
+            selectedDate: selectedDate.toISOString(),
+            totalPayments: filteredPayments.length
+          });
+          
+          filteredPayments = filteredPayments.filter(payment => {
+            const paymentDate = new Date(payment.date || payment.created);
+            const isMatching = isSameDay(paymentDate, selectedDate);
+            
+            if (isMatching) {
+              console.log('Payment matches single date:', {
+                paymentId: payment.id,
+                paymentDate: paymentDate.toISOString()
+              });
+            }
+            
+            return isMatching;
+          });
+          
+          console.log('Single date filter applied:', {
+            filteredCount: filteredPayments.length,
+            selectedDate: selectedDate.toDateString()
+          });
+        } else if (startDate && endDate && dateFilterType === 'range') {
+          console.log('Applying date range filter:', {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            totalPayments: filteredPayments.length
+          });
+          
+          filteredPayments = filteredPayments.filter(payment => {
+            const paymentDate = new Date(payment.date || payment.created);
+            
+            // Create normalized dates for comparison
+            const paymentDateOnly = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), paymentDate.getDate());
+            const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+            const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+            
+            // Check if payment date is within the inclusive range (includes both start and end dates)
+            const isInRange = paymentDateOnly >= startDateOnly && paymentDateOnly <= endDateOnly;
+            
+            if (isInRange) {
+              console.log('Payment included in range:', {
+                paymentId: payment.id,
+                paymentDate: paymentDate.toDateString(),
+                paymentDateOnly: paymentDateOnly.toDateString(),
+                startDate: startDateOnly.toDateString(),
+                endDate: endDateOnly.toDateString()
+              });
+            }
+            
+            return isInRange;
+          });
+          
+          console.log('Date range filter applied:', {
+            filteredCount: filteredPayments.length,
+            startDate: startDate.toDateString(),
+            endDate: endDate.toDateString(),
+            isInclusive: 'Both start and end dates are included'
+          });
+        }
+        
+        setPayments(filteredPayments);
+        setTotalPayments(filteredPayments.length);
+        
+        // Calculate statistics from filtered payments
+        const successful = filteredPayments.filter(p => p.status === 'succeeded') || [];
         setSuccessfulPayments(successful.length);
         
         const total = successful.reduce((sum, payment) => {
@@ -163,6 +258,48 @@ export default function PaymentHistory() {
     setShowPaymentDetails(true);
   };
 
+  // Clear date filter
+  const clearDateFilter = () => {
+    setSelectedDate(null);
+    setStartDate(null);
+    setEndDate(null);
+    setDateFilterType('single');
+    setShowDateFilterModal(false);
+  };
+
+  // Export payments to PDF (same logic as frontend)
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      
+      if (!payments || payments.length === 0) {
+        Alert.alert('No Data', 'No payment history available to export.');
+        return;
+      }
+      // Calculate stats (same as frontend)
+      const stats = {
+        total: payments.length,
+        successful: payments.filter(p => p.status === 'succeeded').length,
+        pending: payments.filter(p => p.status === 'pending').length,
+        failed: payments.filter(p => p.status === 'failed').length,
+        totalAmount: payments.filter(p => p.status === 'succeeded').reduce((sum, p) => sum + (typeof p.amount === 'number' ? p.amount / 100 : 0), 0)
+      };
+      await pdfExportService.exportPaymentsPDF(
+        payments,
+        stats,
+        user,
+        {
+          searchTerm: searchText,
+          statusFilter
+        }
+      );
+    } catch (error) {
+      Alert.alert('Export Failed', 'Failed to export payment history. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Render simplified payment item
   const renderPaymentItem = (payment, index) => (
     <View
@@ -197,6 +334,16 @@ export default function PaymentHistory() {
   );
 
   // Show loading or authentication required
+  if (!isMounted) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#008080" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (!user || userRole !== 'patient') {
     return (
       <SafeAreaView style={styles.container}>
@@ -250,33 +397,66 @@ export default function PaymentHistory() {
         </View>
       </View>
 
-      {/* Search and Filter */}
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Ionicons name="search-outline" size={20} color="#6B7280" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by doctor name, payment ID, amount, or status..."
+            placeholder="Enter doctor name, payment ID or amount"
             value={searchText}
             onChangeText={setSearchText}
             onSubmitEditing={handleSearch}
             placeholderTextColor="#94A3B8"
           />
         </View>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowFilterModal(true)}
-        >
-          <Ionicons name="filter-outline" size={20} color="#1E293B" />
-        </TouchableOpacity>
       </View>
 
-      {/* Export Button */}
-      <View style={styles.exportContainer}>
-        <TouchableOpacity style={styles.exportButton}>
-          <Ionicons name="download-outline" size={16} color="#008080" />
-          <Text style={styles.exportText}>Export</Text>
-        </TouchableOpacity>
+      {/* Date Filter Active Indicator */}
+      {(selectedDate || (startDate && endDate)) && (
+        <View style={styles.activeFilterContainer}>
+          <Text style={styles.activeFilterText}>
+            {dateFilterType === 'single' 
+              ? `Filtered by: ${format(selectedDate, 'MMM d, yyyy')}` 
+              : `Filtered by: ${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`
+            }
+          </Text>
+          <TouchableOpacity onPress={clearDateFilter} style={styles.clearFilterButton}>
+            <Ionicons name="close-circle" size={18} color="#666" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Filter, Calendar and Export Buttons */}
+      <View style={styles.actionButtonsContainer}>
+          <View style={styles.filterCalendarContainer}>
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={() => setShowFilterModal(true)}
+            >
+              <Ionicons name="filter-outline" size={20} color="#1E293B" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.calendarButton}
+              onPress={() => setShowDateFilterModal(true)}
+            >
+              <Ionicons name="calendar-outline" size={20} color="#4A90E2" />
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={[styles.exportButton, isExporting && styles.disabledButton]}
+            onPress={handleExportPDF}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <ActivityIndicator size="small" color="#008080" />
+            ) : (
+              <Ionicons name="download-outline" size={16} color="#008080" />
+            )}
+            <Text style={styles.exportText}>
+              {isExporting ? 'Exporting...' : 'Export'}
+            </Text>
+          </TouchableOpacity>
       </View>
 
       {/* Payment List */}
@@ -361,6 +541,158 @@ export default function PaymentHistory() {
           </View>
         </View>
       </Modal>
+
+      {/* Date Filter Modal */}
+      <Modal
+        visible={showDateFilterModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowDateFilterModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filter by Date</Text>
+              <TouchableOpacity onPress={() => setShowDateFilterModal(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.filterOptions}>
+              <Text style={styles.filterLabel}>Filter Type</Text>
+              
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  dateFilterType === 'single' && styles.filterOptionActive
+                ]}
+                onPress={() => setDateFilterType('single')}
+              >
+                <Text style={[
+                  styles.filterOptionText,
+                  dateFilterType === 'single' && styles.filterOptionTextActive
+                ]}>
+                  Single Date
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  dateFilterType === 'range' && styles.filterOptionActive
+                ]}
+                onPress={() => setDateFilterType('range')}
+              >
+                <Text style={[
+                  styles.filterOptionText,
+                  dateFilterType === 'range' && styles.filterOptionTextActive
+                ]}>
+                  Date Range
+                </Text>
+              </TouchableOpacity>
+
+              {dateFilterType === 'single' && (
+                <View style={styles.datePickerSection}>
+                  <Text style={styles.datePickerLabel}>Select Date:</Text>
+                  <TouchableOpacity
+                    style={styles.dateButton}
+                    onPress={() => setShowSingleDatePicker(true)}
+                  >
+                    <Text style={styles.dateButtonText}>
+                      {selectedDate ? format(selectedDate, 'MMM d, yyyy') : 'Choose Date'}
+                    </Text>
+                    <Ionicons name="calendar-outline" size={16} color="#4A90E2" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {dateFilterType === 'range' && (
+                <View style={styles.datePickerSection}>
+                  <Text style={styles.datePickerLabel}>Start Date:</Text>
+                  <TouchableOpacity
+                    style={styles.dateButton}
+                    onPress={() => setShowStartDatePicker(true)}
+                  >
+                    <Text style={styles.dateButtonText}>
+                      {startDate ? format(startDate, 'MMM d, yyyy') : 'Choose Start Date'}
+                    </Text>
+                    <Ionicons name="calendar-outline" size={16} color="#4A90E2" />
+                  </TouchableOpacity>
+
+                  <Text style={styles.datePickerLabel}>End Date:</Text>
+                  <TouchableOpacity
+                    style={styles.dateButton}
+                    onPress={() => setShowEndDatePicker(true)}
+                  >
+                    <Text style={styles.dateButtonText}>
+                      {endDate ? format(endDate, 'MMM d, yyyy') : 'Choose End Date'}
+                    </Text>
+                    <Ionicons name="calendar-outline" size={16} color="#4A90E2" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <View style={styles.dateFilterActions}>
+                <TouchableOpacity
+                  style={styles.clearButton}
+                  onPress={clearDateFilter}
+                >
+                  <Text style={styles.clearButtonText}>Clear Filter</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.applyButton}
+                  onPress={() => setShowDateFilterModal(false)}
+                >
+                  <Text style={styles.applyButtonText}>Apply Filter</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Date Pickers */}
+      {showSingleDatePicker && (
+        <DateTimePicker
+          value={selectedDate || new Date()}
+          mode="date"
+          display="default"
+          onChange={(event, date) => {
+            setShowSingleDatePicker(false);
+            if (date) {
+              setSelectedDate(date);
+            }
+          }}
+        />
+      )}
+
+      {showStartDatePicker && (
+        <DateTimePicker
+          value={startDate || new Date()}
+          mode="date"
+          display="default"
+          onChange={(event, date) => {
+            setShowStartDatePicker(false);
+            if (date) {
+              setStartDate(date);
+            }
+          }}
+        />
+      )}
+
+      {showEndDatePicker && (
+        <DateTimePicker
+          value={endDate || new Date()}
+          mode="date"
+          display="default"
+          onChange={(event, date) => {
+            setShowEndDatePicker(false);
+            if (date) {
+              setEndDate(date);
+            }
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -420,14 +752,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginHorizontal: 16,
     marginBottom: 8,
-    gap: 8,
   },
   searchInputContainer: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'white',
@@ -456,10 +784,103 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  exportContainer: {
-    alignItems: 'flex-end',
+  calendarButton: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 8,
+    marginLeft: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginHorizontal: 16,
     marginBottom: 16,
+  },
+  filterCalendarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  activeFilterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E0F2FE',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4A90E2',
+  },
+  activeFilterText: {
+    color: '#1E293B',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  clearFilterButton: {
+    padding: 4,
+  },
+  datePickerSection: {
+    marginTop: 16,
+  },
+  datePickerLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  dateButtonText: {
+    color: '#374151',
+    fontSize: 14,
+  },
+  dateFilterActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+    gap: 12,
+  },
+  clearButton: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  applyButton: {
+    flex: 1,
+    backgroundColor: '#4A90E2',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
   },
   exportButton: {
     flexDirection: 'row',
@@ -471,6 +892,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#008080',
     gap: 4,
+  },
+  disabledButton: {
+    opacity: 0.6,
+    backgroundColor: '#F3F4F6',
+    borderColor: '#D1D5DB',
   },
   exportText: {
     color: '#008080',

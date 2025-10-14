@@ -17,9 +17,6 @@ export const DoctorCard = ({
 }) => {
   const router = useRouter();
   
-  // Debug logging
-  console.log(`DoctorCard ${name}: avgRating=${avgRating}, totalReviews=${totalReviews}, ratingSummary=`, ratingSummary);
-  
   // Extract additional data from doctor object
   const yearsOfExperience = doctor?.yearsOfExperience || 0;
   const qualifications = doctor?.qualifications || [];
@@ -32,13 +29,30 @@ export const DoctorCard = ({
   const displayReviews = totalReviews || ratingSummary?.totalReviews || 0;
   
   const handlePress = () => {
+    // Validate that we have required data before navigation
+    if (!id) {
+      console.error('DoctorCard: No doctor ID provided');
+      return;
+    }
+    
     router.push({
       pathname: `/doctor/${id}`,
       params: {
         doctorData: JSON.stringify({
-          doctor,
-          ratingSummary,
-          sessions
+          doctor: doctor || {
+            _id: id,
+            name,
+            specialization,
+            profile,
+            consultationFee,
+            avgRating: displayRating,
+            totalReviews: displayReviews
+          },
+          ratingSummary: ratingSummary || {
+            avgRating: displayRating,
+            totalReviews: displayReviews
+          },
+          sessions: sessions || []
         })
       }
     });
