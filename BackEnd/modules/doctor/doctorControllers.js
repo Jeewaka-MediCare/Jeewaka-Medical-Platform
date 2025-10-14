@@ -149,12 +149,12 @@ export const searchDoctors = async (req, res) => {
       searchQuery.gender = { $regex: gender, $options: "i" };
     }
 
+    // Pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
     // Sorting configuration
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
-
-    // Pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Execute search query
     const doctors = await Doctor.find(searchQuery)
@@ -563,9 +563,14 @@ function basicKeywordFallback(query) {
 
 // Get AI search suggestions (optional endpoint for autocomplete)
 export const getAISearchSuggestions = async (req, res) => {
-  try {
-    const { partialQuery } = req.query;
+  const { partialQuery } = req.query;
 
+  console.log("🔍 AI Search Suggestions Request:", {
+    partialQuery,
+    queryParams: req.query,
+  });
+
+  try {
     if (!partialQuery || partialQuery.length < 2) {
       return res.json({
         success: true,
@@ -574,7 +579,6 @@ export const getAISearchSuggestions = async (req, res) => {
         },
       });
     }
-
     const prompt = `
 Based on the partial search query "${partialQuery}", suggest 3-5 complete search phrases that patients might be looking for when searching for doctors.
 

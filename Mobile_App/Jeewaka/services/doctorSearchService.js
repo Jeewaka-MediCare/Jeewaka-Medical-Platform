@@ -183,45 +183,22 @@ export class DoctorSearchService {
    */
   static async getAllDoctors() {
     try {
-      const response = await api.get("/api/doctor");
-      const doctors = response.data || [];
+      // Use the doctorCard endpoint to get properly structured doctor data
+      const response = await api.get("/api/doctorCard");
+      const doctorCards = response.data || [];
 
-      // Fetch rating data for each doctor
-      const doctorsWithRatings = await Promise.all(
-        doctors.map(async (doctor) => {
-          try {
-            const ratingResponse = await api.get(
-              `/api/ratings/doctor/${doctor._id}/average`
-            );
-            return {
-              ...doctor,
-              avgRating: ratingResponse.data.avgRating || 0,
-              totalReviews: ratingResponse.data.totalReviews || 0,
-              ratingSummary: {
-                avgRating: ratingResponse.data.avgRating || 0,
-                totalReviews: ratingResponse.data.totalReviews || 0,
-              },
-              sessions: [],
-            };
-          } catch (error) {
-            console.error(
-              `Error fetching rating for doctor ${doctor._id}:`,
-              error
-            );
-            return {
-              ...doctor,
-              avgRating: 0,
-              totalReviews: 0,
-              ratingSummary: { avgRating: 0, totalReviews: 0 },
-              sessions: [],
-            };
-          }
-        })
-      );
+      // Transform doctor cards to the expected format
+      const transformedDoctors = doctorCards.map((card) => ({
+        ...card.doctor,
+        avgRating: card.ratingSummary?.avgRating || 0,
+        totalReviews: card.ratingSummary?.totalReviews || 0,
+        ratingSummary: card.ratingSummary || { avgRating: 0, totalReviews: 0 },
+        sessions: card.sessions || [],
+      }));
 
       return {
         success: true,
-        doctors: doctorsWithRatings,
+        doctors: transformedDoctors,
       };
     } catch (error) {
       console.error("Get all doctors error:", error);
