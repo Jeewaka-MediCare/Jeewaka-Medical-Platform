@@ -2,6 +2,8 @@ import adminVerificationSchema from "./doctorCertificateModel.js";
 import storageService from "../../services/supabaseStorageService.js";
 import multer from "multer";
 import path from "path";
+import { doctorVerificationEmail } from "../email/templates/adminVerificationEmail.js";
+import Doctor from "../doctor/doctorModel.js";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -92,6 +94,14 @@ res.status(200).json(verifications);
 export const updateVerificationStatus = async (req, res) => {
   const { doctorId } = req.params; // doctor ID from route
   const updates = req.body; // fields to update
+  const { isVerified, commentFromAdmin } = updates;
+  const doctor = await Doctor.findById(doctorId);
+
+  const name = doctor ? doctor.name : "Doctor";
+  const email = doctor ? doctor.email : null;
+  
+ 
+
 
   try {
     // Find the document by doctorId and update
@@ -103,7 +113,18 @@ export const updateVerificationStatus = async (req, res) => {
 
     if (!updatedCertificate) {
       return res.status(404).json({ message: "Doctor certificate not found" });
+
     }
+    // Send email notification to doctor about status change
+    if(email){
+      try {
+         doctorVerificationEmail(email, name, isVerified, commentFromAdmin);
+      }
+      catch(emailError){
+        console.error('⚠️ Verification updated but failed to send email:', emailError.message);
+      }
+    }
+
 
     res.status(200).json({message: "Verification status updated successfully"});
   } catch (error) {
