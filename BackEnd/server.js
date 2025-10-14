@@ -16,7 +16,6 @@ import paymentsRouter from "./modules/payments/paymentsRoutes.js";
 import financeRouter from "./modules/finance/financeRoutes.js";
 import medicalRecordsRouter from "./modules/records/recordsRoutes.js";
 
-
 // Load environment variables
 dotenv.config();
 
@@ -30,6 +29,18 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Register doctor routes
 app.use("/api/doctor", doctorRoutes);
+
+// Register auth routes
+app.use("/api/auth", authRoutes);
+
+// Register hospital routes
+app.use("/api/hospital", hospitalRouter);
+
+// Register session routes
+app.use("/api/session", sessionRouter);
+
+// Register patient routes
+app.use("/api/patient", patientRouter);
 
 // Register payments routes
 app.use("/api/payments", paymentsRouter);
