@@ -315,6 +315,18 @@ export default function Appointments() {
     }
   };
 
+  // Helper function to check if appointment is today
+  const isAppointmentToday = (appointment) => {
+    try {
+      const today = new Date();
+      const appointmentDate = parseISO(appointment.date);
+      return isSameDay(today, appointmentDate);
+    } catch (error) {
+      console.error('Error checking if appointment is today:', error);
+      return false;
+    }
+  };
+
   // Handle view doctor profile
   const handleViewDoctor = (doctorId) => {
     router.push(`/doctor/${doctorId}`);
@@ -889,6 +901,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
     borderColor: '#F59E0B',
     borderWidth: 2,
+  },
+  todayAppointmentCard: {
+    backgroundColor: '#E6FFFA', // Very light teal
+    borderColor: '#008080',
+    borderWidth: 1,
   },
   cardHeader: {
     flexDirection: 'row',

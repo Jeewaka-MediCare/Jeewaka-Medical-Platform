@@ -91,6 +91,81 @@ class PDFExportService {
   }
 
   /**
+   * Export doctor earnings to PDF (Doctor perspective)
+   * @param {Array} earnings - Array of earning objects
+   * @param {Object} stats - Earnings statistics
+   * @param {Object} user - Doctor information
+   * @param {Object} filters - Applied filters (search, dateRange)
+   */
+  async exportDoctorEarningsPDF(earnings, stats, user, filters = {}) {
+    try {
+      console.log(
+        "🚀 Starting Doctor Earnings PDF export for React Native (Expo)..."
+      );
+
+      if (!earnings || earnings.length === 0) {
+        throw new Error("No earnings data available to export");
+      }
+
+      // Generate HTML content for earnings report
+      const htmlContent = this._generateDoctorEarningsHTML(
+        earnings,
+        stats,
+        user,
+        filters
+      );
+
+      // Generate filename
+      const timestamp = new Date().toISOString().split("T")[0];
+      const filename = `jeewaka-doctor-earnings-${timestamp}.pdf`;
+
+      // Create PDF using Expo Print
+      const { uri } = await Print.printToFileAsync({
+        html: htmlContent,
+        base64: false,
+      });
+
+      console.log("✅ Doctor Earnings PDF generated successfully:", uri);
+
+      // Check if sharing is available
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Export Doctor Earnings",
+          UTI: "com.adobe.pdf",
+        });
+
+        return {
+          success: true,
+          filePath: uri,
+          filename: filename,
+          message: "Doctor earnings exported successfully",
+        };
+      } else {
+        Alert.alert(
+          "Export Complete",
+          `Doctor earnings PDF generated successfully.\nFile saved to: ${uri}`,
+          [{ text: "OK" }]
+        );
+
+        return {
+          success: true,
+          filePath: uri,
+          filename: filename,
+          message: "Doctor earnings PDF generated successfully",
+        };
+      }
+    } catch (error) {
+      console.error("❌ Doctor Earnings PDF Export Error:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Failed to export doctor earnings PDF",
+      };
+    }
+  }
+
+  /**
    * Export single payment receipt to PDF
    * @param {Object} payment - Payment object
    * @param {Object} user - User information
@@ -720,6 +795,327 @@ class PDFExportService {
               <p>Thank you for using Jeewaka Medical Platform</p>
               <p>This is a computer-generated receipt.</p>
             </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generate HTML content for doctor earnings report
+   */
+  _generateDoctorEarningsHTML(earnings, stats, user, filters) {
+    const formatDate = (dateValue) => {
+      if (!dateValue) return "N/A";
+      try {
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) return "N/A";
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      } catch (error) {
+        return "N/A";
+      }
+    };
+
+    const formatTime = (dateValue) => {
+      if (!dateValue) return "N/A";
+      try {
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) return "N/A";
+        return date.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+      } catch (error) {
+        return "N/A";
+      }
+    };
+
+    const formatCurrency = (amount) => {
+      return `LKR ${amount.toFixed(2)}`;
+    };
+
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const earningsTableRows = earnings
+      .map(
+        (earning) => `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid ${
+          this.borderColor
+        };">${earning.patientName || "Unknown Patient"}</td>
+        <td style="padding: 8px; border-bottom: 1px solid ${
+          this.borderColor
+        };">${earning.paymentId || "N/A"}</td>
+        <td style="padding: 8px; border-bottom: 1px solid ${
+          this.borderColor
+        };">${formatCurrency(earning.amount)}</td>
+        <td style="padding: 8px; border-bottom: 1px solid ${
+          this.borderColor
+        };">${formatDate(earning.appointmentDate)}</td>
+        <td style="padding: 8px; border-bottom: 1px solid ${
+          this.borderColor
+        };">${earning.appointmentTime || "N/A"}</td>
+        <td style="padding: 8px; border-bottom: 1px solid ${
+          this.borderColor
+        };">${formatDate(earning.paidDate)} ${formatTime(earning.paidDate)}</td>
+      </tr>
+      `
+      )
+      .join("");
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Doctor Earnings Report - Jeewaka Medical Platform</title>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: ${this.darkTextColor};
+            line-height: 1.4;
+          }
+          .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0;
+          }
+          .header {
+            background: linear-gradient(135deg, ${this.brandColor}, ${
+      this.accentColor
+    });
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 24px;
+          }
+          .header p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+          }
+          .content {
+            padding: 20px;
+          }
+          .info-section {
+            margin-bottom: 30px;
+          }
+          .info-section h2 {
+            color: ${this.darkTextColor};
+            border-bottom: 2px solid ${this.accentColor};
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+          }
+          .stats-grid {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            gap: 15px;
+          }
+          .stat-card {
+            text-align: center;
+            padding: 20px 15px;
+            background: ${this.lightBrandColor};
+            border-radius: 8px;
+            flex: 1;
+            border: 1px solid ${this.borderColor};
+          }
+          .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: ${this.brandColor};
+            margin-bottom: 5px;
+          }
+          .stat-label {
+            font-size: 12px;
+            color: ${this.mutedTextColor};
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .doctor-info {
+            background: ${this.lightBrandColor};
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          }
+          .doctor-info h3 {
+            margin: 0 0 10px 0;
+            color: ${this.brandColor};
+          }
+          .filter-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid ${this.accentColor};
+          }
+          .filter-info h3 {
+            margin: 0 0 10px 0;
+            color: ${this.darkTextColor};
+            font-size: 16px;
+          }
+          .filter-item {
+            margin: 5px 0;
+            color: ${this.mutedTextColor};
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border: 1px solid ${this.borderColor};
+          }
+          th {
+            background: ${this.brandColor};
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 14px;
+          }
+          td {
+            padding: 8px;
+            border-bottom: 1px solid ${this.borderColor};
+            font-size: 13px;
+          }
+          tr:nth-child(even) {
+            background-color: #f9f9f9;
+          }
+          .footer {
+            text-align: center;
+            padding: 20px;
+            color: ${this.mutedTextColor};
+            font-size: 12px;
+            border-top: 1px solid ${this.borderColor};
+            margin-top: 30px;
+          }
+          .footer p {
+            margin: 5px 0;
+          }
+          .total-highlight {
+            background: linear-gradient(135deg, ${this.brandColor}, ${
+      this.accentColor
+    });
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+          }
+          .total-highlight .amount {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .total-highlight .label {
+            font-size: 14px;
+            opacity: 0.9;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Doctor Earnings Report</h1>
+            <p>Jeewaka Medical Platform</p>
+            <p>Generated on ${currentDate}</p>
+          </div>
+
+          <div class="content">
+            <!-- Doctor Information -->
+            <div class="doctor-info">
+              <h3>Dr. ${user?.displayName || user?.name || "Doctor"}</h3>
+              <p><strong>Email:</strong> ${user?.email || "N/A"}</p>
+              <p><strong>Report Period:</strong> ${
+                stats?.period || "All Time"
+              }</p>
+            </div>
+
+            <!-- Applied Filters -->
+            ${
+              filters?.searchTerm || filters?.dateRange
+                ? `
+            <div class="filter-info">
+              <h3>Applied Filters</h3>
+              ${
+                filters?.searchTerm
+                  ? `<div class="filter-item">• Search: "${filters.searchTerm}"</div>`
+                  : ""
+              }
+              ${
+                filters?.dateRange
+                  ? `<div class="filter-item">• Date Range: ${filters.dateRange}</div>`
+                  : ""
+              }
+            </div>
+            `
+                : ""
+            }
+
+            <!-- Summary Statistics -->
+            <div class="info-section">
+              <h2>Earnings Summary</h2>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-number">${
+                    stats?.totalPayments || earnings.length
+                  }</div>
+                  <div class="stat-label">Total Payments</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-number">${earnings.length}</div>
+                  <div class="stat-label">Completed appointments</div>
+                </div>
+              </div>
+              
+              <div class="total-highlight">
+                <div class="amount">${formatCurrency(
+                  stats?.totalAmount || 0
+                )}</div>
+                <div class="label">Total Earnings for Selected Period</div>
+              </div>
+            </div>
+
+            <!-- Earnings Details -->
+            <div class="info-section">
+              <h2>Earnings Details</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Patient Name</th>
+                    <th>Payment ID</th>
+                    <th>Amount Earned</th>
+                    <th>Appointment Date</th>
+                    <th>Appointment Time</th>
+                    <th>Payment Received</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${earningsTableRows}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>This earnings report was generated by Jeewaka Medical Platform</p>
+            <p>© ${new Date().getFullYear()} Jeewaka Medical Platform. All rights reserved.</p>
+            <p>For support, contact: support@jeewaka.com</p>
           </div>
         </div>
       </body>
