@@ -26,7 +26,7 @@ class PDFExportService {
    */
   async exportPaymentsPDF(payments, stats, user, filters = {}) {
     try {
-      console.log("🚀 Starting PDF export for React Native (Expo)...");
+      // Starting PDF export for React Native (Expo)
 
       if (!payments || payments.length === 0) {
         throw new Error("No payment data available to export");
@@ -50,7 +50,7 @@ class PDFExportService {
         base64: false,
       });
 
-      console.log("✅ PDF generated successfully:", uri);
+      // PDF generated successfully
 
       // Check if sharing is available
       if (await Sharing.isAvailableAsync()) {
@@ -125,7 +125,7 @@ class PDFExportService {
         base64: false,
       });
 
-      console.log("✅ Doctor Earnings PDF generated successfully:", uri);
+      // Doctor Earnings PDF generated successfully
 
       // Check if sharing is available
       if (await Sharing.isAvailableAsync()) {
@@ -172,7 +172,7 @@ class PDFExportService {
    */
   async exportPaymentDetailsPDF(payment, user) {
     try {
-      console.log("🚀 Starting single payment PDF export...");
+      // Starting single payment PDF export
 
       if (!payment) {
         throw new Error("No payment data available to export");
@@ -192,7 +192,7 @@ class PDFExportService {
         base64: false,
       });
 
-      console.log("✅ Receipt PDF generated successfully:", uri);
+      // Receipt PDF generated successfully
 
       // Check if sharing is available
       if (await Sharing.isAvailableAsync()) {

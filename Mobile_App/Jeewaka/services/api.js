@@ -8,7 +8,6 @@ const getBaseUrl = () => {
   // Check if we have environment variable from .env file
   const envBackendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
   if (envBackendUrl) {
-    console.log(`Using backend URL from environment: ${envBackendUrl}`);
     return envBackendUrl;
   }
 

@@ -13,9 +13,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
+import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import { getErrorMessage } from '../services/errorHandler';
 import useAuthStore from '../store/authStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AdminVerificationPending() {
   const router = useRouter();
@@ -35,6 +37,7 @@ export default function AdminVerificationPending() {
     __v: 0
   });
   
+  // FRONTEND-COMPATIBLE STATE MANAGEMENT
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -46,62 +49,106 @@ export default function AdminVerificationPending() {
     loadVerificationData();
   }, []);
 
-  // Sync uploadedFiles with doctorData.certificates
+  // Sync uploadedFiles with doctorData.certificates - FRONTEND APPROACH
   useEffect(() => {
     if (doctorData.certificates && doctorData.certificates.length > 0) {
-      setUploadedFiles(
-        doctorData.certificates.map((url, idx) => {
+      // Filter out empty certificate URLs (common issue)
+      const validCertificates = doctorData.certificates.filter(cert => cert && cert.trim() !== '');
+      
+      if (validCertificates.length > 0) {
+        // Use the same logic as frontend - map certificates URLs to file objects
+        const mappedFiles = validCertificates.map((url, idx) => {
           let filename = url.split('/').pop() || '';
           if (filename.includes('?')) filename = filename.split('?')[0];
           return {
             id: `${idx}-${filename}`,
-            name: filename,
+            name: filename || `Certificate-${idx + 1}`,
             url,
             uploadedAt: doctorData.updatedAt || new Date().toISOString(),
             raw: { url },
           };
-        })
-      );
+        });
+        
+        setUploadedFiles(mappedFiles);
+      } else {
+        setUploadedFiles([]);
+      }
     } else {
       setUploadedFiles([]);
     }
   }, [doctorData.certificates, doctorData.updatedAt]);
 
+  // FRONTEND-COMPATIBLE APPROACH: Load verification data from AsyncStorage (like frontend uses location.state)
   const loadVerificationData = async () => {
     try {
       const doctorId = params.doctorId || user?._id;
+      
       if (!doctorId) {
         Alert.alert('Error', 'Doctor ID is missing. Please contact support.');
         return;
       }
 
-      // Try to get existing verification data
+      // First, try to load verification data from AsyncStorage (passed from login/index)
       try {
-        const response = await api.get(`/api/admin-verification/${doctorId}`);
-        if (response.data) {
+        const storedVerificationData = await AsyncStorage.getItem('verificationData');
+        
+        if (storedVerificationData) {
+          const verificationData = JSON.parse(storedVerificationData);
+          
+          // Handle both array format [{}] and object format {}
+          const actualData = Array.isArray(verificationData) ? verificationData[0] : verificationData;
+          
+          // Initialize certificates array if it doesn't exist - same as frontend
+          if (!actualData.certificates) actualData.certificates = [];
+          
           setDoctorData(prev => ({
             ...prev,
-            ...response.data,
-            certificates: response.data.certificates || []
+            ...actualData
           }));
-          // If verification record exists, certificates have been saved
+          
+          setHasSavedCertificates(true);
+          
+          // Clear the stored data after using it
+          await AsyncStorage.removeItem('verificationData');
+          return;
+        }
+      } catch (storageError) {
+        // No stored data, fallback to API
+      }
+
+      // If no data in storage, fallback to API call (like before)
+      try {
+        const response = await api.get(`/api/admin-verification/${doctorId}`);
+        
+        if (response.data) {
+          // Handle both array format [{}] and object format {} - same as AsyncStorage handling
+          const actualData = Array.isArray(response.data) ? response.data[0] : response.data;
+          
+          // Initialize certificates array if it doesn't exist - same as frontend
+          if (!actualData.certificates) actualData.certificates = [];
+          
+          setDoctorData(prev => ({
+            ...prev,
+            ...actualData
+          }));
+          
           setHasSavedCertificates(true);
         }
       } catch (error) {
-        // Verification doesn't exist yet, which is normal for new doctors
-        if (error.response?.status === 404) {
-          console.log('No existing verification found - this is expected for new doctors');
-        } else {
-          console.error('Unexpected error loading verification data:', error);
+        // 404 is normal for new doctors - same as frontend handling
+        if (error.response?.status !== 404) {
+          console.error('Error loading verification data:', error);
         }
       }
+      
     } catch (error) {
-      console.error('Error loading verification data:', error);
+      console.error('Error in loadVerificationData:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  // FRONTEND-COMPATIBLE FILE UPLOAD
   const handleFileUpload = async () => {
     try {
       // Pick documents
@@ -110,7 +157,7 @@ export default function AdminVerificationPending() {
         type: [
           'application/pdf',
           'image/jpeg',
-          'image/jpg',
+          'image/jpg', 
           'image/png',
           'application/msword',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -120,123 +167,157 @@ export default function AdminVerificationPending() {
       if (result.canceled) return;
 
       const files = result.assets || [result];
-      
-      // Validate file sizes (10MB limit)
+      if (files.length === 0) return;
+
+      // Client-side constraints - same as frontend
       const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-      const invalidFile = files.find(file => file.size && file.size > MAX_SIZE);
-      
-      if (invalidFile) {
-        Alert.alert('File Too Large', 'Maximum file size is 10MB per file.');
+      const allowed = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+
+      const invalid = files.find(f => {
+        const ext = (f.name.match(/\.[^.]+$/) || [''])[0].toLowerCase();
+        return f.size > MAX_SIZE || !allowed.includes(ext);
+      });
+
+      if (invalid) {
+        if (invalid.size > MAX_SIZE) {
+          Alert.alert('File Too Large', 'Maximum file size is 10MB.');
+        } else {
+          Alert.alert('Invalid File Type', 'Only PDF, JPG, PNG, DOC, DOCX files are allowed.');
+        }
         return;
       }
 
       setUploading(true);
 
-      const doctorId = doctorData.doctorId;
+      const doctorId = doctorData && doctorData.doctorId;
       if (!doctorId || doctorId === 'undefined') {
         Alert.alert('Error', 'Doctor ID is missing. Please contact support.');
         setUploading(false);
         return;
       }
 
-      // Upload each file
+      // Upload files one by one - same as frontend
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const formData = new FormData();
-        
-        formData.append('document', {
+        const form = new FormData();
+        form.append('document', {
           uri: file.uri,
           type: file.mimeType || 'application/octet-stream',
           name: file.name
         });
 
-        try {
-          const response = await api.post(`/api/admin-verification/documents/${doctorId}`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-
-          const doc = response.data.document || {};
-          const newFile = {
-            id: Date.now() + i,
-            name: doc.filename || file.name,
-            url: doc.url || doc.path || '',
-            uploadedAt: doc.uploadedAt || new Date().toISOString(),
-            raw: doc
-          };
-
-          setUploadedFiles(prev => [...prev, newFile]);
-          setDoctorData(prev => ({
-            ...prev,
-            certificates: [...(prev.certificates || []), newFile.url],
-            updatedAt: new Date().toISOString()
-          }));
-        } catch (uploadError) {
-          console.error('Upload error for file:', file.name, uploadError);
-          Alert.alert(
-            'Upload Failed',
-            `Failed to upload ${file.name}. Please try again.`
-          );
-        }
+        // Upload to backend API - same endpoint as frontend
+        const res = await api.post(`/api/admin-verification/documents/${doctorId}`, form, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        const body = res.data;
+        const doc = body.document || {};
+        const newFile = {
+          id: Date.now() + i,
+          name: doc.filename || file.name,
+          url: doc.url || doc.path || '',
+          uploadedAt: doc.uploadedAt || new Date().toISOString(),
+          raw: doc
+        };
+        
+        // Update state - same as frontend approach
+        setUploadedFiles(prev => [...prev, newFile]);
+        setDoctorData(prev => ({
+          ...prev,
+          certificates: [...(prev.certificates || []), newFile.url],
+          updatedAt: new Date().toISOString()
+        }));
       }
-
-      Alert.alert(
-        'Success',
-        'Certificates uploaded successfully! Waiting for admin verification.'
-      );
+      
+      Alert.alert('Success', 'Certificates uploaded successfully! Waiting for admin verification.');
     } catch (error) {
-      console.error('Document picker error:', error);
-      Alert.alert(
-        'Error',
-        getErrorMessage(error, 'Failed to select documents. Please try again.')
-      );
+      console.error('Upload error', error);
+      const msg = error?.response?.data?.message || error.message || 'Failed to upload document';
+      Alert.alert('Upload Error', msg);
     } finally {
       setUploading(false);
     }
   };
 
+  // FRONTEND-COMPATIBLE FILE REMOVAL
   const removeFile = async (id) => {
     const fileToRemove = uploadedFiles.find(f => f.id === id);
     if (!fileToRemove) return;
-
-    const doctorId = doctorData.doctorId;
+    
+    const doctorId = doctorData && doctorData.doctorId;
     if (!doctorId || doctorId === 'undefined') {
       Alert.alert('Error', 'Doctor ID is missing. Please contact support.');
       return;
     }
-
+    
     try {
+      // Call backend API to delete the file from storage
       await api.delete(`/api/admin-verification/documents/${doctorId}/${encodeURIComponent(fileToRemove.name)}`);
       
+      // Update local state first for immediate UI feedback
+      const updatedCertificates = doctorData.certificates.filter(url => url !== fileToRemove.url);
       setUploadedFiles(prev => prev.filter(f => f.id !== id));
       setDoctorData(prev => ({
         ...prev,
-        certificates: prev.certificates.filter(url => url !== fileToRemove.url),
+        certificates: updatedCertificates,
         updatedAt: new Date().toISOString()
       }));
       
-      Alert.alert('Success', 'File deleted successfully.');
+      // Also update the database to remove the certificate URL
+      try {
+        // Check if verification record exists
+        let exists = false;
+        try {
+          await api.get(`/api/admin-verification/${doctorId}`);
+          exists = true;
+        } catch (err) {
+          exists = false;
+        }
+        
+        // Update or create verification record with the updated certificates
+        if (exists) {
+          await api.put(`/api/admin-verification/${doctorId}`, {
+            certificates: updatedCertificates
+          });
+        } else if (updatedCertificates.length > 0) {
+          // Only create if there are still certificates remaining
+          await api.post(`/api/admin-verification/`, {
+            doctorId,
+            certificates: updatedCertificates
+          });
+        }
+        
+        // Certificate removed from database successfully
+      } catch (dbError) {
+        console.error('File deleted from storage but failed to update database:', dbError);
+        // Don't show error to user since the file was successfully deleted from storage
+        // The database will be synced when they click "Save Certificates"
+      }
+      
     } catch (error) {
-      console.error('Delete error:', error);
+      console.error('Failed to delete file:', error);
       Alert.alert('Error', 'Failed to delete file from storage.');
     }
   };
 
+  // FRONTEND-COMPATIBLE SAVE CERTIFICATES
   const handleSaveCertificates = async () => {
     if (doctorData.certificates.length === 0) {
       Alert.alert('Missing Certificates', 'Please upload at least one certificate');
       return;
     }
-
+    
     try {
-      const doctorId = doctorData.doctorId;
+      const doctorId = doctorData && doctorData.doctorId;
       if (!doctorId || doctorId === 'undefined') {
         Alert.alert('Error', 'Doctor ID is missing. Please contact support.');
         return;
       }
-
-      // Check if verification exists
+      
+      // Check if verification exists - same as frontend
       let exists = false;
       try {
         await api.get(`/api/admin-verification/${doctorId}`);
@@ -244,7 +325,8 @@ export default function AdminVerificationPending() {
       } catch (err) {
         exists = false;
       }
-
+      
+      // Update or create verification record - same as frontend
       if (exists) {
         await api.put(`/api/admin-verification/${doctorId}`, {
           certificates: doctorData.certificates
@@ -255,16 +337,10 @@ export default function AdminVerificationPending() {
           certificates: doctorData.certificates
         });
       }
-
-      Alert.alert(
-        'Success',
-        'Certificates saved successfully! Waiting for admin verification.'
-      );
       
-      // Mark that certificates have been saved
+      Alert.alert('Success', 'Certificates saved successfully! Waiting for admin verification.');
       setHasSavedCertificates(true);
     } catch (error) {
-      console.error('Save error:', error);
       Alert.alert('Error', 'Failed to save certificates to backend.');
     }
   };
@@ -294,7 +370,10 @@ export default function AdminVerificationPending() {
       }
 
       const response = await api.get(`/api/admin-verification/${doctorId}`);
-      const isVerified = response.data?.isVerified || false;
+      
+      // Handle both array format [{}] and object format {} - backend returns array
+      const verificationData = Array.isArray(response.data) ? response.data[0] : response.data;
+      const isVerified = verificationData?.isVerified || false;
       
       if (isVerified) {
         Alert.alert(
@@ -318,7 +397,7 @@ export default function AdminVerificationPending() {
       setDoctorData(prev => ({
         ...prev,
         isVerified,
-        ...response.data
+        ...verificationData
       }));
       
     } catch (error) {
@@ -397,7 +476,7 @@ export default function AdminVerificationPending() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen 
           options={{
-            title: 'Doctor Verification',
+            title: ' ',
             headerStyle: { backgroundColor: '#1E293B' },
             headerTintColor: '#fff',
           }}
@@ -414,8 +493,9 @@ export default function AdminVerificationPending() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{
-          title: 'Doctor Verification',
+          title: ' ',
           headerStyle: { backgroundColor: '#1E293B' },
+          headerShown: true,
           headerTintColor: '#fff',
         }}
       />
@@ -501,7 +581,9 @@ export default function AdminVerificationPending() {
             <Text style={styles.uploadTitle}>Certificates</Text>
             <View style={styles.certificateCount}>
               <Text style={styles.countLabel}>Total</Text>
-              <Text style={styles.countValue}>{doctorData.certificates.length}</Text>
+              <Text style={styles.countValue}>
+                {doctorData.certificates.filter(cert => cert && cert.trim() !== '').length}
+              </Text>
             </View>
           </View>
 
@@ -517,6 +599,37 @@ export default function AdminVerificationPending() {
               <Text style={styles.uploadButtonText}>Choose Files</Text>
             )}
           </TouchableOpacity>
+          
+          {/* Clean Empty Certificates Button - Temporary Fix */}
+          {doctorData.certificates.some(cert => !cert || cert.trim() === '') && (
+            <TouchableOpacity
+              style={[styles.uploadButton, { backgroundColor: '#f59e0b', marginTop: 10 }]}
+              onPress={async () => {
+                // Filter out empty certificates
+                const cleanCertificates = doctorData.certificates.filter(cert => cert && cert.trim() !== '');
+                
+                setDoctorData(prev => ({
+                  ...prev,
+                  certificates: cleanCertificates,
+                  updatedAt: new Date().toISOString()
+                }));
+                
+                // Save the cleaned certificates to backend
+                try {
+                  const doctorId = doctorData.doctorId;
+                  await api.put(`/api/admin-verification/${doctorId}`, {
+                    certificates: cleanCertificates
+                  });
+                  Alert.alert('Success', 'Empty certificates cleaned. You can now upload new certificates.');
+                } catch (error) {
+                  console.error('Error cleaning certificates:', error);
+                  Alert.alert('Error', 'Failed to clean certificates.');
+                }
+              }}
+            >
+              <Text style={styles.uploadButtonText}>Clean Empty Certificates</Text>
+            </TouchableOpacity>
+          )}
           
           <Text style={styles.uploadHint}>
             PDF, JPG, PNG, DOC, DOCX files up to 10MB each
@@ -545,14 +658,8 @@ export default function AdminVerificationPending() {
           )}
 
           {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={handleLogout}
-            >
-              <Text style={styles.backButtonText}>Logout</Text>
-            </TouchableOpacity>
-            
+          {/* First Row: Check Status and Save Certificates */}
+          <View style={styles.primaryButtonsRow}>
             <TouchableOpacity
               style={[
                 styles.statusButton, 
@@ -587,6 +694,17 @@ export default function AdminVerificationPending() {
               ]}>
                 Save Certificates
               </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Second Row: Logout Button */}
+          <View style={styles.logoutButtonRow}>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleLogout}
+            >
+              <Ionicons name="log-out-outline" size={18} color="#EF4444" />
+              <Text style={styles.logoutButtonText}>Log Out</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -631,16 +749,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   welcomeCard: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#d5eeeeff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
+    borderLeftColor: '#008080',
   },
   welcomeText: {
     fontSize: 14,
-    color: '#1E40AF',
+    color: '#008080',
     lineHeight: 20,
   },
   statusBadge: {
@@ -738,7 +856,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
+    borderLeftColor: '#008080',
   },
   commentTitle: {
     fontSize: 16,
@@ -748,17 +866,17 @@ const styles = StyleSheet.create({
   },
   commentText: {
     fontSize: 14,
-    color: '#1E40AF',
+    color: '#008080',
     lineHeight: 20,
   },
   noCommentCard: {
     margin: 16,
     marginTop: 0,
     padding: 20,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#d5eeeeff',
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#94A3B8',
+    borderLeftColor: '#008080',
   },
   noCommentText: {
     fontSize: 14,
@@ -797,10 +915,10 @@ const styles = StyleSheet.create({
   countValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#3B82F6',
+    color: '#1bccccff',
   },
   uploadButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#008080',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
@@ -854,9 +972,9 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   deleteButton: {
-    backgroundColor: '#EF4444',
+    backgroundColor: '#c35252ff',
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderRadius: 6,
   },
   deleteButtonText: {
@@ -883,37 +1001,29 @@ const styles = StyleSheet.create({
     color: '#A16207',
     lineHeight: 20,
   },
-  actionButtons: {
+  // First row: Check Status and Save Certificates buttons
+  primaryButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 24,
-    gap: 8,
-  },
-  backButton: {
-    flex: 1,
-    backgroundColor: '#F1F5F9',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: '#64748B',
-    fontSize: 14,
-    fontWeight: '600',
+    gap: 12,
   },
   statusButton: {
     flex: 1,
-    backgroundColor: '#059669',
-    paddingVertical: 14,
+    backgroundColor: '#26e6e6ff',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   statusButtonDisabled: {
     backgroundColor: '#94A3B8',
+    shadowOpacity: 0.05,
   },
   statusButtonText: {
-    color: '#fff',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '600',
   },
   statusButtonTextDisabled: {
@@ -921,20 +1031,44 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flex: 1,
-    backgroundColor: '#3B82F6',
-    paddingVertical: 14,
+    backgroundColor: '#31ada2ff',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   saveButtonDisabled: {
     backgroundColor: '#94A3B8',
+    shadowOpacity: 0.05,
   },
   saveButtonText: {
-    color: '#fff',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '600',
+    textAlign: 'center',
   },
   saveButtonTextDisabled: {
     color: '#E2E8F0',
+  },
+  // Second row: Logout button (centered, profile page style)
+  logoutButtonRow: {
+    alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 10,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+  },
+  logoutButtonText: {
+    color: '#EF4444',
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
   },
 });

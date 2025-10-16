@@ -31,17 +31,29 @@ const useAuthStore = create((set, get) => ({
 
   setVerificationStatus: (status) => set({ verificationStatus: status }),
 
-  // Check doctor verification status
+  // Check doctor verification status and return full verification data
   checkDoctorVerification: async (doctorId) => {
     try {
       const response = await api.get(`/api/admin-verification/${doctorId}`);
-      const isVerified = response.data?.isVerified || false;
+      const rawData = response.data;
+
+      // Handle both array format [{}] and object format {} - backend returns array
+      const verificationData = Array.isArray(rawData) ? rawData[0] : rawData;
+      const isVerified = verificationData?.isVerified || false;
       set({ verificationStatus: isVerified });
-      return isVerified;
+
+      // Return both status and full data (like frontend)
+      return {
+        isVerified,
+        verificationData: verificationData || null,
+      };
     } catch (error) {
       // If 404 or other error, doctor is not verified
       set({ verificationStatus: false });
-      return false;
+      return {
+        isVerified: false,
+        verificationData: null,
+      };
     }
   },
 

@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import PagerView from "react-native-pager-view";
 import useAuthStore from "../store/authStore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
 
@@ -32,17 +33,25 @@ export default function HomePage() {
   useEffect(() => {
     const handleNavigation = async () => {
       if (!loading && user && userRole) {
-        // If user is a doctor, check verification status
+        // If user is a doctor, check verification status - FRONTEND APPROACH
         if (userRole === "doctor") {
           setCheckingVerification(true);
           try {
-            const isVerified = await checkDoctorVerification(user._id);
+            const { isVerified, verificationData } =
+              await checkDoctorVerification(user._id);
 
             if (isVerified) {
               // Doctor is verified, can access dashboard
               router.replace("/(tabs)");
             } else {
-              // Doctor is not verified, redirect to verification page
+              // Doctor is not verified, redirect to verification page with data
+              // Store verification data for the AdminVerificationPending page
+              if (verificationData) {
+                await AsyncStorage.setItem(
+                  "verificationData",
+                  JSON.stringify(verificationData)
+                );
+              }
               router.replace(
                 `/AdminVerificationPending?doctorId=${user._id}&_id=${
                   user._id
