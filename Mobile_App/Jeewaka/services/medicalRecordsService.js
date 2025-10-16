@@ -28,7 +28,10 @@ export const medicalRecordsService = {
       const response = await apiHelpers.authenticatedRequest(
         "post",
         `/api/medical-records/patients/${patientId}/records`,
-        recordData
+        {
+          ...recordData,
+          patientId, // Add patientId to the request body
+        }
       );
       return response.data;
     } catch (error) {

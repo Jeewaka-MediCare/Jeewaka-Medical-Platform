@@ -147,11 +147,70 @@ export const getSessionById = async (req, res) => {
 
 export const getSessionByDoctorId = async (req, res) => {
   try {
-    const sessions = await Session.find({ doctorId: req.params.doctorId })
+    const { doctorId } = req.params;
+    const { patientName, startDate, endDate, status, type, hospitalName } =
+      req.query;
+
+    // Build the base query
+    let query = { doctorId };
+
+    // Add date range filter if provided
+    if (startDate && endDate) {
+      query.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    }
+
+    // Add session type filter if provided
+    if (type) {
+      query.type = type;
+    }
+
+    const sessions = await Session.find(query)
       .populate("hospital", "name location address")
       .populate("timeSlots.patientId", "name email phone uuid");
-    res.json(sessions);
+
+    let filteredSessions = sessions;
+
+    // Filter by patient name if provided
+    if (patientName && patientName.trim()) {
+      const searchTerm = patientName.toLowerCase().trim();
+      filteredSessions = sessions.filter((session) => {
+        return session.timeSlots.some((slot) => {
+          if (!slot.patientId) return false;
+          const patient = slot.patientId;
+          return (
+            patient.name && patient.name.toLowerCase().includes(searchTerm)
+          );
+        });
+      });
+    }
+
+    // Filter by hospital name if provided
+    if (hospitalName && hospitalName.trim()) {
+      const hospitalSearchTerm = hospitalName.toLowerCase().trim();
+      filteredSessions = filteredSessions.filter((session) => {
+        return (
+          session.hospital &&
+          session.hospital.name &&
+          session.hospital.name.toLowerCase().includes(hospitalSearchTerm)
+        );
+      });
+    }
+
+    // Filter by appointment status if provided
+    if (status) {
+      filteredSessions = filteredSessions.filter((session) => {
+        return session.timeSlots.some((slot) => {
+          return slot.appointmentStatus === status;
+        });
+      });
+    }
+
+    res.json(filteredSessions);
   } catch (err) {
+    console.error("Error fetching doctor sessions:", err);
     res.status(400).json({ error: err.message });
   }
 };

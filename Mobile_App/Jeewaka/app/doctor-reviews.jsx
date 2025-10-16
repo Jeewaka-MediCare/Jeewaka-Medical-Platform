@@ -78,6 +78,18 @@ export default function DoctorReviews() {
             title: 'Reviews',
             headerShown: true,
             headerBackTitle: 'Back',
+          headerStyle: {
+            backgroundColor: '#1E293B',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+          headerTitleStyle: {
+            color: 'white',
+            fontSize: 20,
+            fontWeight: '600',
+          },
+          headerTintColor: 'white',
           }} 
         />
         <View style={styles.loadingContainer}>
@@ -94,6 +106,18 @@ export default function DoctorReviews() {
           title: `Reviews - ${doctor?.name || 'Doctor'}`,
           headerShown: true,
           headerBackTitle: 'Back',
+          headerStyle: {
+            backgroundColor: '#1E293B',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+          headerTitleStyle: {
+            color: 'white',
+            fontSize: 20,
+            fontWeight: '600',
+          },
+          headerTintColor: 'white',
         }} 
       />
       

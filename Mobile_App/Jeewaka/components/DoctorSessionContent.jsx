@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import useAuthStore from '../store/authStore';
-import { format, parseISO, addDays } from 'date-fns';
+import { format, parseISO, addDays, isSameDay } from 'date-fns';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
 import { TextInput, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -22,6 +22,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import VideoCallButton from './VideoCallButton';
 import { useRouter } from 'expo-router';
+import SessionFilters from './SessionFilters';
 
 const initialLayout = { width: Dimensions.get('window').width };
 
@@ -36,8 +37,21 @@ export default function DoctorSessionContent() {
   ]);
   
   const [sessions, setSessions] = useState([]);
+  const [filteredSessions, setFilteredSessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    patientName: '',
+    hospitalName: '',
+    appointmentType: '',
+    appointmentStatus: '',
+    selectedDate: null,
+    startDate: null,
+    endDate: null,
+    dateFilterType: 'single',
+  });
   
   // Session creation modal
   const [modalVisible, setModalVisible] = useState(false);
@@ -55,20 +69,49 @@ export default function DoctorSessionContent() {
   // Hospital options
   const [hospitals, setHospitals] = useState([]);
 
-  // Fetch sessions
-  const fetchSessions = async () => {
+  // Fetch sessions with filters
+  const fetchSessions = async (currentFilters = filters) => {
     if (!user || !user._id) return;
     
     setLoading(true);
     try {
-      const { data } = await api.get('/api/session');
+      // Build query parameters
+      const queryParams = new URLSearchParams();
       
-      // Filter sessions for this doctor only
-      const doctorSessions = (data || []).filter(session => 
-        session.doctorId && session.doctorId._id === user._id
-      );
+      if (currentFilters.patientName.trim()) {
+        queryParams.append('patientName', currentFilters.patientName.trim());
+      }
       
+      if (currentFilters.hospitalName.trim()) {
+        queryParams.append('hospitalName', currentFilters.hospitalName.trim());
+      }
+      
+      if (currentFilters.appointmentType) {
+        queryParams.append('type', currentFilters.appointmentType);
+      }
+      
+      if (currentFilters.appointmentStatus) {
+        queryParams.append('status', currentFilters.appointmentStatus);
+      }
+      
+      // Handle date filtering
+      if (currentFilters.dateFilterType === 'single' && currentFilters.selectedDate) {
+        const formattedDate = format(currentFilters.selectedDate, 'yyyy-MM-dd');
+        queryParams.append('startDate', formattedDate);
+        queryParams.append('endDate', formattedDate);
+      } else if (currentFilters.dateFilterType === 'range' && currentFilters.startDate && currentFilters.endDate) {
+        queryParams.append('startDate', format(currentFilters.startDate, 'yyyy-MM-dd'));
+        queryParams.append('endDate', format(currentFilters.endDate, 'yyyy-MM-dd'));
+      }
+      
+      const queryString = queryParams.toString();
+      const url = queryString ? `/api/session/doctor/${user._id}?${queryString}` : `/api/session/doctor/${user._id}`;
+      
+      const { data } = await api.get(url);
+      
+      const doctorSessions = data || [];
       setSessions(doctorSessions);
+      setFilteredSessions(doctorSessions);
     } catch (error) {
       console.error('Error fetching sessions:', error);
       Alert.alert('Error', 'Failed to load sessions');
@@ -93,6 +136,23 @@ export default function DoctorSessionContent() {
       fetchHospitals();
     }
   }, [user]);
+
+  // Handle filter changes
+  const handleFiltersChange = useCallback((newFilters) => {
+    setFilters(newFilters);
+    fetchSessions(newFilters);
+  }, []);
+
+  // Handle section change from filters
+  const handleSectionChange = useCallback((section) => {
+    const sectionIndex = section === 'upcoming' ? 0 : 1;
+    setTabIndex(sectionIndex);
+  }, []);
+
+  // Get hospital names for filter dropdown
+  const hospitalNames = useMemo(() => {
+    return hospitals.map(hospital => hospital.name).filter(Boolean);
+  }, [hospitals]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -174,7 +234,7 @@ export default function DoctorSessionContent() {
     const futureSessions = [];
     const pastSessions = [];
     
-    sessions.forEach((session) => {
+    filteredSessions.forEach((session) => {
       const sessionEndTime = getSessionEndDateTime(session);
       
       if (sessionEndTime && sessionEndTime >= now) {
@@ -224,7 +284,7 @@ export default function DoctorSessionContent() {
     
     // Combine: future sessions first, then past sessions
     return [...futureSessions, ...pastSessions];
-  }, [sessions, getSessionEndDateTime]);
+  }, [filteredSessions, getSessionEndDateTime]);
 
   // Separate upcoming and past sessions with proper sorting
   const upcomingSessions = useMemo(() => {
@@ -233,7 +293,7 @@ export default function DoctorSessionContent() {
     // Get future sessions
     const futureSessions = [];
     
-    sessions.forEach((session) => {
+    filteredSessions.forEach((session) => {
       const sessionEndTime = getSessionEndDateTime(session);
       
       if (sessionEndTime && sessionEndTime >= now) {
@@ -261,7 +321,7 @@ export default function DoctorSessionContent() {
     });
     
     return futureSessions;
-  }, [sessions, getSessionEndDateTime]);
+  }, [filteredSessions, getSessionEndDateTime]);
 
   const pastSessions = useMemo(() => {
     const now = new Date();
@@ -269,7 +329,7 @@ export default function DoctorSessionContent() {
     // Get past sessions
     const pastSessionsList = [];
     
-    sessions.forEach((session) => {
+    filteredSessions.forEach((session) => {
       const sessionEndTime = getSessionEndDateTime(session);
       
       if (sessionEndTime && sessionEndTime < now) {
@@ -297,7 +357,7 @@ export default function DoctorSessionContent() {
     });
     
     return pastSessionsList;
-  }, [sessions, getSessionEndDateTime]);
+  }, [filteredSessions, getSessionEndDateTime]);
 
   // Helper function to get booked slots count
   const getBookedSlotsCount = useCallback((session) => {
@@ -334,6 +394,7 @@ export default function DoctorSessionContent() {
     const bookedSlots = getBookedSlotsCount(session);
     const totalSlots = session.timeSlots?.length || 0;
     const isPast = isSessionPast(session);
+    const isToday = isSameDay(new Date(), parseISO(session.date));
     const canCancel = !isPast && bookedSlots === 0; // Only show cancel if NOT past AND no bookings
     const hasBookings = bookedSlots > 0; // Check if session has any bookings
 
@@ -343,7 +404,8 @@ export default function DoctorSessionContent() {
         style={[
           styles.sessionCard, 
           isPast && styles.pastSessionCard,
-          hasBookings && styles.clickableSessionCard
+          hasBookings && !isToday && styles.clickableSessionCard, // Only apply if not today
+          !isPast && isToday && styles.todaySessionCard, // Today takes priority
         ]}
         onPress={() => handleSessionPress(session)}
         disabled={!hasBookings}
@@ -716,6 +778,14 @@ export default function DoctorSessionContent() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.scene}>
+        {/* Session Filters */}
+        <SessionFilters
+          onFiltersChange={handleFiltersChange}
+          onSectionChange={handleSectionChange}
+          currentSection={tabIndex === 0 ? 'upcoming' : 'past'}
+          hospitals={hospitalNames}
+        />
+        
         <TabView
           navigationState={{ index: tabIndex, routes }}
           renderScene={renderScene}
@@ -1036,6 +1106,11 @@ const styles = StyleSheet.create({
     borderColor: '#008080',
     borderWidth: 2,
     backgroundColor: '#F8FAFC',
+  },
+  todaySessionCard: {
+    backgroundColor: '#d1f4f4ff', // Very light teal
+    borderColor: '#008080',
+    borderWidth: 2, // Use thicker border like clickable cards
   },
   clickableIndicator: {
     position: 'absolute',

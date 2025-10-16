@@ -8,8 +8,9 @@ import {
   SafeAreaView,
   Alert,
   ScrollView,
+  BackHandler,
 } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import paymentService from '../services/paymentService';
 import useAuthStore from '../store/authStore';
@@ -33,6 +34,21 @@ export default function PaymentSuccess() {
   useEffect(() => {
     handlePaymentSuccess();
   }, []);
+
+  // Prevent hardware back button on Android to restrict going back after payment
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        // Return true to prevent default behavior (going back)
+        // This ensures users cannot navigate back to the payment flow after completion
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [])
+  );
 
   const handlePaymentSuccess = async () => {
     try {
@@ -65,6 +81,7 @@ export default function PaymentSuccess() {
   };
 
   const handleViewAppointments = () => {
+    // Use replace to prevent returning to payment success page
     router.replace('/(tabs)/appointments');
   };
 
@@ -106,7 +123,7 @@ export default function PaymentSuccess() {
               fontWeight: '600',
             },
             headerTintColor: 'white',
-            headerLeft: () => null, // Disable back button during processing
+            headerLeft: () => null, // Disable back button - prevent returning to payment flow
           }}
         />
         
@@ -137,6 +154,7 @@ export default function PaymentSuccess() {
               fontWeight: '600',
             },
             headerTintColor: 'white',
+            headerLeft: () => null, // Disable back button - prevent returning to payment flow
           }}
         />
         
@@ -183,7 +201,7 @@ export default function PaymentSuccess() {
             fontWeight: '600',
           },
           headerTintColor: 'white',
-          headerLeft: () => null, // Disable back button on success
+          headerLeft: () => null, // Disable back button - prevent returning to payment flow
         }}
       />
       

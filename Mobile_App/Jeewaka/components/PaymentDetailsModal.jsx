@@ -25,19 +25,7 @@ const PaymentDetailsModal = ({
   const { user } = useAuthStore();
   const [isExporting, setIsExporting] = useState(false);
   
-  // Debug logging
-  console.log('PaymentDetailsModal - visible:', visible);
-  console.log('PaymentDetailsModal - payment:', payment);
-  console.log('PaymentDetailsModal - payment fields:', {
-    id: payment?.id,
-    _id: payment?._id,
-    amount: payment?.amount,
-    doctorName: payment?.doctorName,
-    doctor: payment?.doctor,
-    date: payment?.date,
-    created: payment?.created,
-    status: payment?.status
-  });
+  // Payment details modal logic
   
   const handleExportSinglePayment = async () => {
     if (!payment) {
@@ -70,7 +58,7 @@ const PaymentDetailsModal = ({
         description: payment.description || payment.notes || payment.memo
       };
 
-      console.log('Exporting enhanced payment data:', paymentData);
+      // Export enhanced payment data
       
       await pdfExportService.exportPaymentDetailsPDF(
         paymentData, // Single payment object (not array)
@@ -87,7 +75,6 @@ const PaymentDetailsModal = ({
   };
   
   if (!payment) {
-    console.log('PaymentDetailsModal - No payment data, returning null');
     return null;
   }
 
