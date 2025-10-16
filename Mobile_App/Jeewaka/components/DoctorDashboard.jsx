@@ -9,7 +9,8 @@ import {
   RefreshControl,
   Alert,
   Animated,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-gifted-charts';
@@ -28,6 +29,7 @@ export default function DoctorDashboard() {
   const [recentReviews, setRecentReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [chartLoading, setChartLoading] = useState(false);
   
   // Earnings state
   const [earningsData, setEarningsData] = useState({
@@ -37,30 +39,93 @@ export default function DoctorDashboard() {
   });
   
   // Time range state for chart
-  const [selectedTimeRange, setSelectedTimeRange] = useState('4weeks');
+  const [selectedTimeRange, setSelectedTimeRange] = useState('last-week');
   const [showTimeRangePicker, setShowTimeRangePicker] = useState(false);
+  
+  // Month/Year selection state
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-12
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  
   const timeRangeOptions = [
-    { label: 'Last 4 Weeks', value: '4weeks' },
-    { label: 'Last 8 Weeks', value: '8weeks' },
-    { label: 'Last 3 Months', value: '3months' },
-    { label: 'Last 6 Months', value: '6months' },
+    { label: 'Last Week (Daily)', value: 'last-week' },
+    { label: 'Last 4 Weeks (Daily)', value: '4weeks-daily' },
+    { label: 'Monthly View', value: 'monthly' },
   ];
-      const [totalEarnings, setTotalEarnings] = useState(0);
+  
+  const monthOptions = [
+    { label: 'January', value: 1 },
+    { label: 'February', value: 2 },
+    { label: 'March', value: 3 },
+    { label: 'April', value: 4 },
+    { label: 'May', value: 5 },
+    { label: 'June', value: 6 },
+    { label: 'July', value: 7 },
+    { label: 'August', value: 8 },
+    { label: 'September', value: 9 },
+    { label: 'October', value: 10 },
+    { label: 'November', value: 11 },
+    { label: 'December', value: 12 },
+  ];
+  
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 6 }, (_, i) => ({
+    label: (currentYear - i).toString(),
+    value: currentYear - i,
+  }));
+  
+  const [totalEarnings, setTotalEarnings] = useState(0);
   
   // Handler functions
   const handleTimeRangeSelect = (value) => {
     setSelectedTimeRange(value);
     setShowTimeRangePicker(false);
-    fetchEarningsData(value);
+    
+    // If switching to monthly view, fetch data for current selected month/year
+    if (value === 'monthly') {
+      fetchEarningsData(value, selectedYear, selectedMonth);
+    } else {
+      fetchEarningsData(value);
+    }
+  };
+
+  const handleMonthSelect = (month) => {
+    setSelectedMonth(month);
+    setShowMonthPicker(false);
+    if (selectedTimeRange === 'monthly') {
+      fetchEarningsData('monthly', selectedYear, month);
+    }
+  };
+
+  const handleYearSelect = (year) => {
+    setSelectedYear(year);
+    setShowYearPicker(false);
+    if (selectedTimeRange === 'monthly') {
+      fetchEarningsData('monthly', year, selectedMonth);
+    }
   };
 
   const toggleTimeRangePicker = () => {
     setShowTimeRangePicker(!showTimeRangePicker);
   };
 
+  const toggleMonthPicker = () => {
+    setShowMonthPicker(!showMonthPicker);
+  };
+
+  const toggleYearPicker = () => {
+    setShowYearPicker(!showYearPicker);
+  };
+
   const getSelectedTimeRangeLabel = () => {
     const selected = timeRangeOptions.find(option => option.value === selectedTimeRange);
-    return selected ? selected.label : 'Last 4 Weeks';
+    return selected ? selected.label : 'Last Week (Daily)';
+  };
+
+  const getSelectedMonthLabel = () => {
+    const selected = monthOptions.find(option => option.value === selectedMonth);
+    return selected ? selected.label : 'January';
   };
   
   // Animation values for floating reviews
@@ -118,17 +183,18 @@ export default function DoctorDashboard() {
     }
   };
 
-  const fetchEarningsData = async (timeRange = '4weeks') => {
+  const fetchEarningsData = async (timeRange = '4weeks-daily', year = null, month = null) => {
     if (!user?._id) return;
     
     try {
-      console.log('Fetching earnings data for doctor:', user._id, 'timeRange:', timeRange);
+      setChartLoading(true);
+      console.log('Fetching earnings data for doctor:', user._id, 'timeRange:', timeRange, 'year:', year, 'month:', month);
       
       // Import payment service
       const { default: paymentService } = await import('../services/paymentService');
       
-      // Fetch real earnings statistics from backend with time range
-      const response = await paymentService.getDoctorEarningsStats(timeRange);
+      // Fetch real earnings statistics from backend with time range and optional year/month
+      const response = await paymentService.getDoctorEarningsStats(timeRange, year, month);
       
       if (response.success) {
         const { stats } = response;
@@ -137,7 +203,7 @@ export default function DoctorDashboard() {
         setEarningsData({
           weeklyEarnings: stats.weeklyEarnings, // Already in cents from backend
           todayEarnings: stats.todayEarnings, // Already in cents from backend
-          chartData: stats.chartData // Already formatted with date, week, earnings
+          chartData: stats.chartData // Now contains daily data with new labels
         });
         
         // Calculate total earnings for selected time range (sum all chartData earnings)
@@ -149,7 +215,9 @@ export default function DoctorDashboard() {
           todayEarnings: stats.todayEarnings,
           chartDataPoints: stats.chartData.length,
           chartData: stats.chartData,
-          totalEarnings: total
+          totalEarnings: total,
+          timeRange: stats.timeRange,
+          period: stats.period
         });
       } else {
         throw new Error('Invalid response format from earnings API');
@@ -165,6 +233,8 @@ export default function DoctorDashboard() {
         chartData: []
       });
       setTotalEarnings(0);
+    } finally {
+      setChartLoading(false);
     }
   };
 
@@ -232,9 +302,13 @@ export default function DoctorDashboard() {
   // Listen for time range changes
   useEffect(() => {
     if (user?._id && selectedTimeRange) {
-      fetchEarningsData(selectedTimeRange);
+      if (selectedTimeRange === 'monthly') {
+        fetchEarningsData(selectedTimeRange, selectedYear, selectedMonth);
+      } else {
+        fetchEarningsData(selectedTimeRange);
+      }
     }
-  }, [selectedTimeRange, user?._id]);
+  }, [selectedTimeRange, selectedYear, selectedMonth, user?._id]);
 
   // Separate useEffect to handle animations when reviews change
   useEffect(() => {
@@ -447,22 +521,38 @@ export default function DoctorDashboard() {
             <Text style={styles.earningsLabel}>Today</Text>
           </View>
           <View style={styles.earningsCard}>
-            <MaterialCommunityIcons name="calendar-week" size={20} color="#10B981" />
+            <MaterialCommunityIcons 
+              name="calendar-week" 
+              size={20} 
+              color="#10B981" 
+            />
             <Text style={styles.earningsValue}>LKR {(earningsData.weeklyEarnings / 100).toLocaleString()}</Text>
-            <Text style={styles.earningsLabel}>Weekly</Text>
+            <Text style={styles.earningsLabel}>
+              This Week
+            </Text>
           </View>
         </View>
         <View style={styles.totalEarningsRow}>
           <MaterialCommunityIcons name="cash-multiple" size={20} color="#008080" />
-          <Text style={styles.totalEarningsLabel}>Total Earnings ({getSelectedTimeRangeLabel()}): </Text>
+          <Text style={styles.totalEarningsLabel}>
+            Total Earnings (
+            {selectedTimeRange === 'monthly' 
+              ? `${getSelectedMonthLabel()} ${selectedYear}` 
+              : getSelectedTimeRangeLabel()
+            }): 
+          </Text>
           <Text style={styles.totalEarningsValue}>LKR {(totalEarnings / 100).toLocaleString()}</Text>
         </View>
         
         {/* Earnings Chart with Time Range Selector */}
-        {earningsData.chartData.length > 0 && (
-          <View style={styles.chartContainer}>
+        <View style={styles.chartContainer}>
             <View style={styles.chartHeader}>
-              <Text style={styles.chartTitle}>Earnings Trend</Text>
+              <Text style={styles.chartTitle}>
+                {selectedTimeRange === 'monthly' 
+                  ? `Daily Earnings - ${getSelectedMonthLabel()} ${selectedYear}` 
+                  : 'Daily Earnings Trend'
+                }
+              </Text>
               <TouchableOpacity 
                 style={styles.timeRangeButton}
                 onPress={toggleTimeRangePicker}
@@ -502,15 +592,133 @@ export default function DoctorDashboard() {
               </View>
             )}
             
-            <View style={styles.chartWrapper}>
-              {(() => {
+            {/* Month/Year Picker for Monthly View */}
+            {selectedTimeRange === 'monthly' && (
+              <View style={styles.monthYearPickerRow}>
+                {/* Month Picker */}
+                <View style={styles.monthYearPickerContainer}>
+                  <TouchableOpacity 
+                    style={styles.monthYearButton}
+                    onPress={toggleMonthPicker}
+                  >
+                    <Text style={styles.monthYearText}>{getSelectedMonthLabel()}</Text>
+                    <MaterialCommunityIcons 
+                      name={showMonthPicker ? "chevron-up" : "chevron-down"} 
+                      size={14} 
+                      color="#6B7280" 
+                    />
+                  </TouchableOpacity>
+                  
+                  {/* Month Dropdown */}
+                  {showMonthPicker && (
+                    <View style={styles.monthYearDropdown}>
+                      <ScrollView 
+                        showsVerticalScrollIndicator={true}
+                        nestedScrollEnabled={true}
+                        style={styles.dropdownScrollView}
+                      >
+                        {monthOptions.map((option) => (
+                          <TouchableOpacity
+                            key={option.value}
+                            style={[
+                              styles.monthYearOption,
+                              selectedMonth === option.value && styles.selectedMonthYearOption
+                            ]}
+                            onPress={() => handleMonthSelect(option.value)}
+                          >
+                            <Text style={[
+                              styles.monthYearOptionText,
+                              selectedMonth === option.value && styles.selectedMonthYearOptionText
+                            ]}>
+                              {option.label}
+                            </Text>
+                            {selectedMonth === option.value && (
+                              <MaterialCommunityIcons name="check" size={14} color="#059669" />
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+                
+                {/* Year Picker */}
+                <View style={styles.monthYearPickerContainer}>
+                  <TouchableOpacity 
+                    style={styles.monthYearButton}
+                    onPress={toggleYearPicker}
+                  >
+                    <Text style={styles.monthYearText}>{selectedYear}</Text>
+                    <MaterialCommunityIcons 
+                      name={showYearPicker ? "chevron-up" : "chevron-down"} 
+                      size={14} 
+                      color="#6B7280" 
+                    />
+                  </TouchableOpacity>
+                  
+                  {/* Year Dropdown */}
+                  {showYearPicker && (
+                    <View style={styles.monthYearDropdown}>
+                      <ScrollView 
+                        showsVerticalScrollIndicator={true}
+                        nestedScrollEnabled={true}
+                        style={styles.dropdownScrollView}
+                      >
+                        {yearOptions.map((option) => (
+                          <TouchableOpacity
+                            key={option.value}
+                            style={[
+                              styles.monthYearOption,
+                              selectedYear === option.value && styles.selectedMonthYearOption
+                            ]}
+                            onPress={() => handleYearSelect(option.value)}
+                          >
+                            <Text style={[
+                              styles.monthYearOptionText,
+                              selectedYear === option.value && styles.selectedMonthYearOptionText
+                            ]}>
+                              {option.label}
+                            </Text>
+                            {selectedYear === option.value && (
+                              <MaterialCommunityIcons name="check" size={14} color="#059669" />
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+            
+            <TouchableOpacity 
+              style={styles.chartWrapper}
+              activeOpacity={1}
+            >
+              {chartLoading ? (
+                <View style={styles.chartLoadingContainer}>
+                  <ActivityIndicator size="large" color="#4DB6AC" />
+                  <Text style={styles.chartLoadingText}>Loading chart data...</Text>
+                </View>
+              ) : (
+              (() => {
                 const screenWidth = Dimensions.get('window').width;
                 // Account for: screen margins (8px), container padding (32px), wrapper padding (20px)
-                const chartWidth = screenWidth - 120; 
+                const containerWidth = screenWidth - 120; 
                 const dataLength = earningsData.chartData.length;
-                // Ensure spacing distributes points evenly with proper margins
-                const availableWidth = chartWidth - 80; // Space for labels and margins
-                const spacing = dataLength > 1 ? Math.max(30, availableWidth / (dataLength - 1)) : 50;
+                
+                // Calculate optimal chart width for scrollability
+                let chartWidth, spacing;
+                if (selectedTimeRange === 'monthly' || dataLength >= 15) {
+                  // Monthly view or views with many data points: wider chart for better visibility with scroll
+                  const minSpacing = selectedTimeRange === 'monthly' ? 20 : 15; // More spacing for monthly
+                  chartWidth = Math.max(containerWidth, dataLength * minSpacing + 100);
+                  spacing = Math.max(minSpacing, (chartWidth - 100) / dataLength);
+                } else {
+                  // Weekly view: fit to container
+                  chartWidth = containerWidth;
+                  spacing = dataLength > 1 ? Math.max(30, (chartWidth - 80) / (dataLength - 1)) : 50;
+                }
                 
                 // Calculate Y-axis labels with improved scaling
                 const maxEarnings = Math.max(...earningsData.chartData.map(d => Math.max(d.earnings / 100, 0)));
@@ -551,13 +759,13 @@ export default function DoctorDashboard() {
                   chartWidth,
                   dataLength,
                   spacing,
-                  availableWidth,
+                  isDailyView: dataLength >= 28,
                   rawEarningsData: earningsData.chartData.map(item => item.earnings),
+                  chartLabels: earningsData.chartData.map(item => item.label),
                   maxEarnings,
                   maxValue,
                   scalingRatio: maxValue / maxEarnings,
                   yAxisLabels,
-                  chartData: earningsData.chartData.map(item => ({ week: item.week, earnings: item.earnings }))
                 });
                 
                 // Test scaling logic with different scenarios
@@ -605,21 +813,65 @@ export default function DoctorDashboard() {
                   });
                 });
                 
+                const isScrollable = chartWidth > containerWidth;
+                
                 return (
-                  <LineChart
-                    areaChart
-                    data={earningsData.chartData.map(item => ({
-                      value: Math.max(item.earnings / 100, 0), // Convert from cents to LKR, ensure minimum 0
-                      label: item.week,
-                    }))}
+                  <ScrollView
+                    horizontal={isScrollable}
+                    showsHorizontalScrollIndicator={isScrollable}
+                    style={{ flex: 1 }}
+                    contentContainerStyle={{ minWidth: chartWidth }}
+                  >
+                    {/* Week Separators for Multi-Week Views - Above Chart */}
+                    {(selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week') && (
+                      <View style={[styles.weekSeparatorsContainer, { width: chartWidth }]}>
+                        {selectedTimeRange === '4weeks-daily' ? (
+                          // 4 weeks
+                          [1, 2, 3, 4].map((week, index) => (
+                            <View key={week} style={[
+                              styles.weekSeparator,
+                              {
+                                left: 70 + (index * (chartWidth - 120) / 4), // Position based on chart sections
+                                width: (chartWidth - 120) / 4, // Equal width sections
+                              }
+                            ]}>
+                              <Text style={styles.weekSeparatorText}>Week {week}</Text>
+                            </View>
+                          ))
+                        ) : (
+                          // Last week - single label
+                          <View style={[
+                            styles.weekSeparator,
+                            {
+                              left: 70 + ((chartWidth - 120) / 2) - 25, // Center position
+                              width: 50, // Fixed width for center text
+                            }
+                          ]}>
+                            <Text style={styles.weekSeparatorText}>Last 7 Days</Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                    
+                    {earningsData.chartData.length > 0 ? (
+                      <LineChart
+                      areaChart
+                      data={earningsData.chartData.map((item, index) => ({
+                        value: Math.max(item.earnings / 100, 0), // Convert from cents to LKR, ensure minimum 0
+                        label: item.label, // Day number for all views
+                        date: item.date, // Full date for tooltip
+                        dayOfWeek: item.dayOfWeek, // Day of week for additional info
+                        dayOfMonth: item.dayOfMonth, // Day of month for monthly view
+                        index: index, // For week separator calculation
+                      }))}
                     width={chartWidth}
-                    height={240}
+                    height={(selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week') ? 280 : 240} // Taller for week separators
                     spacing={spacing}
-                    initialSpacing={40}
-                    endSpacing={40}
+                    initialSpacing={(selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week') ? 20 : 40}
+                    endSpacing={(selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week') ? 20 : 40}
                     adjustToWidth={false}
                     color="#4DB6AC"
-                    thickness={3}
+                    thickness={selectedTimeRange === '4weeks-daily' ? 2 : 3} // Thinner line for daily data
                     startFillColor="#008080"
                     endFillColor="rgba(147, 197, 253, 0.1)"
                     startOpacity={0.4}
@@ -646,21 +898,26 @@ export default function DoctorDashboard() {
                     showYAxisIndices={true}
                     yAxisLabelSuffix=""
                 xAxisLabelTextStyle={{
-                  color: '#6B7280',
-                  fontSize: 11,
+                  color: '#6B7280', // Show labels for all views
+                  fontSize: (selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week') ? 9 : 11,
                   fontWeight: '500',
                 }}
-                showVerticalLines={false}
+                showVerticalLines={selectedTimeRange === '4weeks-daily'} // Show vertical lines only for 4-week view
+                verticalLinesColor="#E5E7EB"
+                verticalLinesThickness={1}
+                verticalLinesZIndex={0}
+                verticalLinesUptoDataPoint={true}
+                noOfVerticalLines={selectedTimeRange === '4weeks-daily' ? 3 : 0} // 3 lines to create 4 week sections
                 curved={false}
                 isAnimated={true}
                 animationDuration={1500}
                 animateOnDataChange={true}
                 onDataChangeAnimationDuration={800}
-                hideDataPoints={false}
-                dataPointsHeight={8}
-                dataPointsWidth={8}
+                hideDataPoints={(selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week')} // Hide data points for cleaner daily views
+                dataPointsHeight={(selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week') ? 6 : 8}
+                dataPointsWidth={(selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week') ? 6 : 8}
                 dataPointsColor="#008080"
-                dataPointsRadius={4}
+                dataPointsRadius={(selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week') ? 3 : 4}
                 focusEnabled={true}
                 showStripOnFocus={true}
                 stripColor="#E5E7EB"
@@ -668,35 +925,94 @@ export default function DoctorDashboard() {
                 stripWidth={2}
                 showTextOnFocus={true}
                 focusedDataPointColor="#1D4ED8"
-                focusedDataPointRadius={6}
+                focusedDataPointRadius={(selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week') ? 5 : 6}
                 textShiftY={-8}
                 textShiftX={0}
                 textColor="#1F2937"
                 textFontSize={12}
-                  />
+                pointerConfig={{
+                  hidePointer1: true,
+                  showPointerStrip: false,
+                }}
+                      />
+                    ) : (
+                      // Empty state for future months or no data
+                      <View style={styles.emptyChartContainer}>
+                        <MaterialCommunityIcons name="chart-line" size={48} color="#E5E7EB" />
+                        <Text style={styles.emptyChartText}>
+                          {selectedTimeRange === 'monthly' ? 'No data available for this month' : 'No earnings data available'}
+                        </Text>
+                      </View>
+                    )}
+                  </ScrollView>
                 );
-              })()}
-            </View>
+              })())}
+            </TouchableOpacity>
             
             {/* Chart Statistics */}
             <View style={styles.chartStats}>
               <View style={styles.statRow}>
                 <View style={styles.statItem}>
-                  <MaterialCommunityIcons name="trending-up" size={16} color="#10B981" />
-                  <Text style={styles.statLabel}>
+                  <MaterialCommunityIcons 
+                    name={earningsData.chartData.length > 1 && 
+                         earningsData.chartData[earningsData.chartData.length - 1].earnings > earningsData.chartData[0].earnings
+                         ? "trending-up" : "trending-down"} 
+                    size={16} 
+                    color={earningsData.chartData.length > 1 && 
+                          earningsData.chartData[earningsData.chartData.length - 1].earnings > earningsData.chartData[0].earnings
+                          ? "#10B981" : "#EF4444"} 
+                  />
+                  <Text style={[styles.statLabel, {
+                    color: earningsData.chartData.length > 1 && 
+                           earningsData.chartData[earningsData.chartData.length - 1].earnings > earningsData.chartData[0].earnings
+                           ? "#10B981" : "#EF4444"
+                  }]}>
                     {earningsData.chartData.length > 1 ? 
                       (earningsData.chartData[earningsData.chartData.length - 1].earnings > earningsData.chartData[0].earnings ? 
                         'Trending up' : 'Trending down') 
                       : 'Stable'}
                   </Text>
                 </View>
-                <Text style={styles.periodLabel}>
-                  {timeRangeOptions.find(opt => opt.value === selectedTimeRange)?.label}
-                </Text>
+                <View style={styles.chartInfoItem}>
+                  <Text style={styles.chartInfoLabel}>
+                    {earningsData.chartData.length} days
+                  </Text>
+                  <Text style={styles.periodLabel}>
+                    {selectedTimeRange === 'monthly' 
+                      ? `${getSelectedMonthLabel()} ${selectedYear}` 
+                      : selectedTimeRange === 'last-week'
+                      ? 'Last 7 Days'
+                      : 'Last 4 Weeks'
+                    }
+                  </Text>
+                </View>
               </View>
+              
+              {/* Additional daily stats */}
+              {(selectedTimeRange === '4weeks-daily' || selectedTimeRange === 'last-week') && earningsData.chartData.length > 0 && (
+                <View style={styles.dailyStatsRow}>
+                  <View style={styles.dailyStatItem}>
+                    <Text style={styles.dailyStatValue}>
+                      {Math.round(totalEarnings / 100 / earningsData.chartData.length)}
+                    </Text>
+                    <Text style={styles.dailyStatLabel}>Avg/Day (LKR)</Text>
+                  </View>
+                  <View style={styles.dailyStatItem}>
+                    <Text style={styles.dailyStatValue}>
+                      {Math.max(...earningsData.chartData.map(d => Math.round(d.earnings / 100)))}
+                    </Text>
+                    <Text style={styles.dailyStatLabel}>Best Day (LKR)</Text>
+                  </View>
+                  <View style={styles.dailyStatItem}>
+                    <Text style={styles.dailyStatValue}>
+                      {earningsData.chartData.filter(d => d.earnings > 0).length}
+                    </Text>
+                    <Text style={styles.dailyStatLabel}>Active Days</Text>
+                  </View>
+                </View>
+              )}
             </View>
           </View>
-        )}
       </View>
 
       {/* Recent Reviews Section */}
@@ -1491,6 +1807,194 @@ const styles = StyleSheet.create({
   noReviewsSubtext: {
     fontSize: 14,
     color: '#9CA3AF',
+    textAlign: 'center',
+  },
+  // Month/Year Picker Styles
+  monthYearPickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    marginBottom: 16,
+    paddingHorizontal: 4,
+    gap: 12,
+  },
+  monthYearPickerContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  monthYearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    minHeight: 36,
+  },
+  monthYearText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  monthYearDropdown: {
+    position: 'absolute',
+    top: 38,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1000,
+    maxHeight: 150, // Reduced height to force scrolling
+  },
+  dropdownScrollView: {
+    maxHeight: 148, // Slightly less than container to show borders
+  },
+  monthYearOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  selectedMonthYearOption: {
+    backgroundColor: '#F0FDF4',
+  },
+  monthYearOptionText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '400',
+  },
+  selectedMonthYearOptionText: {
+    color: '#059669',
+    fontWeight: '500',
+  },
+  // Additional Chart Statistics Styles
+  chartInfoItem: {
+    alignItems: 'flex-end',
+  },
+  chartInfoLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  dailyStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  dailyStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  dailyStatValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  dailyStatLabel: {
+    fontSize: 10,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  // Chart Tooltip Styles
+  chartTooltip: {
+    position: 'absolute',
+    backgroundColor: 'rgba(31, 41, 55, 0.9)',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 1000,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  tooltipText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  tooltipValue: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  // Week Separators Styles
+  weekSeparatorsContainer: {
+    position: 'absolute',
+    top: -25,
+    height: 20,
+    flexDirection: 'row',
+    zIndex: 10,
+  },
+  weekSeparator: {
+    position: 'absolute',
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  weekSeparatorText: {
+    fontSize: 10,
+    color: '#6B7280',
+    fontWeight: '600',
+    textAlign: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  // Chart Loading Styles
+  chartLoadingContainer: {
+    height: 240,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    marginVertical: 10,
+  },
+  chartLoadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  // Empty Chart Styles
+  emptyChartContainer: {
+    height: 240,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+  },
+  emptyChartText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
     textAlign: 'center',
   },
 });

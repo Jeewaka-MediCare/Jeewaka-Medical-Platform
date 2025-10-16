@@ -299,19 +299,43 @@ export const paymentService = {
   },
 
   // Get doctor earnings statistics for charts (doctor-specific)
-  getDoctorEarningsStats: async (timeRange = "4weeks") => {
+  getDoctorEarningsStats: async (
+    timeRange = "4weeks-daily",
+    year = null,
+    month = null
+  ) => {
     try {
       // Wait for Firebase auth to be ready
       await waitForAuth();
 
       console.log(
         "Mobile PaymentService - Getting doctor earnings statistics for timeRange:",
-        timeRange
+        timeRange,
+        "year:",
+        year,
+        "month:",
+        month
       );
 
-      const response = await api.get(
-        `/api/payments/earnings/stats?timeRange=${timeRange}`
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append("timeRange", timeRange);
+
+      // Add year and month parameters for monthly view
+      if (timeRange === "monthly" && year && month) {
+        params.append("year", year.toString());
+        params.append("month", month.toString());
+      }
+
+      const queryString = params.toString();
+      const url = `/api/payments/earnings/stats?${queryString}`;
+
+      console.log(
+        "Mobile PaymentService - Making earnings stats request to:",
+        url
       );
+
+      const response = await api.get(url);
       console.log(
         "Mobile PaymentService - Doctor earnings stats response:",
         response.data
