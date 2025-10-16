@@ -194,6 +194,11 @@ export default function SessionAppointments() {
     }
     
     console.log('Final patient info for medical records:', patientInfo);
+    console.log('Patient _id type:', typeof patientInfo._id);
+    console.log('Patient _id value:', patientInfo._id);
+    console.log('Patient _id length:', patientInfo._id?.length);
+    console.log('Is valid ObjectId format:', /^[0-9a-fA-F]{24}$/.test(patientInfo._id));
+    
     setSelectedPatient(patientInfo);
     setMedicalRecordsVisible(true);
   }, []);
