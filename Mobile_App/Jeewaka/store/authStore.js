@@ -2,12 +2,14 @@ import { create } from "zustand";
 import { auth } from "../config/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "../services/api";
 
 const useAuthStore = create((set, get) => ({
   user: null,
   userRole: null,
   loading: true,
   authToken: null,
+  verificationStatus: null, // Track doctor verification status
 
   setUser: async (user) => {
     set({ user });
@@ -24,6 +26,22 @@ const useAuthStore = create((set, get) => ({
       await AsyncStorage.setItem("userRole", userRole);
     } else {
       await AsyncStorage.removeItem("userRole");
+    }
+  },
+
+  setVerificationStatus: (status) => set({ verificationStatus: status }),
+
+  // Check doctor verification status
+  checkDoctorVerification: async (doctorId) => {
+    try {
+      const response = await api.get(`/api/admin-verification/${doctorId}`);
+      const isVerified = response.data?.isVerified || false;
+      set({ verificationStatus: isVerified });
+      return isVerified;
+    } catch (error) {
+      // If 404 or other error, doctor is not verified
+      set({ verificationStatus: false });
+      return false;
     }
   },
 
@@ -55,7 +73,12 @@ const useAuthStore = create((set, get) => ({
     await signOut(auth);
     await AsyncStorage.removeItem("userData");
     await AsyncStorage.removeItem("userRole");
-    set({ user: null, userRole: null, authToken: null });
+    set({
+      user: null,
+      userRole: null,
+      authToken: null,
+      verificationStatus: null,
+    });
   },
 
   // Initialize user from AsyncStorage and set up auth listener
@@ -80,9 +103,9 @@ const useAuthStore = create((set, get) => ({
             const token = await firebaseUser.getIdToken();
             const idTokenResult = await firebaseUser.getIdTokenResult();
             const role = idTokenResult.claims.role;
-            
+
             set({ authToken: token });
-            
+
             // Update role if it's different from stored role
             if (role && role !== get().userRole) {
               await get().setUserRole(role);
@@ -97,7 +120,7 @@ const useAuthStore = create((set, get) => ({
       });
 
       set({ loading: false });
-      
+
       // Return cleanup function
       return unsubscribe;
     } catch (error) {

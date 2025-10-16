@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AntDesign } from '@expo/vector-icons';
 
 export default function Login() {
-  const { setUser, setUserRole } = useAuthStore();
+  const { setUser, setUserRole, checkDoctorVerification } = useAuthStore();
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -83,7 +83,22 @@ export default function Login() {
         
         // Navigate based on user role
         if (role === 'doctor') {
-          router.replace('/(tabs)/appointments');  // Direct to My Appointments tab
+          // Check if doctor is verified before allowing access
+          try {
+            const isVerified = await checkDoctorVerification(userData._id);
+            
+            if (isVerified) {
+              // Doctor is verified, can access dashboard
+              router.replace('/(tabs)/appointments');  // Direct to My Appointments tab
+            } else {
+              // Doctor is not verified, redirect to verification page
+              router.replace(`/AdminVerificationPending?doctorId=${userData._id}&_id=${userData._id}&name=${encodeURIComponent(userData.name)}&email=${encodeURIComponent(userData.email)}`);
+            }
+          } catch (verificationError) {
+            console.error('Error checking verification:', verificationError);
+            // On error, redirect to verification page to be safe
+            router.replace(`/AdminVerificationPending?doctorId=${userData._id}&_id=${userData._id}&name=${encodeURIComponent(userData.name)}&email=${encodeURIComponent(userData.email)}`);
+          }
         } else if (role === 'patient') {
           router.replace('/(tabs)');  // Direct to Jeewaka tab
         } else if (role === 'admin') {

@@ -65,17 +65,27 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error("API Response Error:", error.message);
-    if (error.response) {
-      console.error("Error Status:", error.response.status);
-      console.error("Error Data:", error.response.data);
+    // Don't log expected 404s for verification checks (normal for new doctors)
+    if (
+      error.response?.status === 404 &&
+      error.config?.url?.includes("/api/admin-verification/")
+    ) {
+      console.log(
+        `Verification not found (expected for new doctors): ${error.config.url}`
+      );
+    } else {
+      console.error("API Response Error:", error.message);
+      if (error.response) {
+        console.error("Error Status:", error.response.status);
+        console.error("Error Data:", error.response.data);
 
-      // Handle authentication errors globally
-      if (error.response.status === 401) {
-        console.warn(
-          "Authentication error detected - user may need to re-login"
-        );
-        // You could emit an event here or call a global logout function
+        // Handle authentication errors globally
+        if (error.response.status === 401) {
+          console.warn(
+            "Authentication error detected - user may need to re-login"
+          );
+          // You could emit an event here or call a global logout function
+        }
       }
     }
     return Promise.reject(error);

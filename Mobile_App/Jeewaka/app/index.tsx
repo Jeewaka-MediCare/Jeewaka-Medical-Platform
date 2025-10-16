@@ -18,8 +18,10 @@ const { width } = Dimensions.get("window");
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, loading, initializeAuth } = useAuthStore();
+  const { user, userRole, loading, initializeAuth, checkDoctorVerification } =
+    useAuthStore();
   const [currentPage, setCurrentPage] = useState(0);
+  const [checkingVerification, setCheckingVerification] = useState(false);
   const pagerRef = useRef<PagerView>(null);
 
   useEffect(() => {
@@ -28,17 +30,60 @@ export default function HomePage() {
 
   // Handle navigation after authentication check
   useEffect(() => {
-    if (!loading && user) {
-      router.replace("/(tabs)");
-    }
-  }, [user, loading]);
+    const handleNavigation = async () => {
+      if (!loading && user && userRole) {
+        // If user is a doctor, check verification status
+        if (userRole === "doctor") {
+          setCheckingVerification(true);
+          try {
+            const isVerified = await checkDoctorVerification(user._id);
 
-  // Show loading while checking authentication
-  if (loading) {
+            if (isVerified) {
+              // Doctor is verified, can access dashboard
+              router.replace("/(tabs)");
+            } else {
+              // Doctor is not verified, redirect to verification page
+              router.replace(
+                `/AdminVerificationPending?doctorId=${user._id}&_id=${
+                  user._id
+                }&name=${encodeURIComponent(
+                  user.name
+                )}&email=${encodeURIComponent(user.email)}`
+              );
+            }
+          } catch (error) {
+            console.error("Error checking verification:", error);
+            // On error, redirect to verification page to be safe
+            router.replace(
+              `/AdminVerificationPending?doctorId=${user._id}&_id=${
+                user._id
+              }&name=${encodeURIComponent(
+                user.name
+              )}&email=${encodeURIComponent(user.email)}`
+            );
+          } finally {
+            setCheckingVerification(false);
+          }
+        } else {
+          // User is not a doctor (patient/admin), proceed normally
+          router.replace("/(tabs)");
+        }
+      }
+    };
+
+    handleNavigation();
+  }, [user, userRole, loading]);
+
+  // Show loading while checking authentication or verification
+  if (loading || checkingVerification) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#008080" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>
+          {checkingVerification
+            ? "Checking verification status..."
+            : "Loading..."}
+        </Text>
       </SafeAreaView>
     );
   }
