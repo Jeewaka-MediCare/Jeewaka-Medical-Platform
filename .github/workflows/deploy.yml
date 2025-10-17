@@ -229,20 +229,21 @@ jobs:
           exit 1
         fi
     
-    - name: Notify Slack on success
-      if: success()
-      uses: 8398a7/action-slack@v3
-      with:
-        status: success
-        text: '🚀 Jeewaka Medical Platform deployed successfully!'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    #
+    #- name: Notify Slack on success
+    #  if: success()
+    #  uses: 8398a7/action-slack@v3
+    #  with:
+    #    status: success
+    #    text: '🚀 Jeewaka Medical Platform deployed successfully!'
+    #  env:
+    #    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     
-    - name: Notify Slack on failure
-      if: failure()
-      uses: 8398a7/action-slack@v3
-      with:
-        status: failure
-        text: '❌ Jeewaka Medical Platform deployment failed!'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    #- name: Notify Slack on failure
+    #  if: failure()
+    #  uses: 8398a7/action-slack@v3
+    #  with:
+    #    status: failure
+    #    text: '❌ Jeewaka Medical Platform deployment failed!'
+    #  env:
+    #    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
