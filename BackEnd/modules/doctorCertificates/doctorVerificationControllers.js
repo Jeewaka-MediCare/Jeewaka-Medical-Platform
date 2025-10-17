@@ -163,6 +163,22 @@ export const uploadDoctorDocument = async (req, res) => {
       file.mimetype
     );
 
+    // After successful upload, ensure the uploaded URL is persisted
+    try {
+      const urlToStore = uploadResult?.url || uploadResult?.path || null;
+      if (urlToStore) {
+        // Add to certificates array if not present; create verification doc if missing
+        await adminVerificationSchema.findOneAndUpdate(
+          { doctorId },
+          { $addToSet: { certificates: urlToStore } },
+          { new: true, upsert: true }
+        );
+      }
+    } catch (persistErr) {
+      console.error('Warning: uploaded document but failed to persist URL to verification record', persistErr);
+      // continue and return success for upload - persistence failure shouldn't block file storage
+    }
+
     res.status(200).json({
       message: "Document uploaded successfully",
       document: uploadResult,
@@ -184,10 +200,25 @@ export const getVerificationByDoctorId = async (req, res) => {
       return res.status(400).json({ message: "Doctor ID is required" });
     }
 
-    const verification = await adminVerificationSchema.find({ doctorId });
+    // Try direct match first
+    let verification = await adminVerificationSchema.find({ doctorId });
+
+    // If not found, try to resolve doctorId as a Doctor.uuid (Firebase uid) and lookup by the doctor's ObjectId
+    if (!verification || verification.length === 0) {
+      try {
+        const doctorDoc = await Doctor.findOne({ uuid: doctorId });
+        if (doctorDoc) {
+          verification = await adminVerificationSchema.find({ doctorId: doctorDoc._id });
+        }
+      } catch (innerErr) {
+        console.warn('Fallback lookup by Doctor.uuid failed', innerErr.message || innerErr);
+      }
+    }
+
     if (!verification || verification.length === 0) {
       return res.status(404).json({ message: "Verification not found" });
     }
+
     res.status(200).json(verification);
   } catch (error) {
     console.error("Error getting verification:", error);
