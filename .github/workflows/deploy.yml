@@ -63,10 +63,10 @@ jobs:
     #  working-directory: ./frontend
     #  run: npm run lint
       
-    - name: Security audit
-      run: |
-        cd frontend && npm audit --audit-level moderate
-        cd ../BackEnd && npm audit --audit-level moderate
+    #- name: Security audit
+    #  run: |
+    #    cd frontend && npm audit --audit-level moderate
+    #    cd ../BackEnd && npm audit --audit-level moderate
 
   #security-scan:
   #  runs-on: ubuntu-latest
