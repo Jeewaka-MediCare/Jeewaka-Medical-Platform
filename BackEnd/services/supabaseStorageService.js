@@ -50,7 +50,7 @@ class SupabaseStorageService {
    * Upload doctor verification document
    * Folder structure: verification-documents/{doctorId}/{filename}
    */
-  async uploadDoctorDocument(doctorId, file, filename) {
+  async uploadDoctorDocument(doctorId, file, filename, contentType = 'application/octet-stream') {
     if (!this.backupEnabled) {
       console.warn('Supabase backup is disabled');
       return null;
@@ -62,7 +62,8 @@ class SupabaseStorageService {
         .from(this.verificationDocsBucket)
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true
+          upsert: true,
+          contentType
         });
       if (error) {
         console.error('Error uploading doctor document:', error);

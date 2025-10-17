@@ -272,12 +272,13 @@ export default function AdminVerificationPending() {
                     <div className="flex-1">
                       <a
                         href={file.url}
-                        download={file.name}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="font-semibold text-blue-700 hover:underline break-all"
                       >
                         {file.name}
                       </a>
-                      <p className="text-xs text-gray-500 break-all">{file.url}</p>
+                      {/* Don't show raw signed URL to avoid clutter; filename is a clickable link */}
                       <p className="text-xs text-gray-400 mt-1">
                         Uploaded: {formatDate(file.uploadedAt)}
                       </p>
