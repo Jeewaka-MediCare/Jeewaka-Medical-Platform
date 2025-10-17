@@ -211,7 +211,7 @@ jobs:
 
         # Move files into /opt with sudo and run deploy script as the remote user
         ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} \
-          "sudo mkdir -p /opt/jeewaka-medical-platform && sudo cp -r /home/${USER_NAME}/jeewaka-medical-platform/* /opt/jeewaka-medical-platform/ && sudo cp -r /home/${USER_NAME}/jeewaka-medical-platform/BackEnd/service-account-key.json /opt/jeewaka-medical-platform/BackEnd/ || true && sudo chown -R ${USER_NAME}:${USER_NAME} /opt/jeewaka-medical-platform || true && cd /opt/jeewaka-medical-platform && git pull origin main || true && chmod +x scripts/deploy-micro.sh && ./scripts/deploy-micro.sh"
+          "sudo mkdir -p /opt/jeewaka-medical-platform && sudo cp -r /home/${USER_NAME}/jeewaka-medical-platform/* /opt/jeewaka-medical-platform/ && sudo cp -r /home/${USER_NAME}/jeewaka-medical-platform/BackEnd/service-account-key.json /opt/jeewaka-medical-platform/BackEnd/ || true && sudo chown -R ${USER_NAME}:${USER_NAME} /opt/jeewaka-medical-platform || true && if [ -f /opt/jeewaka-medical-platform/scripts/deploy-micro.sh ]; then chmod +x /opt/jeewaka-medical-platform/scripts/deploy-micro.sh && /opt/jeewaka-medical-platform/scripts/deploy-micro.sh; else echo 'No deploy script found at /opt/jeewaka-medical-platform/scripts/deploy-micro.sh - skipping remote deploy script step'; fi"
     
     - name: Health check
       env:
