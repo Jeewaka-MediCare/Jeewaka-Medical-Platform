@@ -15,7 +15,7 @@ import adminVerificationRouter from "./modules/doctorCertificates/doctorVerifica
 import paymentsRouter from "./modules/payments/paymentsRoutes.js";
 import financeRouter from "./modules/finance/financeRoutes.js";
 import medicalRecordsRouter from "./modules/records/recordsRoutes.js";
-
+import authRouter from "./modules/auth/authRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +33,12 @@ app.use("/api/doctor", doctorRoutes);
 
 // Register payments routes
 app.use("/api/payments", paymentsRouter);
+app.use("/api/hospital", hospitalRouter);
+app.use("/api/session", sessionRouter);
+app.use("/api/patient", patientRouter);
+
+// Register auth routes
+app.use("/api/auth", authRoutes);
 
 // Register finance routes
 app.use("/api/finance", financeRouter);

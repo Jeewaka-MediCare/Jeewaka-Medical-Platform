@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 import { useEffect, useState } from "react"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, Calendar, Clock, Video, Users } from 'lucide-react'
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import api from "@/services/api.js"
@@ -92,128 +92,191 @@ export default function AppointmentsPage() {
 
   if (loading) {
     return (
-      <main className="container mx-auto py-8 px-4">
-        <h1 className="text-2xl font-semibold">Loading your appointments…</h1>
+      <main className="min-h-screen bg-gradient-to-br from-teal-50 via-emerald-50 to-green-50">
+        <div className="container mx-auto py-12 px-4">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 animate-pulse">
+                <Calendar className="h-8 w-8 text-white" />
+              </div>
+              <h1 className="text-2xl font-semibold text-gray-800">Loading your appointments...</h1>
+              <p className="text-gray-600">Please wait while we fetch your schedule</p>
+            </div>
+          </div>
+        </div>
       </main>
     )
   }
 
   return (
-    <main className="container mx-auto py-8 px-4">
-      <div className="mb-6">
-        <Link to="/patient-dashboard" className="inline-flex items-center text-primary hover:underline">
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Back to Dashboard
-        </Link>
+    <main className="min-h-screen bg-gradient-to-br from-teal-50 via-emerald-50 to-green-50">
+      <div className="container mx-auto py-8 px-4 max-w-6xl">
+        {/* Back Navigation */}
+        <div className="mb-6">
+          <Link 
+            to="/patient-dashboard" 
+            className="inline-flex items-center text-teal-700 hover:text-teal-800 font-medium transition-colors group"
+          >
+            <ChevronLeft className="h-5 w-5 mr-1 group-hover:-translate-x-1 transition-transform" />
+            Back to Dashboard
+          </Link>
+        </div>
+
+        {/* Page Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow-lg">
+              <Calendar className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-700 to-emerald-700 bg-clip-text text-transparent">
+                My Appointments
+              </h1>
+              <p className="text-gray-600 mt-1">View and manage your upcoming and past appointments</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="in-person" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8 bg-white/80 backdrop-blur-sm p-1.5 rounded-xl shadow-md border border-teal-100">
+            <TabsTrigger 
+              value="in-person" 
+              className="text-base py-3.5 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all font-medium flex items-center justify-center gap-2"
+            >
+              <Users className="h-4 w-4" />
+              In-Person
+            </TabsTrigger>
+            <TabsTrigger 
+              value="online" 
+              className="text-base py-3.5 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all font-medium flex items-center justify-center gap-2"
+            >
+              <Video className="h-4 w-4" />
+              Online
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="in-person" className="space-y-8">
+            {/* Upcoming In-Person Appointments */}
+            <div>
+              <div className="flex items-center gap-2 mb-5">
+                <Clock className="h-5 w-5 text-teal-600" />
+                <h3 className="text-xl font-bold text-teal-700">Upcoming Appointments</h3>
+              </div>
+              {inPersonAppointments.filter(a => a.isUpcoming).length > 0 ? (
+                <div className="grid gap-4 mb-6">
+                  {inPersonAppointments.filter(a => a.isUpcoming).map((appointment, index) => (
+                    <AppointmentCard
+                      key={`upcoming-${index}`}
+                      appointment={appointment}
+                      type="upcoming"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="mb-6 border-teal-100 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-shadow">
+                  <CardContent className="p-8 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-50 mb-4">
+                      <Calendar className="h-8 w-8 text-teal-400" />
+                    </div>
+                    <p className="text-gray-600 font-medium">No upcoming in-person appointments</p>
+                    <p className="text-sm text-gray-500 mt-2">Your scheduled appointments will appear here</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Past In-Person Appointments */}
+            <div>
+              <div className="flex items-center gap-2 mb-5">
+                <Calendar className="h-5 w-5 text-gray-600" />
+                <h3 className="text-xl font-bold text-gray-700">Past Appointments</h3>
+              </div>
+              {inPersonAppointments.filter(a => !a.isUpcoming).length > 0 ? (
+                <div className="grid gap-4">
+                  {inPersonAppointments.filter(a => !a.isUpcoming).map((appointment, index) => (
+                    <AppointmentCard
+                      key={`past-${index}`}
+                      appointment={appointment}
+                      type="completed"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="border-gray-200 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-shadow">
+                  <CardContent className="p-8 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4">
+                      <Calendar className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 font-medium">No past in-person appointments</p>
+                    <p className="text-sm text-gray-500 mt-2">Your appointment history will appear here</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="online" className="space-y-8">
+            {/* Upcoming Online Appointments */}
+            <div>
+              <div className="flex items-center gap-2 mb-5">
+                <Clock className="h-5 w-5 text-teal-600" />
+                <h3 className="text-xl font-bold text-teal-700">Upcoming Appointments</h3>
+              </div>
+              {onlineAppointments.filter(a => a.isUpcoming).length > 0 ? (
+                <div className="grid gap-4 mb-6">
+                  {onlineAppointments.filter(a => a.isUpcoming).map((appointment, index) => (
+                    <AppointmentCard
+                      key={`upcoming-online-${index}`}
+                      appointment={appointment}
+                      type="upcoming"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="mb-6 border-teal-100 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-shadow">
+                  <CardContent className="p-8 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-50 mb-4">
+                      <Video className="h-8 w-8 text-teal-400" />
+                    </div>
+                    <p className="text-gray-600 font-medium">No upcoming online appointments</p>
+                    <p className="text-sm text-gray-500 mt-2">Your scheduled video consultations will appear here</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Past Online Appointments */}
+            <div>
+              <div className="flex items-center gap-2 mb-5">
+                <Calendar className="h-5 w-5 text-gray-600" />
+                <h3 className="text-xl font-bold text-gray-700">Past Appointments</h3>
+              </div>
+              {onlineAppointments.filter(a => !a.isUpcoming).length > 0 ? (
+                <div className="grid gap-4">
+                  {onlineAppointments.filter(a => !a.isUpcoming).map((appointment, index) => (
+                    <AppointmentCard
+                      key={`past-online-${index}`}
+                      appointment={appointment}
+                      type="completed"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="border-gray-200 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-shadow">
+                  <CardContent className="p-8 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4">
+                      <Video className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 font-medium">No past online appointments</p>
+                    <p className="text-sm text-gray-500 mt-2">Your consultation history will appear here</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">My Appointments</h1>
-        <p className="text-muted-foreground">View and manage your appointments</p>
-      </div>
-
-      <Tabs defaultValue="in-person" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="in-person" className="text-base py-3">
-            Inperson
-          </TabsTrigger>
-          <TabsTrigger value="online" className="text-base py-3">
-            Online
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="in-person" className="space-y-6">
-          {/* Upcoming In-Person Appointments */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-green-600">Upcoming Appointments</h3>
-            {inPersonAppointments.filter(a => a.isUpcoming).length > 0 ? (
-              <div className="grid gap-4 mb-6">
-                {inPersonAppointments.filter(a => a.isUpcoming).map((appointment, index) => (
-                  <AppointmentCard
-                    key={`upcoming-${index}`}
-                    appointment={appointment}
-                    type="upcoming"
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="mb-6">
-                <CardContent className="p-6 text-center">
-                  <p className="text-muted-foreground">No upcoming in-person appointments</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Past In-Person Appointments */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-600">Past Appointments</h3>
-            {inPersonAppointments.filter(a => !a.isUpcoming).length > 0 ? (
-              <div className="grid gap-4">
-                {inPersonAppointments.filter(a => !a.isUpcoming).map((appointment, index) => (
-                  <AppointmentCard
-                    key={`past-${index}`}
-                    appointment={appointment}
-                    type="completed"
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <p className="text-muted-foreground">No past in-person appointments</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="online" className="space-y-6">
-          {/* Upcoming Online Appointments */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-green-600">Upcoming Appointments</h3>
-            {onlineAppointments.filter(a => a.isUpcoming).length > 0 ? (
-              <div className="grid gap-4 mb-6">
-                {onlineAppointments.filter(a => a.isUpcoming).map((appointment, index) => (
-                  <AppointmentCard
-                    key={`upcoming-online-${index}`}
-                    appointment={appointment}
-                    type="upcoming"
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="mb-6">
-                <CardContent className="p-6 text-center">
-                  <p className="text-muted-foreground">No upcoming online appointments</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Past Online Appointments */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-600">Past Appointments</h3>
-            {onlineAppointments.filter(a => !a.isUpcoming).length > 0 ? (
-              <div className="grid gap-4">
-                {onlineAppointments.filter(a => !a.isUpcoming).map((appointment, index) => (
-                  <AppointmentCard
-                    key={`past-online-${index}`}
-                    appointment={appointment}
-                    type="completed"
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <p className="text-muted-foreground">No past online appointments</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
     </main>
   )
 }

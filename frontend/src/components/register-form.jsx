@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { email, z } from "zod"
 import { useState } from "react"
-import { Eye, EyeOff, Loader2, UserCheck, Stethoscope } from "lucide-react"
+import { Eye, EyeOff, Loader2, UserCheck, Stethoscope, Heart, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react'
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { auth } from "../services/firebase"
 import api from "../services/api"
@@ -269,36 +269,60 @@ export function SignupForm({ className, ...props }) {
   }
 
   return (
-    <div className={cn("flex flex-col gap-6 max-w-md mx-auto", className)} {...props}>
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Create Account</CardTitle>
-          <CardDescription>Join our medical platform as a doctor or patient</CardDescription>
+    <div className={cn("flex flex-col gap-8 max-w-lg mx-auto py-8 px-4", className)} {...props}>
+      {/* Header Section with Medical Theme */}
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 mb-2 shadow-lg">
+          <Heart className="h-8 w-8 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold text-balance bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent">
+          Join Our Healthcare Platform
+        </h1>
+        <p className="text-muted-foreground text-balance leading-relaxed">
+          Create your account to access quality healthcare services
+        </p>
+      </div>
+
+      <Card className="border-emerald-100 shadow-xl shadow-emerald-50">
+        <CardHeader className="space-y-3 pb-6 bg-gradient-to-br from-emerald-50/50 to-teal-50/30 border-b border-emerald-100">
+          <CardTitle className="text-2xl font-semibold text-emerald-900">Create Account</CardTitle>
+          <CardDescription className="text-base leading-relaxed">
+            Register as a patient or healthcare provider
+          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Tabs value={userType} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="patient" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-2 h-12 bg-emerald-50/50 p-1 rounded-lg">
+              <TabsTrigger 
+                value="patient" 
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-md transition-all"
+              >
                 <UserCheck className="h-4 w-4" />
-                Patient
+                <span className="font-medium">Patient</span>
               </TabsTrigger>
-              <TabsTrigger value="doctor" className="flex items-center gap-2">
+              <TabsTrigger 
+                value="doctor" 
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-md transition-all"
+              >
                 <Stethoscope className="h-4 w-4" />
-                Doctor
+                <span className="font-medium">Doctor</span>
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="patient" className="mt-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Error Display */}
                 {errors.submit && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-red-800 text-sm">{errors.submit}</p>
+                  <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-md flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-red-800 text-sm leading-relaxed">{errors.submit}</p>
                   </div>
                 )}
                 
-                <div className="grid gap-3">
-                  <Label htmlFor="name">Full Name *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                    Full Name <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="name"
                     type="text"
@@ -307,41 +331,52 @@ export function SignupForm({ className, ...props }) {
                     value={patientForm.name}
                     onChange={handlePatientChange}
                     aria-invalid={errors.name ? "true" : "false"}
+                    className="h-11 border-gray-200 focus:border-emerald-500 focus:ring-emerald-500"
                   />
                   {errors.name && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.name}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="email">Email *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email Address <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="your.email@example.com"
                     required
                     value={patientForm.email}
                     onChange={handlePatientChange}
                     aria-invalid={errors.email ? "true" : "false"}
+                    className="h-11 border-gray-200 focus:border-emerald-500 focus:ring-emerald-500"
                   />
                   {errors.email && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.email}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="gender">Gender *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="gender" className="text-sm font-medium text-gray-700">
+                    Gender <span className="text-red-500">*</span>
+                  </Label>
                   <Select 
                     onValueChange={(value) => handleSelectChange("gender", value)}
                     required
                     value={patientForm.gender}
                   >
-                    <SelectTrigger className={!patientForm.gender ? "border-red-300" : ""}>
-                      <SelectValue placeholder="Select gender" />
+                    <SelectTrigger className={cn(
+                      "h-11 border-gray-200 focus:border-emerald-500 focus:ring-emerald-500",
+                      !patientForm.gender && "text-muted-foreground"
+                    )}>
+                      <SelectValue placeholder="Select your gender" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Male">Male</SelectItem>
@@ -350,14 +385,17 @@ export function SignupForm({ className, ...props }) {
                     </SelectContent>
                   </Select>
                   {errors.gender && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.gender}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="dob">Date of Birth *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="dob" className="text-sm font-medium text-gray-700">
+                    Date of Birth <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="dob"
                     type="date"
@@ -366,30 +404,36 @@ export function SignupForm({ className, ...props }) {
                     value={patientForm.dob}
                     onChange={handlePatientChange}
                     aria-invalid={errors.dob ? "true" : "false"}
+                    className="h-11 border-gray-200 focus:border-emerald-500 focus:ring-emerald-500"
                   />
                   {errors.dob && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.dob}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="password">Password * (min. 8 characters)</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    Password <span className="text-red-500">*</span>
+                    <span className="text-xs text-gray-500 font-normal ml-2">(minimum 8 characters)</span>
+                  </Label>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Create a password"
+                      placeholder="Create a strong password"
                       required
                       minLength={8}
                       value={patientForm.password}
                       onChange={handlePatientChange}
                       aria-invalid={errors.password ? "true" : "false"}
+                      className="h-11 pr-10 border-gray-200 focus:border-emerald-500 focus:ring-emerald-500"
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-600 transition-colors"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
@@ -397,34 +441,38 @@ export function SignupForm({ className, ...props }) {
                     </button>
                   </div>
                   {errors.password && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.password}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                    Confirm Password <span className="text-red-500">*</span>
+                  </Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm your password"
+                      placeholder="Re-enter your password"
                       required
                       value={patientForm.confirmPassword}
                       onChange={handlePatientChange}
                       aria-invalid={errors.confirmPassword ? "true" : "false"}
-                      className={
+                      className={cn(
+                        "h-11 pr-20 border-gray-200 focus:ring-emerald-500 transition-colors",
                         patientForm.password && patientForm.confirmPassword
                           ? patientForm.password === patientForm.confirmPassword
-                            ? "border-green-500 focus:border-green-500"
-                            : "border-red-500 focus:border-red-500"
-                          : ""
-                      }
+                            ? "border-emerald-500 focus:border-emerald-600"
+                            : "border-red-500 focus:border-red-600"
+                          : "focus:border-emerald-500"
+                      )}
                     />
                     <button
                       type="button"
-                      className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-600 transition-colors"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                     >
@@ -433,129 +481,163 @@ export function SignupForm({ className, ...props }) {
                     {patientForm.password && patientForm.confirmPassword && (
                       <div className="absolute right-3 top-1/2 -translate-y-1/2">
                         {patientForm.password === patientForm.confirmPassword ? (
-                          <span className="text-green-500 text-sm">✓</span>
+                          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                         ) : (
-                          <span className="text-red-500 text-sm">✗</span>
+                          <AlertCircle className="h-5 w-5 text-red-500" />
                         )}
                       </div>
                     )}
                   </div>
                   {errors.confirmPassword && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.confirmPassword}
                     </span>
                   )}
                   {patientForm.password &&
                     patientForm.confirmPassword &&
                     patientForm.password === patientForm.confirmPassword && (
-                      <span className="text-green-500 text-xs">✓ Passwords match</span>
+                      <span className="text-emerald-600 text-xs flex items-center gap-1 font-medium">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Passwords match
+                      </span>
                     )}
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-medium shadow-lg shadow-emerald-200 transition-all" 
+                  disabled={isLoading}
+                >
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Creating Your Account...
                     </>
                   ) : (
-                    "Create Patient Account"
+                    <>
+                      <ShieldCheck className="mr-2 h-5 w-5" />
+                      Create Patient Account
+                    </>
                   )}
                 </Button>
               </form>
             </TabsContent>
 
             <TabsContent value="doctor" className="mt-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Error Display */}
                 {errors.submit && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-red-800 text-sm">{errors.submit}</p>
+                  <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-md flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-red-800 text-sm leading-relaxed">{errors.submit}</p>
                   </div>
                 )}
                 
-                <div className="grid gap-3">
-                  <Label htmlFor="name">Full Name *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                    Full Name <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="name"
                     type="text"
-                    placeholder="Enter your full name"
+                    placeholder="Dr. John Smith"
                     required
                     value={doctorForm.name}
                     onChange={handleDoctorChange}
                     aria-invalid={errors.name ? "true" : "false"}
+                    className="h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                   />
                   {errors.name && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.name}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="email">Email *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email Address <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="doctor@hospital.com"
                     required
                     value={doctorForm.email}
                     onChange={handleDoctorChange}
                     aria-invalid={errors.email ? "true" : "false"}
+                    className="h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                   />
                   {errors.email && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.email}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="phone">Phone Number * (min. 10 digits)</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                    Phone Number <span className="text-red-500">*</span>
+                    <span className="text-xs text-gray-500 font-normal ml-2">(minimum 10 digits)</span>
+                  </Label>
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="+1234567890"
+                    placeholder="+1 (555) 123-4567"
                     required
                     minLength={10}
                     value={doctorForm.phone}
                     onChange={handleDoctorChange}
                     aria-invalid={errors.phone ? "true" : "false"}
+                    className="h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                   />
                   {errors.phone && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.phone}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="regNo">Medical Registration Number *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="regNo" className="text-sm font-medium text-gray-700">
+                    Medical Registration Number <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="regNo"
                     type="text"
-                    placeholder="Enter your registration number"
+                    placeholder="Enter your medical license number"
                     required
                     value={doctorForm.regNo}
                     onChange={handleDoctorChange}
                     aria-invalid={errors.regNo ? "true" : "false"}
+                    className="h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                   />
                   {errors.regNo && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.regNo}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="gender">Gender *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="gender" className="text-sm font-medium text-gray-700">
+                    Gender <span className="text-red-500">*</span>
+                  </Label>
                   <Select 
                     onValueChange={(value) => handleSelectChange("gender", value)}
                     required
                     value={doctorForm.gender}
                   >
-                    <SelectTrigger className={!doctorForm.gender ? "border-red-300" : ""}>
-                      <SelectValue placeholder="Select gender" />
+                    <SelectTrigger className={cn(
+                      "h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500",
+                      !doctorForm.gender && "text-muted-foreground"
+                    )}>
+                      <SelectValue placeholder="Select your gender" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Male">Male</SelectItem>
@@ -564,14 +646,17 @@ export function SignupForm({ className, ...props }) {
                     </SelectContent>
                   </Select>
                   {errors.gender && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.gender}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="dob">Date of Birth *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="dob" className="text-sm font-medium text-gray-700">
+                    Date of Birth <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="dob"
                     type="date"
@@ -580,29 +665,35 @@ export function SignupForm({ className, ...props }) {
                     value={doctorForm.dob}
                     onChange={handleDoctorChange}
                     aria-invalid={errors.dob ? "true" : "false"}
+                    className="h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                   />
                   {errors.dob && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.dob}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="password">Password</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    Password <span className="text-red-500">*</span>
+                    <span className="text-xs text-gray-500 font-normal ml-2">(minimum 8 characters)</span>
+                  </Label>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Create a password"
+                      placeholder="Create a strong password"
                       required
                       value={doctorForm.password}
                       onChange={handleDoctorChange}
                       aria-invalid={errors.password ? "true" : "false"}
+                      className="h-11 pr-10 border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-colors"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
@@ -610,34 +701,38 @@ export function SignupForm({ className, ...props }) {
                     </button>
                   </div>
                   {errors.password && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.password}
                     </span>
                   )}
                 </div>
 
-                <div className="grid gap-3">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                    Confirm Password <span className="text-red-500">*</span>
+                  </Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm your password"
+                      placeholder="Re-enter your password"
                       required
                       value={doctorForm.confirmPassword}
                       onChange={handleDoctorChange}
                       aria-invalid={errors.confirmPassword ? "true" : "false"}
-                      className={
+                      className={cn(
+                        "h-11 pr-20 border-gray-200 focus:ring-teal-500 transition-colors",
                         doctorForm.password && doctorForm.confirmPassword
                           ? doctorForm.password === doctorForm.confirmPassword
-                            ? "border-green-500 focus:border-green-500"
-                            : "border-red-500 focus:border-red-500"
-                          : ""
-                      }
+                            ? "border-teal-500 focus:border-teal-600"
+                            : "border-red-500 focus:border-red-600"
+                          : "focus:border-teal-500"
+                      )}
                     />
                     <button
                       type="button"
-                      className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-colors"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                     >
@@ -646,56 +741,77 @@ export function SignupForm({ className, ...props }) {
                     {doctorForm.password && doctorForm.confirmPassword && (
                       <div className="absolute right-3 top-1/2 -translate-y-1/2">
                         {doctorForm.password === doctorForm.confirmPassword ? (
-                          <span className="text-green-500 text-sm">✓</span>
+                          <CheckCircle2 className="h-5 w-5 text-teal-500" />
                         ) : (
-                          <span className="text-red-500 text-sm">✗</span>
+                          <AlertCircle className="h-5 w-5 text-red-500" />
                         )}
                       </div>
                     )}
                   </div>
                   {errors.confirmPassword && (
-                    <span className="text-red-500 text-xs" role="alert">
+                    <span className="text-red-600 text-xs flex items-center gap-1" role="alert">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.confirmPassword}
                     </span>
                   )}
                   {doctorForm.password &&
                     doctorForm.confirmPassword &&
                     doctorForm.password === doctorForm.confirmPassword && (
-                      <span className="text-green-500 text-xs">✓ Passwords match</span>
+                      <span className="text-teal-600 text-xs flex items-center gap-1 font-medium">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Passwords match
+                      </span>
                     )}
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-medium shadow-lg shadow-teal-200 transition-all" 
+                  disabled={isLoading}
+                >
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Creating Your Account...
                     </>
                   ) : (
-                    "Create Doctor Account"
+                    <>
+                      <ShieldCheck className="mr-2 h-5 w-5" />
+                      Create Doctor Account
+                    </>
                   )}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
 
-          <div className="mt-6 text-center text-sm">
-            Already have an account?{" "}
-            <button
-              type="button"
-              className="underline underline-offset-4 hover:text-primary"
-              onClick={() => console.log("Login clicked")}
-            >
-              Sign in
-            </button>
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{" "}
+              <Button
+                type="button"
+                className="font-medium text-emerald-600 hover:text-emerald-700 underline underline-offset-4 transition-colors"
+                onClick={() => navigate("/login")}
+              >
+                Sign in here
+              </Button>
+            </p>
           </div>
         </CardContent>
       </Card>
 
-      <div className="text-muted-foreground text-center text-xs text-balance">
-        By creating an account, you agree to our{" "}
-        <button className="underline underline-offset-4 hover:text-primary">Terms of Service</button> and{" "}
-        <button className="underline underline-offset-4 hover:text-primary">Privacy Policy</button>.
+      <div className="text-center text-xs text-gray-500 leading-relaxed px-4">
+        <p className="text-balance">
+          By creating an account, you agree to our{" "}
+          <button className="text-emerald-600 hover:text-emerald-700 underline underline-offset-4 font-medium transition-colors">
+            Terms of Service
+          </button>{" "}
+          and{" "}
+          <button className="text-emerald-600 hover:text-emerald-700 underline underline-offset-4 font-medium transition-colors">
+            Privacy Policy
+          </button>
+          .
+        </p>
       </div>
     </div>
   )

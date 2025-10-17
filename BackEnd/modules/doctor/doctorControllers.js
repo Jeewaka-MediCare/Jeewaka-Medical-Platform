@@ -2,7 +2,7 @@ import Doctor from './doctorModel.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { generateVertexEmbedding } from '../../utils/vertexAI.js';
 import { registrationEmail } from '../email/templates/registrationEmail.js';
-import { sendEmail } from '../email/emailService.js';
+
 
 import Session from '../session/sessionModel.js';
 import Rating from '../ratings/ratingModel.js';

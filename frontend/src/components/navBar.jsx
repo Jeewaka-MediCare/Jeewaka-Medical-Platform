@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, LogOut, User, Stethoscope, Menu, CreditCard, BarChart3, CalendarDays } from "lucide-react";
+import { Calendar, LogOut, User, Stethoscope, Menu, CreditCard, BarChart3, CalendarDays, FileText } from 'lucide-react';
 import useAuthStore from "../store/authStore";
 
 export function Navbar() {
@@ -56,21 +56,13 @@ export function Navbar() {
       return [
         { to: "/appointments", label: "Appointments", icon: Calendar },
         { to: "/payments", label: "Payments", icon: CreditCard },
-        { 
-          to: "/medical-records", 
-          label: "Medical Records", 
-          icon: () => (
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          ) 
-        },
+        { to: "/medical-records", label: "Medical Records", icon: FileText },
       ];
     }
   };
 
   return (
-    <nav className="bg-white/95 backdrop-blur-sm border-b border-green-100/50 shadow-sm sticky top-0 z-50">
+    <nav className="bg-white/95 backdrop-blur-md border-b border-teal-100 shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left side: logo + links */}
@@ -79,20 +71,20 @@ export function Navbar() {
               to={getDashboardLink()}
               className="flex items-center space-x-2 group"
             >
-              <div className="bg-gradient-to-r from-green-600 to-green-700 p-2 rounded-xl shadow-lg group-hover:shadow-green-200 transition-all duration-200">
+              <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-2.5 rounded-xl shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
                 <Stethoscope className="h-5 w-5 text-white" />
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-green-700 to-green-600 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-r from-teal-700 to-emerald-700 bg-clip-text text-transparent">
                 Jeewaka
               </span>
             </Link>
 
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-1">
               {getNavigationLinks().map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="text-slate-600 hover:text-green-700 hover:bg-green-50/80 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:shadow-sm"
+                  className="text-gray-700 hover:text-teal-700 hover:bg-gradient-to-r hover:from-teal-50 hover:to-emerald-50 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-sm border border-transparent hover:border-teal-100"
                 >
                   <link.icon className="h-4 w-4" />
                   {link.label}
@@ -107,45 +99,57 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="relative h-10 w-10 rounded-full hover:ring-2 hover:ring-green-200 transition-all duration-200"
+                  className="relative h-11 w-11 rounded-full hover:ring-2 hover:ring-teal-300 hover:ring-offset-2 transition-all duration-200"
                 >
-                  <Avatar className="h-10 w-10 border-2 border-green-200 shadow-sm">
+                  <Avatar className="h-11 w-11 border-2 border-teal-200 shadow-md hover:border-teal-300 transition-all">
                     <AvatarImage
                       src={user?.photoURL || "/doctor-profile.png"}
                       alt={user?.displayName || "Profile"}
                     />
-                    <AvatarFallback className="bg-gradient-to-br from-green-100 to-green-50 text-green-700 font-semibold">
-                      <User className="h-5 w-5" />
+                    <AvatarFallback className="bg-gradient-to-br from-teal-100 to-emerald-100 text-teal-700 font-bold text-base">
+                      {user?.name?.charAt(0)?.toUpperCase() || <User className="h-5 w-5" />}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
 
               <DropdownMenuContent
-                className="w-64 shadow-lg border-green-100/50"
+                className="w-72 shadow-xl border-teal-100 bg-white/95 backdrop-blur-sm"
                 align="end"
                 forceMount
               >
-                <DropdownMenuLabel className="font-normal p-4">
-                  <div className="flex flex-col space-y-2">
-                    <p className="text-sm font-semibold leading-none text-slate-900">
-                      {user?.name || "Guest User"}
-                    </p>
-                    <p className="text-xs leading-none text-slate-500">
-                      {user?.email || "No email"}
-                    </p>
+                <DropdownMenuLabel className="font-normal p-4 bg-gradient-to-r from-teal-50 to-emerald-50">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-12 w-12 border-2 border-teal-200 shadow-sm">
+                      <AvatarImage
+                        src={user?.photoURL || "/doctor-profile.png"}
+                        alt={user?.displayName || "Profile"}
+                      />
+                      <AvatarFallback className="bg-gradient-to-br from-teal-100 to-emerald-100 text-teal-700 font-bold">
+                        {user?.name?.charAt(0)?.toUpperCase() || <User className="h-5 w-5" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-bold leading-none text-gray-900">
+                        {user?.name || "Guest User"}
+                      </p>
+                      <p className="text-xs leading-none text-gray-600">
+                        {user?.email || "No email"}
+                      </p>
+                      {userRole && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-teal-100 text-teal-800 mt-1 w-fit">
+                          {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </DropdownMenuLabel>
 
-                <DropdownMenuSeparator className="bg-green-100/50" />
-
-                
-
-                <DropdownMenuSeparator className="bg-green-100/50" />
+                <DropdownMenuSeparator className="bg-teal-100" />
 
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50/80 focus:bg-red-50/80 focus:text-red-700 p-3"
+                  className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 focus:bg-red-50 focus:text-red-700 p-3 m-2 rounded-lg transition-colors font-medium"
                 >
                   <LogOut className="mr-3 h-4 w-4" />
                   <span className="text-sm">Sign out</span>
@@ -160,24 +164,28 @@ export function Navbar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="hover:bg-green-50/80 transition-colors"
+                    className="hover:bg-gradient-to-r hover:from-teal-50 hover:to-emerald-50 transition-all rounded-lg border border-transparent hover:border-teal-100"
                   >
-                    <Menu className="h-5 w-5 text-slate-600" />
+                    <Menu className="h-5 w-5 text-gray-700" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-56 shadow-lg border-green-100/50"
+                  className="w-64 shadow-xl border-teal-100 bg-white/95 backdrop-blur-sm"
                   align="end"
                 >
+                  <DropdownMenuLabel className="px-4 py-3 bg-gradient-to-r from-teal-50 to-emerald-50 font-bold text-teal-800">
+                    Navigation
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-teal-100" />
                   {getNavigationLinks().map((link) => (
                     <DropdownMenuItem
                       key={link.to}
                       asChild
-                      className="cursor-pointer hover:bg-green-50/80 focus:bg-green-50/80"
+                      className="cursor-pointer hover:bg-gradient-to-r hover:from-teal-50 hover:to-emerald-50 focus:bg-gradient-to-r focus:from-teal-50 focus:to-emerald-50 m-2 rounded-lg transition-all"
                     >
                       <Link to={link.to} className="flex items-center p-3">
-                        <link.icon className="mr-3 h-4 w-4 text-slate-600" />
-                        <span className="text-sm">{link.label}</span>
+                        <link.icon className="mr-3 h-4 w-4 text-teal-600" />
+                        <span className="text-sm font-medium text-gray-700">{link.label}</span>
                       </Link>
                     </DropdownMenuItem>
                   ))}
