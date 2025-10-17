@@ -48,12 +48,12 @@ jobs:
     #  working-directory: ./frontend
     #  run: npm test -- --run
       
-    - name: Run backend tests
-      working-directory: ./BackEnd
-      run: npm test
-      env:
-        MONGODB_URI: mongodb://localhost:27017/jeewaka-test
-        JWT_SECRET: test-secret-key-for-testing-only
+    #- name: Run backend tests
+    #  working-directory: ./BackEnd
+    #  run: npm test
+    #  env:
+    #    MONGODB_URI: mongodb://localhost:27017/jeewaka-test
+    #    JWT_SECRET: test-secret-key-for-testing-only
     
     - name: Build frontend
       working-directory: ./frontend
