@@ -6,7 +6,8 @@ import {
   Animated,
   Dimensions,
   Image,
-  TouchableOpacity
+  TouchableOpacity,
+  ImageBackground
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -77,67 +78,84 @@ export default function LandingPage() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        {/* Title */}
-        <Animated.View
-          style={[
-            styles.titleContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
-        >
-          <Text style={styles.subtitle}>Your Health, Our Priority</Text>
-        </Animated.View>
-
-      {/* Welcome Message */}
-      <Animated.View
-        style={[
-          styles.welcomeContainer,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }
-        ]}
+      {/* Background Image with Fade Effect */}
+      <ImageBackground
+        source={require('../assets/images/homeimage.png')} // Using existing image
+        style={styles.backgroundImage}
+        imageStyle={styles.backgroundImageStyle} // Add this line
+        resizeMode="contain" // Changed from contain to cover for better positioning
       >
-        <Text style={styles.welcomeTitle}>Welcome Back!</Text>
-        <Text style={styles.welcomeText}>
-          We're excited to see you again. Please sign in to continue your healthcare journey.
-        </Text>
-      </Animated.View>
+        {/* Fade Overlay for blurred effect */}
+        <View style={styles.fadeOverlay} />
+        
+        {/* Content Container */}
+        <View style={styles.content}>
+          {/* Top Section - Text Content */}
+          <View style={styles.topSection}>
+            {/* Title */}
+            <Animated.View
+              style={[
+                styles.titleContainer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }]
+                }
+              ]}
+            >
+              <Text style={styles.subtitle}>Your Health, Our Priority</Text>
+            </Animated.View>
 
-      {/* Action Buttons */}
-      <View style={styles.buttonsContainer}>
-        <Animated.View
-          style={[
-            styles.buttonWrapper,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: buttonScaleAnim1 }]
-            }
-          ]}
-        >
-          <TouchableOpacity style={styles.primaryButton} onPress={handleSignIn}>
-            <Text style={styles.primaryButtonText}>Sign In</Text>
-          </TouchableOpacity>
-        </Animated.View>
+            {/* Welcome Message */}
+            <Animated.View
+              style={[
+                styles.welcomeContainer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }]
+                }
+              ]}
+            >
+              <Text style={styles.welcomeTitle}>Welcome Back!</Text>
+              <Text style={styles.welcomeText}>
+                We're excited to see you again. Please sign in to continue your healthcare journey.
+              </Text>
+            </Animated.View>
+          </View>
 
-        <Animated.View
-          style={[
-            styles.buttonWrapper,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: buttonScaleAnim2 }]
-            }
-          ]}
-        >
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleCreateAccount}>
-            <Text style={styles.secondaryButtonText}>Create New Account</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-      </View>
+          {/* Bottom Section - Action Buttons */}
+          <View style={styles.bottomSection}>
+            <View style={styles.buttonsContainer}>
+              <Animated.View
+                style={[
+                  styles.buttonWrapper,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{ scale: buttonScaleAnim1 }]
+                  }
+                ]}
+              >
+                <TouchableOpacity style={styles.primaryButton} onPress={handleSignIn}>
+                  <Text style={styles.primaryButtonText}>Sign In</Text>
+                </TouchableOpacity>
+              </Animated.View>
+
+              <Animated.View
+                style={[
+                  styles.buttonWrapper,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{ scale: buttonScaleAnim2 }]
+                  }
+                ]}
+              >
+                <TouchableOpacity style={styles.secondaryButton} onPress={handleCreateAccount}>
+                  <Text style={styles.secondaryButtonText}>Create New Account</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+          </View>
+        </View>
+      </ImageBackground>
     </View>
   );
 }
@@ -145,13 +163,42 @@ export default function LandingPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffffff', // Teal background
+    backgroundColor: '#ffffffff', // Fallback background
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  backgroundImageStyle: {
+    transform: [
+      { translateY: -90 } // Move UP by 30px (negative = up, positive = down)
+    ],
+
+  },
+  fadeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)', // White overlay with 85% opacity for strong fade effect
+
   },
   content: {
     flex: 1,
+    justifyContent: 'space-between', // This will push top and bottom sections apart
     alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 20,
+    paddingTop: 60, // Add top padding to push text higher
+    paddingBottom: 100, // Add bottom padding to push buttons lower
+    zIndex: 1, // Ensure content is above background
+  },
+  topSection: {
+    top: 100,
+    alignItems: 'center',
+    flex: 0, // Don't let this section grow
+  },
+  bottomSection: {
+    alignItems: 'center',
+    flex: 0, // Don't let this section grow
+    width: '100%',
   },
   titleContainer: {
     alignItems: 'center',
@@ -165,7 +212,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 24, // Made larger since it's now the main title
-    color: '#008080', // Dark gray for better visibility on teal
+    color: '#1b4641ff', // Dark gray for better visibility on teal
     fontStyle: 'italic',
     fontWeight: '600', // Added font weight
     textAlign: 'center',
@@ -201,11 +248,13 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   buttonsContainer: {
-    width: '80%', // Made smaller
-    paddingHorizontal: 20,
+    width: '100%', // Full width within bottomSection
+    paddingHorizontal: 0, // Remove horizontal padding since bottomSection handles it
+    alignItems: 'center',
   },
   buttonWrapper: {
     marginBottom: 12, // Reduced margin
+    width: '80%', // Control button width here
   },
   primaryButton: {
     backgroundColor: '#008080', // Dark green complementing teal
@@ -231,15 +280,10 @@ const styles = StyleSheet.create({
     borderRadius: 8, // Smaller border radius
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#008080', // Dark green border complementing teal
-    elevation: 1, // Reduced elevation
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderColor: '#047878ff', // Dark green border complementing teal
   },
   secondaryButtonText: {
-    color: '#008080', // Dark green text complementing teal
+    color: '#058686ff', // Dark green text complementing teal
     fontSize: 16, // Smaller font
     fontWeight: '600',
   },
