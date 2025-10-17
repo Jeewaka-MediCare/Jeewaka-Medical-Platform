@@ -355,8 +355,12 @@ export default function DoctorDetails() {
       <Stack.Screen
         options={{
           title: '',
+          headerShown: true,
           headerTransparent: true,
           headerTintColor: '#fff',
+          headerStyle: {
+            backgroundColor: 'transparent',
+          },
           headerLeft: () => (
             <TouchableOpacity 
               onPress={() => router.back()}
@@ -669,10 +673,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   scrollView: {
     flex: 1,

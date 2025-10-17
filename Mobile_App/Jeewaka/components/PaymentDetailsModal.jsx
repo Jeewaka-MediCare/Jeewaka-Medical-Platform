@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,12 @@ import {
   Modal,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import pdfExportService from '../services/pdfExportService';
+import useAuthStore from '../store/authStore';
 
 const { width } = Dimensions.get('window');
 
@@ -18,12 +22,59 @@ const PaymentDetailsModal = ({
   payment,
   onViewDetails = null // Optional callback for additional actions
 }) => {
-  // Debug logging
-  console.log('PaymentDetailsModal - visible:', visible);
-  console.log('PaymentDetailsModal - payment:', payment);
+  const { user } = useAuthStore();
+  const [isExporting, setIsExporting] = useState(false);
+  
+  // Payment details modal logic
+  
+  const handleExportSinglePayment = async () => {
+    if (!payment) {
+      Alert.alert('Error', 'No payment data available to export');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      
+      // Use the payment data directly, ensuring it has proper structure
+      const paymentData = {
+        ...payment,
+        // Ensure essential fields are present
+        id: payment.id || payment._id || `payment_${Date.now()}`,
+        amount: payment.amount || 0,
+        date: payment.date || payment.created || new Date().toISOString(),
+        doctorName: payment.doctorName || payment.doctor?.name || 'Unknown Doctor',
+        doctorSpecialization: payment.doctorSpecialization || payment.doctor?.specialization || 'General',
+        status: payment.status || 'completed',
+        currency: payment.currency || 'LKR',
+        // Include appointment information if available
+        appointmentDate: payment.appointmentDate || payment.appointment?.date,
+        appointmentTime: payment.appointmentTime || payment.appointment?.time,
+        appointmentStatus: payment.appointmentStatus || payment.appointment?.status,
+        // Include session information if available
+        sessionType: payment.sessionType || payment.session?.type,
+        sessionDuration: payment.sessionDuration || payment.session?.duration,
+        // Include any additional description
+        description: payment.description || payment.notes || payment.memo
+      };
+
+      // Export enhanced payment data
+      
+      await pdfExportService.exportPaymentDetailsPDF(
+        paymentData, // Single payment object (not array)
+        user
+      );
+      
+      Alert.alert('Success', 'Payment receipt exported successfully!');
+    } catch (error) {
+      console.error('Error exporting payment receipt:', error);
+      Alert.alert('Error', 'Failed to export payment receipt. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
   
   if (!payment) {
-    console.log('PaymentDetailsModal - No payment data, returning null');
     return null;
   }
 
@@ -248,8 +299,25 @@ const PaymentDetailsModal = ({
           </View>
 
           {/* Footer Actions */}
-          {onViewDetails && (
-            <View style={styles.modalFooter}>
+          <View style={styles.modalFooter}>
+            {/* Export Button */}
+            <TouchableOpacity 
+              style={[styles.viewDetailsButton, styles.exportButton]}
+              onPress={handleExportSinglePayment}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <ActivityIndicator size="small" color="#008080" />
+              ) : (
+                <Ionicons name="download-outline" size={16} color="#008080" />
+              )}
+              <Text style={styles.viewDetailsText}>
+                {isExporting ? 'Exporting...' : 'Export Receipt'}
+              </Text>
+            </TouchableOpacity>
+            
+            {/* View Details Button */}
+            {onViewDetails && (
               <TouchableOpacity 
                 style={styles.viewDetailsButton}
                 onPress={() => onViewDetails(payment)}
@@ -257,8 +325,8 @@ const PaymentDetailsModal = ({
                 <Ionicons name="eye-outline" size={16} color="#008080" />
                 <Text style={styles.viewDetailsText}>View Full Details</Text>
               </TouchableOpacity>
-            </View>
-          )}
+            )}
+          </View>
         </View>
       </View>
     </Modal>
@@ -373,6 +441,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
+    gap: 12,
   },
   viewDetailsButton: {
     flexDirection: 'row',
@@ -384,6 +453,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: '#008080',
+  },
+  exportButton: {
+    backgroundColor: '#E0F2FE',
   },
   viewDetailsText: {
     color: '#008080',

@@ -15,7 +15,10 @@ import adminVerificationRouter from "./modules/doctorCertificates/doctorVerifica
 import paymentsRouter from "./modules/payments/paymentsRoutes.js";
 import financeRouter from "./modules/finance/financeRoutes.js";
 import medicalRecordsRouter from "./modules/records/recordsRoutes.js";
+<<<<<<< HEAD
 import authRouter from "./modules/auth/authRoutes.js";
+=======
+>>>>>>> 07ef0c61f2ee1f49f3bf9562dcf065527b9f92a5
 
 // Load environment variables
 dotenv.config();
@@ -30,6 +33,18 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Register doctor routes
 app.use("/api/doctor", doctorRoutes);
+
+// Register auth routes
+app.use("/api/auth", authRoutes);
+
+// Register hospital routes
+app.use("/api/hospital", hospitalRouter);
+
+// Register session routes
+app.use("/api/session", sessionRouter);
+
+// Register patient routes
+app.use("/api/patient", patientRouter);
 
 // Register payments routes
 app.use("/api/payments", paymentsRouter);

@@ -159,7 +159,8 @@ export const uploadDoctorDocument = async (req, res) => {
     const uploadResult = await storageService.uploadDoctorDocument(
       doctorId,
       file.buffer,
-      filename
+      filename,
+      file.mimetype
     );
 
     res.status(200).json({

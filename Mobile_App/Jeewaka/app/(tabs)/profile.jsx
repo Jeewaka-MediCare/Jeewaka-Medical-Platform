@@ -8,7 +8,7 @@ import api from '../../services/api';
 import ImagePickerComponent from '../../components/ImagePicker';
 
 export default function Profile() {
-  const { user, userRole, logout, loading } = useAuthStore();
+  const { user, userRole, logout, loading, updateUser } = useAuthStore();
   const router = useRouter();
   const [profileImageModalVisible, setProfileImageModalVisible] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -18,7 +18,17 @@ export default function Profile() {
   console.log('Profile Debug - User Role:', userRole);
   console.log('Profile Debug - User Object:', JSON.stringify(user, null, 2));
   console.log('Profile Debug - User Name:', user?.name);
-  console.log('Profile Debug - User Profile:', user?.profile);
+  console.log('Profile Debug - User Profile Picture:', user?.profile ? 'Present' : 'Missing');
+  console.log('Profile Debug - Profile Picture Length:', user?.profile?.length || 'N/A');
+  
+  // Verify profile picture is valid data URL or URL
+  if (user?.profile) {
+    const isDataUrl = user.profile.startsWith('data:image/');
+    const isHttpUrl = user.profile.startsWith('http');
+    console.log('Profile Debug - Is Data URL:', isDataUrl);
+    console.log('Profile Debug - Is HTTP URL:', isHttpUrl);
+    console.log('Profile Debug - Profile Preview:', user.profile.substring(0, 50) + '...');
+  }
 
   // Get avatar initial with comprehensive fallback
   const getAvatarInitial = () => {
@@ -147,6 +157,26 @@ export default function Profile() {
         const updatedProfile = { ...userProfile, profile: imageData };
         setUserProfile(updatedProfile);
         
+        // 🔧 FIX: Update the global auth store so other components see the new profile picture
+        await updateUser(updatedProfile);
+        
+        // 🔍 VERIFICATION: Fetch fresh user data to verify database storage
+        setTimeout(async () => {
+          try {
+            const endpoint = userRole === 'doctor' 
+              ? `/api/doctor/${user._id}` 
+              : `/api/patient/${user._id}`;
+            
+            const verifyResponse = await api.get(endpoint);
+            console.log('🔍 Database Verification - Fresh user data:', verifyResponse.data);
+            console.log('🔍 Database Verification - Profile field present:', !!verifyResponse.data?.profile);
+            console.log('🔍 Database Verification - Profile matches uploaded:', 
+              verifyResponse.data?.profile === imageData);
+          } catch (verifyError) {
+            console.error('🔍 Database Verification Failed:', verifyError);
+          }
+        }, 1000); // Verify after 1 second
+        
         // Close modal
         setProfileImageModalVisible(false);
       } else {
@@ -192,6 +222,9 @@ export default function Profile() {
       // Update local state - remove the profile image
       const updatedProfile = { ...userProfile, profile: null };
       setUserProfile(updatedProfile);
+      
+      // 🔧 FIX: Update the global auth store so other components see the profile picture removal
+      await updateUser(updatedProfile);
       
       // Close modal
       setProfileImageModalVisible(false);
