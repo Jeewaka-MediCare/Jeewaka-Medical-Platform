@@ -94,11 +94,16 @@ const AppointmentSlotCard = ({
           <View style={styles.cardActions}>
             {(slot.sessionType === 'online' || slot.sessionType === 'video') && (
               <VideoCallButton
-                style={[styles.actionButton, styles.videoCallButton]}
-                title="Join Video Call"
+                style={[
+                  styles.actionButton, 
+                  styles.videoCallButton,
+                  isPast && styles.disabledButton
+                ]}
+                title={isPast ? "Call Ended" : "Join Video Call"}
                 meetingId={slot.meetingId}
                 sessionId={sessionId}
                 slotIndex={slot.slotIndex}
+                disabled={isPast}
               />
             )}
             
@@ -226,6 +231,11 @@ const styles = StyleSheet.create({
   videoCallButton: {
     backgroundColor: '#10B981',
     borderColor: '#10B981',
+  },
+  disabledButton: {
+    backgroundColor: '#61656cff',
+    borderColor: '#61656cff',
+    opacity: 0.6,
   },
   medicalRecordsButton: {
     backgroundColor: 'white',

@@ -8,6 +8,7 @@ interface VideoCallButtonProps {
   slotIndex?: number;
   style?: any;
   title?: string;
+  disabled?: boolean;
 }
 
 export default function VideoCallButton({
@@ -16,10 +17,15 @@ export default function VideoCallButton({
   slotIndex,
   style,
   title = "Start Video Call",
+  disabled = false,
 }: VideoCallButtonProps) {
   const router = useRouter();
 
   const handlePress = () => {
+    if (disabled) {
+      return; // Don't do anything if disabled
+    }
+
     if (meetingId) {
       // Join existing meeting directly
       router.push(`/video-consultation/${meetingId}` as any);
@@ -51,8 +57,14 @@ export default function VideoCallButton({
   };
 
   return (
-    <TouchableOpacity style={[styles.button, style]} onPress={handlePress}>
-      <Text style={styles.buttonText}>{title}</Text>
+    <TouchableOpacity
+      style={[styles.button, style]}
+      onPress={handlePress}
+      disabled={disabled}
+    >
+      <Text style={[styles.buttonText, disabled && styles.disabledText]}>
+        {title}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -69,5 +81,8 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  disabledText: {
+    color: "#fcfcfcff",
   },
 });
