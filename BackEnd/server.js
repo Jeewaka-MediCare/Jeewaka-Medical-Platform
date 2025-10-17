@@ -45,29 +45,24 @@ app.use("/api/patient", patientRouter);
 
 // Register payments routes
 app.use("/api/payments", paymentsRouter);
-app.use("/api/hospital", hospitalRouter);
-app.use("/api/session", sessionRouter);
-app.use("/api/patient", patientRouter);
-
-// Register auth routes
-app.use("/api/auth", authRoutes);
 
 // Register finance routes
 app.use("/api/finance", financeRouter);
+
 // Register medical records routes
 app.use("/api/medical-records", medicalRecordsRouter);
-//docotr Card routes
+
+// Register doctor Card routes
 app.use("/api/doctorCard", doctorCardRouter);
-// admin routes
+
+// Register admin routes
 app.use("/api/admin", adminRouter);
 
-//admin verification routes
+// Register admin verification routes
 app.use("/api/admin-verification", adminVerificationRouter);
 
 // Register rating/review routes
 app.use("/api/ratings", ratingRouter);
-// Register payments routes
-app.use("/api/payments", paymentsRouter);
 
 // Connect to MongoDB
 connectDB();
