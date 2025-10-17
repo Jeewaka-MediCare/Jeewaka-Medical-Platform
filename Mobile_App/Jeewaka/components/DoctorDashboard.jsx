@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-gifted-charts';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { format, parseISO } from 'date-fns';
 import api from '../services/api';
 import useAuthStore from '../store/authStore';
@@ -66,30 +67,55 @@ export default function DoctorDashboard() {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50)); // Start 50 pixels below
   const [scrollAnim] = useState(new Animated.Value(0)); // For continuous scrolling animation
+  
+  // Ref to track animation state and cleanup
+  const animationRef = useRef(null);
+  const isComponentMounted = useRef(true);
 
   // Function to start continuous scrolling animation
   const startContinuousScroll = (reviewCount) => {
     console.log('Starting continuous scroll for', reviewCount, 'reviews');
-    if (reviewCount === 0) return;
+    if (reviewCount === 0 || !isComponentMounted.current) return;
     
     const cardWidth = 290; // Card width (280) + margin (10)
     const totalWidth = cardWidth * reviewCount;
     
     const scrollSequence = () => {
+      if (!isComponentMounted.current) {
+        console.log('Component unmounted, stopping animation');
+        return;
+      }
+      
       scrollAnim.setValue(0);
       console.log('Scrolling to:', -totalWidth);
-      Animated.timing(scrollAnim, {
+      animationRef.current = Animated.timing(scrollAnim, {
         toValue: -totalWidth,
         duration: reviewCount * 4000, // 4 seconds per card
         useNativeDriver: true,
-      }).start(() => {
-        // Reset and restart the animation
-        console.log('Animation completed, restarting...');
-        scrollSequence();
+      });
+      
+      animationRef.current.start((finished) => {
+        if (finished && isComponentMounted.current) {
+          // Reset and restart the animation only if component is still mounted
+          console.log('Animation completed, restarting...');
+          scrollSequence();
+        } else {
+          console.log('Animation stopped or component unmounted');
+        }
       });
     };
     
     scrollSequence();
+  };
+
+  // Function to stop animations
+  const stopAnimations = () => {
+    console.log('Stopping all animations');
+    isComponentMounted.current = false;
+    if (animationRef.current) {
+      animationRef.current.stop();
+      animationRef.current = null;
+    }
   };
 
   const fetchEarningsData = async (timeRange = '4weeks') => {
@@ -181,6 +207,28 @@ export default function DoctorDashboard() {
     fetchDoctorData();
   }, [user?._id]);
 
+  // Handle focus/unfocus events for tab navigation
+  useFocusEffect(
+    useCallback(() => {
+      console.log('DoctorDashboard tab focused - enabling animations');
+      isComponentMounted.current = true;
+      
+      // Restart animations if reviews are available and we're focused
+      if (recentReviews.length > 0) {
+        setTimeout(() => {
+          if (isComponentMounted.current) {
+            startContinuousScroll(recentReviews.length);
+          }
+        }, 1000);
+      }
+
+      return () => {
+        console.log('DoctorDashboard tab unfocused - stopping animations');
+        stopAnimations();
+      };
+    }, [recentReviews])
+  );
+
   // Listen for time range changes
   useEffect(() => {
     if (user?._id && selectedTimeRange) {
@@ -190,8 +238,8 @@ export default function DoctorDashboard() {
 
   // Separate useEffect to handle animations when reviews change
   useEffect(() => {
-    if (recentReviews.length > 0) {
-      // Start animation when reviews are available
+    if (recentReviews.length > 0 && isComponentMounted.current) {
+      // Start animation when reviews are available and component is focused
       console.log('Starting reviews section animation for', recentReviews.length, 'reviews');
       
       // Reset animation values
@@ -199,6 +247,8 @@ export default function DoctorDashboard() {
       slideAnim.setValue(50);
       
       setTimeout(() => {
+        if (!isComponentMounted.current) return;
+        
         Animated.parallel([
           Animated.timing(fadeAnim, {
             toValue: 1,
@@ -211,16 +261,31 @@ export default function DoctorDashboard() {
             friction: 8,
             useNativeDriver: true,
           }),
-        ]).start(() => {
-          console.log('Animation completed');
-          // Start continuous scrolling after fade-in completes
-          setTimeout(() => {
-            startContinuousScroll(recentReviews.length);
-          }, 2000); // Wait 2 seconds before starting scroll
+        ]).start((finished) => {
+          if (finished && isComponentMounted.current) {
+            console.log('Fade-in animation completed');
+            // Start continuous scrolling after fade-in completes
+            setTimeout(() => {
+              if (isComponentMounted.current) {
+                startContinuousScroll(recentReviews.length);
+              }
+            }, 2000); // Wait 2 seconds before starting scroll
+          }
         });
       }, 1000);
+    } else if (recentReviews.length === 0) {
+      // Stop animations if no reviews
+      stopAnimations();
     }
   }, [recentReviews]);
+
+  // Fallback cleanup effect for component unmount
+  useEffect(() => {
+    return () => {
+      console.log('DoctorDashboard component unmounting - final cleanup');
+      stopAnimations();
+    };
+  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);

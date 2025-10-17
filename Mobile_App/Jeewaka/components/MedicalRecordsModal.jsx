@@ -4,393 +4,403 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
   Modal,
-  TextInput,
-  RefreshControl
+  SafeAreaView,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, parseISO } from 'date-fns';
-import medicalRecordsService from '../services/medicalRecordsService';
+import { diffLines } from 'diff';
+import Markdown from 'react-native-markdown-display';
+import MedicalRecordsList from './MedicalRecordsList';
+import MedicalRecordViewer from './MedicalRecordViewer';
+import MedicalRecordEditor from './MedicalRecordEditor';
+import useAuthStore from '../store/authStore';
+import { medicalRecordsService } from '../services/medicalRecordsService';
 
 export default function MedicalRecordsModal({ 
   visible, 
   onClose, 
-  patient
+  patient,
+  initialView = 'list'
 }) {
-  const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showRecordDetail, setShowRecordDetail] = useState(false);
+  const { userRole } = useAuthStore();
+  const isDoctor = userRole === 'doctor';
   
-  // Form states
-  const [newRecord, setNewRecord] = useState({
-    title: '',
-    description: '',
-    content: '',
-    tags: ''
-  });
+  const [currentView, setCurrentView] = useState(initialView);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [versionHistoryVisible, setVersionHistoryVisible] = useState(false);
+  const [versions, setVersions] = useState([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
 
-  // Load medical records when modal opens
   useEffect(() => {
-    console.log('MedicalRecordsModal - Modal visible:', visible);
-    console.log('MedicalRecordsModal - Patient data received:', patient);
+    if (visible) {
+      setCurrentView(initialView);
+      setSelectedRecord(null);
+    }
+  }, [visible, initialView]);
+
+  const handleClose = () => {
+    setCurrentView('list');
+    setSelectedRecord(null);
+    onClose();
+  };
+
+  const handleRecordPress = (record) => {
+    setSelectedRecord(record);
+    setCurrentView('view');
+  };
+
+  const handleCreateRecord = () => {
+    setSelectedRecord(null);
+    setCurrentView('edit');
+  };
+
+  const handleEditRecord = (record) => {
+    setSelectedRecord(record);
+    setCurrentView('edit');
+  };
+
+  const handleBackToList = () => {
+    setCurrentView('list');
+    setSelectedRecord(null);
+  };
+
+  const handleSaveRecord = () => {
+    setRefreshTrigger(prev => prev + 1);
+    setCurrentView('list');
+    setSelectedRecord(null);
+  };
+
+  const handleViewHistory = async (record) => {
+    setSelectedRecord(record);
+    setVersionHistoryVisible(true);
+    setLoadingVersions(true);
     
-    if (visible && patient?._id) {
-      loadMedicalRecords();
+    try {
+      const response = await medicalRecordsService.getRecordVersions(record.recordId);
+      setVersions(response.versions || []);
+    } catch (error) {
+      console.error('Error loading version history:', error);
+      Alert.alert('Error', 'Failed to load version history');
+    } finally {
+      setLoadingVersions(false);
     }
-  }, [visible, patient]);
+  };
 
-  const loadMedicalRecords = async () => {
-    if (!patient?._id) return;
+  const renderDiffText = (version, index) => {
+    if (index === versions.length - 1) {
+      // First version, no diff to show
+      return null;
+    }
+
+    const previousVersion = versions[index + 1];
+    const diff = diffLines(previousVersion.content || '', version.content || '');
     
-    setLoading(true);
-    try {
-      // Temporarily showing placeholder message instead of making API call
-      console.log('Medical records temporarily disabled for patient:', patient._id);
-      setRecords([]);
-      
-      // Show a user-friendly message
-      setTimeout(() => {
-        Alert.alert(
-          'Medical Records', 
-          'Medical records feature is being updated. This functionality will be available soon.',
-          [{ text: 'OK' }]
-        );
-      }, 100);
-      
-      /* Temporarily disabled until backend compatibility is resolved
-      const response = await medicalRecordsService.getPatientRecords(patient._id);
-      console.log('Medical records response:', response);
-      setRecords(response.records || []);
-      */
-    } catch (error) {
-      console.error('Error loading medical records:', error);
-      Alert.alert('Error', 'Failed to load medical records');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    loadMedicalRecords();
-  };
-
-  const handleCreateRecord = async () => {
-    Alert.alert(
-      'Feature Temporarily Unavailable', 
-      'Medical records functionality is currently being updated. Please check back later.',
-      [{ text: 'OK' }]
-    );
-    return;
-
-    // Temporarily disabled until backend compatibility is resolved
-    if (!newRecord.title.trim() || !newRecord.content.trim()) {
-      Alert.alert('Validation Error', 'Please provide both title and content for the medical record.');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const recordData = {
-        title: newRecord.title.trim(),
-        description: newRecord.description.trim(),
-        content: newRecord.content.trim(),
-        tags: newRecord.tags.trim().split(',').map(tag => tag.trim()).filter(tag => tag)
-      };
-
-      await medicalRecordsService.createRecord(patient._id, recordData);
-      
-      Alert.alert('Success', 'Medical record created successfully');
-      setShowCreateForm(false);
-      setNewRecord({ title: '', description: '', content: '', tags: '' });
-      loadMedicalRecords();
-    } catch (error) {
-      console.error('Error creating medical record:', error);
-      Alert.alert('Error', 'Failed to create medical record');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleViewRecord = async (record) => {
-    try {
-      setLoading(true);
-      const fullRecord = await medicalRecordsService.getRecord(record.recordId);
-      setSelectedRecord(fullRecord.record);
-      setShowRecordDetail(true);
-    } catch (error) {
-      console.error('Error loading record details:', error);
-      Alert.alert('Error', 'Failed to load record details');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const renderRecordsList = () => (
-    <ScrollView 
-      style={styles.recordsList}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-    >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Medical Records</Text>
-        <Text style={styles.headerSubtitle}>
-          Patient: {patient?.name || 'Loading patient information...'}
-        </Text>
-      </View>
-
-      <TouchableOpacity 
-        style={[styles.createButton, styles.disabledButton]}
-        onPress={() => Alert.alert('Coming Soon', 'Medical records creation will be available in the next update.')}
-        disabled={true}
-      >
-        <Ionicons name="construct" size={20} color="#fff" />
-        <Text style={styles.createButtonText}>Feature Coming Soon</Text>
-      </TouchableOpacity>
-
-      {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#008080" />
-          <Text style={styles.loadingText}>Loading medical records...</Text>
-        </View>
-      ) : records.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="construct-outline" size={64} color="#94A3B8" />
-          <Text style={styles.emptyTitle}>Medical Records Coming Soon</Text>
-          <Text style={styles.emptyText}>
-            The medical records feature is currently being updated to provide you with the best experience. 
-            This functionality will be available in the next update.
-          </Text>
-        </View>
-      ) : (
-        records.map((record) => (
-          <TouchableOpacity
-            key={record._id}
-            style={styles.recordCard}
-            onPress={() => handleViewRecord(record)}
-          >
-            <View style={styles.recordHeader}>
-              <Text style={styles.recordTitle}>{record.title}</Text>
-              <Text style={styles.recordDate}>
-                {format(parseISO(record.createdAt), 'MMM dd, yyyy')}
-              </Text>
-            </View>
-            
-            {record.description && (
-              <Text style={styles.recordDescription} numberOfLines={2}>
-                {record.description}
-              </Text>
-            )}
-            
-            <View style={styles.recordFooter}>
-              <Text style={styles.recordCreatedBy}>
-                By: {record.createdBy?.name || 'Doctor'}
-              </Text>
-              {record.tags && record.tags.length > 0 && (
-                <View style={styles.tagsContainer}>
-                  {record.tags.slice(0, 2).map((tag, index) => (
-                    <View key={index} style={styles.tag}>
-                      <Text style={styles.tagText}>{tag}</Text>
-                    </View>
-                  ))}
-                  {record.tags.length > 2 && (
-                    <Text style={styles.moreTagsText}>+{record.tags.length - 2} more</Text>
-                  )}
-                </View>
-              )}
-            </View>
-            
-            <View style={styles.recordMeta}>
-              <Ionicons name="eye-outline" size={16} color="#64748B" />
-              <Text style={styles.viewText}>Tap to view details</Text>
-            </View>
-          </TouchableOpacity>
-        ))
-      )}
-    </ScrollView>
-  );
-
-  const renderCreateForm = () => (
-    <ScrollView style={styles.formContainer}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Create Medical Record</Text>
-        <Text style={styles.headerSubtitle}>
-          Patient: {patient?.name || 'Loading patient information...'}
-        </Text>
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Title *</Text>
-        <TextInput
-          style={styles.input}
-          value={newRecord.title}
-          onChangeText={(text) => setNewRecord(prev => ({ ...prev, title: text }))}
-          placeholder="Enter record title (e.g., Follow-up Visit, Lab Results)"
-          placeholderTextColor="#94A3B8"
-          multiline={false}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={styles.input}
-          value={newRecord.description}
-          onChangeText={(text) => setNewRecord(prev => ({ ...prev, description: text }))}
-          placeholder="Brief description (optional)"
-          placeholderTextColor="#94A3B8"
-          multiline={true}
-          numberOfLines={2}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Medical Content *</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={newRecord.content}
-          onChangeText={(text) => setNewRecord(prev => ({ ...prev, content: text }))}
-          placeholder="Enter detailed medical information, diagnosis, treatment notes, etc."
-          placeholderTextColor="#94A3B8"
-          multiline={true}
-          numberOfLines={6}
-          textAlignVertical="top"
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Tags (optional)</Text>
-        <TextInput
-          style={styles.input}
-          value={newRecord.tags}
-          onChangeText={(text) => setNewRecord(prev => ({ ...prev, tags: text }))}
-          placeholder="Enter tags separated by commas (e.g., diabetes, follow-up, lab-results)"
-          placeholderTextColor="#94A3B8"
-        />
-      </View>
-
-      <View style={styles.buttonRow}>
-        <TouchableOpacity 
-          style={[styles.button, styles.cancelButton]}
-          onPress={() => {
-            setShowCreateForm(false);
-            setNewRecord({ title: '', description: '', content: '', tags: '' });
-          }}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.button, styles.saveButton]}
-          onPress={handleCreateRecord}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Create Record</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-  );
-
-  const renderRecordDetail = () => (
-    <ScrollView style={styles.detailContainer}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{selectedRecord?.title}</Text>
-        <Text style={styles.headerSubtitle}>
-          Created: {selectedRecord && format(parseISO(selectedRecord.createdAt), 'PPP')}
-        </Text>
-      </View>
-
-      {selectedRecord?.description && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.sectionText}>{selectedRecord.description}</Text>
-        </View>
-      )}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Medical Content</Text>
-        <Text style={styles.sectionText}>
-          {selectedRecord?.currentVersionId?.content || 'No content available'}
-        </Text>
-      </View>
-
-      {selectedRecord?.tags && selectedRecord.tags.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tags</Text>
-          <View style={styles.tagsContainer}>
-            {selectedRecord.tags.map((tag, index) => (
-              <View key={index} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
+    return (
+      <View style={styles.diffContainer}>
+        <Text style={styles.diffHeader}>What was updated:</Text>
+        {diff.map((part, partIndex) => {
+          if (part.added) {
+            return (
+              <View key={partIndex} style={styles.diffAddedContainer}>
+                <Markdown
+                  style={{
+                    body: {
+                      color: '#059669',
+                      fontSize: 13,
+                      margin: 0,
+                      padding: 4,
+                    },
+                    paragraph: {
+                      color: '#059669',
+                      fontSize: 13,
+                      margin: 0,
+                    },
+                    strong: {
+                      color: '#059669',
+                      fontWeight: 'bold',
+                    },
+                    heading1: {
+                      color: '#059669',
+                      fontSize: 16,
+                      fontWeight: 'bold',
+                      margin: 0,
+                    },
+                    heading2: {
+                      color: '#059669',
+                      fontSize: 15,
+                      fontWeight: 'bold',
+                      margin: 0,
+                    },
+                    heading3: {
+                      color: '#059669',
+                      fontSize: 14,
+                      fontWeight: 'bold',
+                      margin: 0,
+                    },
+                  }}
+                >
+                  {part.value.trim()}
+                </Markdown>
               </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Record Information</Text>
-        <Text style={styles.infoText}>Created by: {selectedRecord?.createdBy?.name || 'Doctor'}</Text>
-        <Text style={styles.infoText}>Record ID: {selectedRecord?.recordId}</Text>
-        <Text style={styles.infoText}>
-          Last modified: {selectedRecord && format(parseISO(selectedRecord.updatedAt), 'PPP')}
-        </Text>
+            );
+          } else if (part.removed) {
+            return (
+              <View key={partIndex} style={styles.diffRemovedContainer}>
+                <Markdown
+                  style={{
+                    body: {
+                      color: '#DC2626',
+                      fontSize: 13,
+                      margin: 0,
+                      padding: 4,
+                      textDecorationLine: 'line-through',
+                    },
+                    paragraph: {
+                      color: '#DC2626',
+                      fontSize: 13,
+                      margin: 0,
+                      textDecorationLine: 'line-through',
+                    },
+                    strong: {
+                      color: '#DC2626',
+                      fontWeight: 'bold',
+                      textDecorationLine: 'line-through',
+                    },
+                    heading1: {
+                      color: '#DC2626',
+                      fontSize: 16,
+                      fontWeight: 'bold',
+                      margin: 0,
+                      textDecorationLine: 'line-through',
+                    },
+                    heading2: {
+                      color: '#DC2626',
+                      fontSize: 15,
+                      fontWeight: 'bold',
+                      margin: 0,
+                      textDecorationLine: 'line-through',
+                    },
+                    heading3: {
+                      color: '#DC2626',
+                      fontSize: 14,
+                      fontWeight: 'bold',
+                      margin: 0,
+                      textDecorationLine: 'line-through',
+                    },
+                  }}
+                >
+                  {part.value.trim()}
+                </Markdown>
+              </View>
+            );
+          }
+          return null; // Don't show unchanged parts for brevity
+        })}
       </View>
+    );
+  };
 
-      <TouchableOpacity 
-        style={[styles.button, styles.backButton]}
-        onPress={() => setShowRecordDetail(false)}
-      >
-        <Text style={styles.backButtonText}>Back to Records</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
+  const renderHeader = () => {
+    let title = 'Medical Records';
+    let showBack = false;
+    
+    if (currentView === 'view') {
+      title = 'Medical Record';
+      showBack = true;
+    } else if (currentView === 'edit') {
+      title = selectedRecord ? 'Edit Record' : 'Create Record';
+      showBack = true;
+    }
+
+    return (
+      <View style={styles.header}>
+        {showBack ? (
+          <TouchableOpacity onPress={handleBackToList} style={styles.headerButton}>
+            <Ionicons name="chevron-back" size={24} color="#008080" />
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerButton} />
+        )}
+        
+        <Text style={styles.headerTitle}>{title}</Text>
+        
+        <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
+          <Ionicons name="close" size={24} color="#64748B" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={styles.container}>
-        <View style={styles.modalHeader}>
-          <TouchableOpacity 
-            style={styles.closeButton}
-            onPress={onClose}
-          >
-            <Ionicons name="close" size={24} color="#1E293B" />
-          </TouchableOpacity>
-          
-          {showRecordDetail && (
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => setShowRecordDetail(false)}
-            >
-              <Ionicons name="arrow-back" size={24} color="#1E293B" />
-            </TouchableOpacity>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={handleClose}
+    >
+      <SafeAreaView style={styles.container}>
+        {renderHeader()}
+        
+        <View style={styles.content}>
+          {currentView === 'list' && (
+            <MedicalRecordsList
+              patientId={patient?._id}
+              onRecordPress={handleRecordPress}
+              onCreateRecord={isDoctor ? handleCreateRecord : null}
+              userRole={userRole}
+              refreshTrigger={refreshTrigger}
+            />
           )}
           
-          {showCreateForm && (
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => setShowCreateForm(false)}
-            >
-              <Ionicons name="arrow-back" size={24} color="#1E293B" />
-            </TouchableOpacity>
+          {currentView === 'view' && selectedRecord && (
+            <MedicalRecordViewer
+              visible={true}
+              record={selectedRecord}
+              onClose={handleBackToList}
+              onEdit={isDoctor ? () => handleEditRecord(selectedRecord) : null}
+              onViewHistory={handleViewHistory}
+              showModal={false}
+            />
+          )}
+          
+          {currentView === 'edit' && (
+            <MedicalRecordEditor
+              visible={true}
+              patientId={patient?._id}
+              recordId={selectedRecord?.recordId}
+              onClose={handleBackToList}
+              onSave={handleSaveRecord}
+            />
           )}
         </View>
+      </SafeAreaView>
+      
+      {/* Version History Modal */}
+      <Modal
+        visible={versionHistoryVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setVersionHistoryVisible(false)}
+      >
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity 
+              onPress={() => setVersionHistoryVisible(false)} 
+              style={styles.headerButton}
+            >
+              <Ionicons name="chevron-back" size={24} color="#008080" />
+              <Text style={styles.backButtonText}>Back</Text>
+            </TouchableOpacity>
+            
+            <Text style={styles.headerTitle}>Version History</Text>
+            
+            <TouchableOpacity 
+              onPress={() => setVersionHistoryVisible(false)} 
+              style={styles.headerButton}
+            >
+              <Ionicons name="close" size={24} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.content}>
+            {loadingVersions ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#008080" />
+                <Text style={styles.loadingText}>Loading version history...</Text>
+              </View>
+            ) : versions.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="time-outline" size={48} color="#94A3B8" />
+                <Text style={styles.emptyText}>No version history found</Text>
+              </View>
+            ) : (
+              versions.map((version, index) => (
+                <View key={version._id} style={styles.versionCard}>
+                  <View style={styles.versionHeader}>
+                    <View>
+                      <Text style={styles.versionNumber}>Version {version.versionNumber}</Text>
+                      <Text style={styles.versionDate}>
+                        {format(parseISO(version.createdAt), 'MMM dd, yyyy • HH:mm')}
+                      </Text>
+                    </View>
+                    {version.createdBy && (
+                      <Text style={styles.versionAuthor}>
+                        {version.createdBy.name}
+                      </Text>
+                    )}
+                  </View>
+                  
+                  {version.changeDescription && (
+                    <Text style={styles.versionChange}>{version.changeDescription}</Text>
+                  )}
 
-        {showRecordDetail ? renderRecordDetail() : 
-         showCreateForm ? renderCreateForm() : 
-         renderRecordsList()}
-      </View>
+                  {/* Show diff for non-initial versions */}
+                  {renderDiffText(version, index)}
+                  
+                  <View style={styles.versionContentContainer}>
+                    <Markdown
+                      style={{
+                        body: {
+                          color: '#64748B',
+                          fontSize: 14,
+                          lineHeight: 20,
+                          margin: 0,
+                          padding: 0,
+                        },
+                        paragraph: {
+                          color: '#64748B',
+                          fontSize: 14,
+                          lineHeight: 20,
+                          marginBottom: 8,
+                        },
+                        heading1: {
+                          fontSize: 18,
+                          fontWeight: 'bold',
+                          color: '#64748B',
+                          marginBottom: 8,
+                        },
+                        heading2: {
+                          fontSize: 16,
+                          fontWeight: 'bold',
+                          color: '#64748B',
+                          marginBottom: 6,
+                        },
+                        heading3: {
+                          fontSize: 14,
+                          fontWeight: 'bold',
+                          color: '#64748B',
+                          marginBottom: 4,
+                        },
+                        strong: {
+                          fontWeight: 'bold',
+                          color: '#64748B',
+                        },
+                        em: {
+                          fontStyle: 'italic',
+                          color: '#64748B',
+                        },
+                        list_item: {
+                          color: '#64748B',
+                          fontSize: 14,
+                        },
+                      }}
+                    >
+                      {version.content || ''}
+                    </Markdown>
+                  </View>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </Modal>
   );
 }
@@ -400,268 +410,146 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  modalHeader: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
-  closeButton: {
-    padding: 5,
-  },
-  backButton: {
-    padding: 5,
-  },
-  header: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1E293B',
-    marginBottom: 5,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#64748B',
-  },
-  recordsList: {
-    flex: 1,
-  },
-  createButton: {
+  headerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#008080',
-    margin: 20,
-    padding: 15,
-    borderRadius: 10,
+    padding: 8,
+    minWidth: 60,
   },
-  disabledButton: {
-    backgroundColor: '#94A3B8',
-    opacity: 0.6,
-  },
-  createButtonText: {
-    color: '#fff',
+  backButtonText: {
     fontSize: 16,
+    color: '#008080',
+    marginLeft: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
     fontWeight: '600',
-    marginLeft: 8,
+    color: '#1E293B',
+    textAlign: 'center',
+    flex: 1,
+  },
+  content: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 50,
+    padding: 40,
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 16,
     fontSize: 16,
     color: '#64748B',
+    fontWeight: '500',
   },
-  emptyState: {
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 50,
-    paddingHorizontal: 40,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#64748B',
-    marginTop: 15,
-    marginBottom: 10,
+    padding: 40,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#94A3B8',
+    marginTop: 16,
+    fontSize: 16,
+    color: '#64748B',
     textAlign: 'center',
-    lineHeight: 20,
   },
-  recordCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginVertical: 8,
+  versionCard: {
+    backgroundColor: 'white',
+    marginHorizontal: 16,
+    marginBottom: 12,
     padding: 16,
     borderRadius: 12,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 2,
+    elevation: 1,
   },
-  recordHeader: {
+  versionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 8,
   },
-  recordTitle: {
-    fontSize: 18,
+  versionNumber: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#1E293B',
-    flex: 1,
-    marginRight: 10,
   },
-  recordDate: {
-    fontSize: 12,
-    color: '#64748B',
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  recordDescription: {
+  versionDate: {
     fontSize: 14,
     color: '#64748B',
-    marginBottom: 10,
-    lineHeight: 18,
+    marginTop: 2,
   },
-  recordFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  recordCreatedBy: {
-    fontSize: 12,
-    color: '#64748B',
-    fontStyle: 'italic',
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tag: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 4,
-  },
-  tagText: {
-    fontSize: 10,
+  versionAuthor: {
+    fontSize: 14,
     color: '#008080',
     fontWeight: '500',
   },
-  moreTagsText: {
-    fontSize: 10,
-    color: '#64748B',
-    marginLeft: 4,
-  },
-  recordMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  viewText: {
-    fontSize: 12,
-    color: '#64748B',
-    marginLeft: 4,
-  },
-  formContainer: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  inputGroup: {
-    marginHorizontal: 20,
-    marginVertical: 10,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
+  versionChange: {
+    fontSize: 14,
+    color: '#374151',
+    fontStyle: 'italic',
     marginBottom: 8,
+    backgroundColor: '#F8FAFC',
+    padding: 8,
+    borderRadius: 6,
   },
-  input: {
-    backgroundColor: '#fff',
+  versionContentContainer: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 8,
+    maxHeight: 120,
+    overflow: 'hidden',
+  },
+  diffContainer: {
+    marginVertical: 8,
     padding: 12,
-    fontSize: 16,
-    color: '#1E293B',
-    minHeight: 48,
-  },
-  textArea: {
-    height: 120,
-    textAlignVertical: 'top',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginHorizontal: 20,
-    marginVertical: 20,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#F1F5F9',
-    marginRight: 10,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  saveButton: {
-    backgroundColor: '#008080',
-    marginLeft: 10,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  detailContainer: {
-    flex: 1,
     backgroundColor: '#F8FAFC',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  section: {
-    backgroundColor: '#fff',
-    margin: 20,
-    padding: 16,
-    borderRadius: 12,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
-  },
-  sectionTitle: {
-    fontSize: 16,
+  diffHeader: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#1E293B',
+    color: '#374151',
     marginBottom: 8,
   },
-  sectionText: {
-    fontSize: 14,
-    color: '#64748B',
-    lineHeight: 20,
+  diffAdded: {
+    fontSize: 13,
+    color: '#059669',
+    backgroundColor: '#D1FAE5',
+    padding: 4,
+    marginVertical: 2,
+    borderRadius: 4,
+    fontFamily: 'monospace',
   },
-  infoText: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#008080',
+  diffRemoved: {
+    fontSize: 13,
+    color: '#DC2626',
+    backgroundColor: '#FEE2E2',
+    padding: 4,
+    marginVertical: 2,
+    borderRadius: 4,
+    textDecorationLine: 'line-through',
+    fontFamily: 'monospace',
   },
 });

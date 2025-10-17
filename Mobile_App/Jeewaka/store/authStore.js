@@ -2,12 +2,14 @@ import { create } from "zustand";
 import { auth } from "../config/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "../services/api";
 
 const useAuthStore = create((set, get) => ({
   user: null,
   userRole: null,
   loading: true,
   authToken: null,
+  verificationStatus: null, // Track doctor verification status
 
   setUser: async (user) => {
     set({ user });
@@ -24,6 +26,34 @@ const useAuthStore = create((set, get) => ({
       await AsyncStorage.setItem("userRole", userRole);
     } else {
       await AsyncStorage.removeItem("userRole");
+    }
+  },
+
+  setVerificationStatus: (status) => set({ verificationStatus: status }),
+
+  // Check doctor verification status and return full verification data
+  checkDoctorVerification: async (doctorId) => {
+    try {
+      const response = await api.get(`/api/admin-verification/${doctorId}`);
+      const rawData = response.data;
+
+      // Handle both array format [{}] and object format {} - backend returns array
+      const verificationData = Array.isArray(rawData) ? rawData[0] : rawData;
+      const isVerified = verificationData?.isVerified || false;
+      set({ verificationStatus: isVerified });
+
+      // Return both status and full data (like frontend)
+      return {
+        isVerified,
+        verificationData: verificationData || null,
+      };
+    } catch (error) {
+      // If 404 or other error, doctor is not verified
+      set({ verificationStatus: false });
+      return {
+        isVerified: false,
+        verificationData: null,
+      };
     }
   },
 
@@ -55,7 +85,12 @@ const useAuthStore = create((set, get) => ({
     await signOut(auth);
     await AsyncStorage.removeItem("userData");
     await AsyncStorage.removeItem("userRole");
-    set({ user: null, userRole: null, authToken: null });
+    set({
+      user: null,
+      userRole: null,
+      authToken: null,
+      verificationStatus: null,
+    });
   },
 
   // Initialize user from AsyncStorage and set up auth listener
@@ -80,9 +115,9 @@ const useAuthStore = create((set, get) => ({
             const token = await firebaseUser.getIdToken();
             const idTokenResult = await firebaseUser.getIdTokenResult();
             const role = idTokenResult.claims.role;
-            
+
             set({ authToken: token });
-            
+
             // Update role if it's different from stored role
             if (role && role !== get().userRole) {
               await get().setUserRole(role);
@@ -97,7 +132,7 @@ const useAuthStore = create((set, get) => ({
       });
 
       set({ loading: false });
-      
+
       // Return cleanup function
       return unsubscribe;
     } catch (error) {

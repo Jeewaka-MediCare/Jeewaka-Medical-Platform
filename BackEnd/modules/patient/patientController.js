@@ -3,12 +3,20 @@ import Session from "../session/sessionModel.js";
 import Doctor from "../doctor/doctorModel.js";
 import Record from "../records/recordModel.js";
 import Version from "../records/versionModel.js";
+import { sendRegistrationEmail } from "../email/emailService.js";
 
 // Create a patient
 export const createPatient = async (req, res) => {
   try {
     // Create the patient first
     const patient = new Patient(req.body);
+    try{
+      await sendRegistrationEmail(patient.email, patient.name, 'patient');
+
+    }
+    catch(emailError){
+      console.error('⚠️ Patient created but failed to send email:', emailError.message);
+    }
     await patient.save();
 
     // Create an initial medical record for the patient
@@ -23,6 +31,7 @@ export const createPatient = async (req, res) => {
       });
 
       await initialRecord.save();
+      
 
       // Create initial version with basic template
       const initialContent = `# Medical History - ${patient.name}

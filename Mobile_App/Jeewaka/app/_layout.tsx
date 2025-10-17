@@ -47,7 +47,7 @@ export default function RootLayout() {
 
       // Initialize auth - this now sets up Firebase auth listener
       const unsubscribe = await initializeAuth();
-      
+
       // Return cleanup function
       return unsubscribe;
     };
@@ -59,7 +59,7 @@ export default function RootLayout() {
 
     // Cleanup function
     return () => {
-      if (cleanup && typeof cleanup === 'function') {
+      if (cleanup && typeof cleanup === "function") {
         cleanup();
       }
     };
@@ -78,6 +78,10 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="AdminVerificationPending"
+            options={{ headerShown: false }}
+          />
           <Stack.Screen name="doctor/[id]" options={{ headerShown: false }} />
           <Stack.Screen
             name="book-session/[sessionId]"
@@ -89,6 +93,10 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="payment-success"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="payment-history"
             options={{ headerShown: false }}
           />
           <Stack.Screen

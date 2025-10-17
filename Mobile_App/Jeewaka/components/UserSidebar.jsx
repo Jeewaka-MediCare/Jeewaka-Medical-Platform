@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
   TouchableWithoutFeedback,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../store/authStore';
@@ -109,7 +110,15 @@ const UserDropdown = ({ visible, onClose, onLogin, onLogout }) => {
               <>
                 <View style={styles.userInfo}>
                   <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{getAvatarInitial()}</Text>
+                    {user?.profile || user?.profilePicture ? (
+                      <Image 
+                        source={{ uri: user.profile || user.profilePicture }}
+                        style={styles.avatarImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text style={styles.avatarText}>{getAvatarInitial()}</Text>
+                    )}
                   </View>
                   <View style={styles.nameContainer}>
                     <Text style={styles.userName}>{getDisplayName()}</Text>
@@ -189,6 +198,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   avatarText: {
     color: 'white',

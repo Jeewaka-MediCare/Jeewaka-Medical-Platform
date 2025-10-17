@@ -26,6 +26,7 @@ export const EnhancedSearchFilters = ({ onSearch, onAISearch }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [loadingAISearch, setLoadingAISearch] = useState(false);
   
   // Filter options from backend
   const [filterOptions, setFilterOptions] = useState({
@@ -64,6 +65,28 @@ export const EnhancedSearchFilters = ({ onSearch, onAISearch }) => {
     }
   }, [searchQuery, searchType]);
 
+  // Handle real-time search for normal search
+  useEffect(() => {
+    if (searchType === 'normal') {
+      const debounceTimer = setTimeout(() => {
+        handleNormalSearch();
+      }, 500); // 500ms delay for normal search
+      
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [searchQuery, searchType]);
+
+  // Handle real-time search for filter changes (specialization, fees, rating)
+  useEffect(() => {
+    if (searchType === 'normal') {
+      const debounceTimer = setTimeout(() => {
+        handleNormalSearch();
+      }, 300); // Shorter delay for filter changes
+      
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [specialization, minFee, maxFee, minRating, searchType]);
+
   const loadSearchSuggestions = async (query) => {
     setLoadingSuggestions(true);
     try {
@@ -86,6 +109,10 @@ export const EnhancedSearchFilters = ({ onSearch, onAISearch }) => {
       minRating: minRating ? parseFloat(minRating) : undefined,
     };
     
+    // For real-time search, only trigger if there's meaningful input
+    // This prevents excessive API calls when all fields are empty
+    const hasFilters = searchQuery.trim() || specialization || minFee || maxFee || minRating;
+    
     onSearch(filters);
     setShowSuggestions(false);
   };
@@ -96,12 +123,15 @@ export const EnhancedSearchFilters = ({ onSearch, onAISearch }) => {
       return;
     }
 
+    setLoadingAISearch(true);
     try {
       const result = await DoctorSearchService.aiSearchDoctors(searchQuery);
       onAISearch(result);
       setShowSuggestions(false);
     } catch (error) {
       Alert.alert('Search Error', error.message);
+    } finally {
+      setLoadingAISearch(false);
     }
   };
 
@@ -126,11 +156,22 @@ export const EnhancedSearchFilters = ({ onSearch, onAISearch }) => {
     onSearch({}); // Trigger search with empty filters to reset
   };
 
+  const clearSearchInput = () => {
+    setSearchQuery('');
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
   const handleSearchTypeChange = (type) => {
     if (type !== searchType) {
       setSearchQuery(''); // Clear input field when switching search types
       setShowSuggestions(false);
       setSuggestions([]);
+      
+      // If switching to normal search, trigger fetch of all doctors
+      if (type === 'normal') {
+        onSearch({}); // Trigger search with empty filters to get all doctors
+      }
     }
     setSearchType(type);
   };
@@ -200,7 +241,7 @@ export const EnhancedSearchFilters = ({ onSearch, onAISearch }) => {
         />
         
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+          <TouchableOpacity onPress={clearSearchInput} style={styles.clearButton}>
             <Ionicons name="close-circle" size={20} color="#64748B" />
           </TouchableOpacity>
         )}
@@ -232,10 +273,16 @@ export const EnhancedSearchFilters = ({ onSearch, onAISearch }) => {
           <TouchableOpacity
             style={[styles.searchButton, styles.aiSearchButton]}
             onPress={handleAISearch}
-            disabled={!searchQuery.trim()}
+            disabled={!searchQuery.trim() || loadingAISearch}
           >
-            <Ionicons name="sparkles" size={18} color="white" />
-            <Text style={styles.searchButtonText}>AI Search</Text>
+            {loadingAISearch ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Ionicons name="sparkles" size={18} color="white" />
+            )}
+            <Text style={styles.searchButtonText}>
+              {loadingAISearch ? 'Searching...' : 'AI Search'}
+            </Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -243,7 +290,7 @@ export const EnhancedSearchFilters = ({ onSearch, onAISearch }) => {
             onPress={handleNormalSearch}
           >
             <Ionicons name="search" size={18} color="white" />
-            <Text style={styles.searchButtonText}>Search</Text>
+            <Text style={styles.searchButtonText}>Search Now</Text>
           </TouchableOpacity>
         )}
         

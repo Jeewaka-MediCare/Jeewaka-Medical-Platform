@@ -21,6 +21,9 @@ import PaymentCheckout from "./pages/PaymentCheckout";
 import { Navbar } from "./components/navBar";
 import PatientLayout from "./Layout.jsx/patientLayout";
 import LandingPage from "./pages/LandingPage";
+import AdminFinancePage from "./pages/AdminFinancePage";
+import { AdminLayout } from "./Layout.jsx/adminLayOut";
+import DoctorFinance from "./pages/DoctorFinance";
 import { AuthProvider } from "./components/AuthProvider";
 import { Toaster } from "./components/ui/sonner";
 import AdminVerificationPending from "./pages/AdminVerificationPending";
@@ -102,39 +105,43 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/sign-up" element={<SignupPage />} />
 
-        {/* Doctor routes */}
-        <Route element={<DoctorLayout />}>
+          {/* Doctor routes */}
+          <Route element={<DoctorLayout />}>
+            <Route element={<ProtectedRoute allowedRoles={["doctor"]} />}>
+              <Route path="/doctor-overview" element={<DoctorOverviewPage />} />
+              <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+              <Route path="/doctor-profile-setting" element={<DoctorProfileSetting />} />
+              <Route path="/doctor-finance" element={<DoctorFinance />} />
+            </Route>
+          </Route>
+
+          {/* Doctor pending verification page - protected but no DoctorLayout */}
           <Route element={<ProtectedRoute allowedRoles={["doctor"]} />}>
-            <Route path="/doctor-overview" element={<DoctorOverviewPage />} />
-            <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
-            <Route path="/doctor-profile-setting" element={<DoctorProfileSetting />} />
+            <Route path="/admin-verification-pending" element={<AdminVerificationPending />} />
           </Route>
-        </Route>
 
-        {/* Doctor pending verification page - protected but no DoctorLayout */}
-        <Route element={<ProtectedRoute allowedRoles={["doctor"]} />}>
-          <Route path="/admin-verification-pending" element={<AdminVerificationPending />} />
-        </Route>
-
-        {/* Patient routes */}
-        <Route element={<PatientLayout />}>
-          <Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
-            <Route path="/patient-dashboard" element={<PatientDashboard />} />
-            <Route path="/appointments" element={<AppointmentsPage />} />
-            <Route path="/appointments/:id" element={<AppointmentDetails />} />
-            <Route path="/medical-records" element={<MedicalRecordsPage />} />
-            <Route path="/payments" element={<PaymentsPage />} />
-            <Route path="/doctors/review/:id" element={<DoctorDetailsPage />} />
-            <Route path="/payment-success" element={<PaymentSuccess />} />
-            <Route path="/payment-checkout" element={<PaymentCheckout />} />
+          {/* Patient routes */}
+          <Route element={<PatientLayout />}>
+            <Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
+              <Route path="/patient-dashboard" element={<PatientDashboard />} />
+              <Route path="/appointments" element={<AppointmentsPage />} />
+              <Route path="/appointments/:id" element={<AppointmentDetails />} />
+              <Route path="/medical-records" element={<MedicalRecordsPage />} />
+              <Route path="/payments" element={<PaymentsPage />} />
+              <Route path="/doctors/review/:id" element={<DoctorDetailsPage />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-checkout" element={<PaymentCheckout />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Admin routes */}
-        <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        </Route>
-      </Routes>
+          {/* Admin routes */}
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              <Route path="/admin-finance" element={<AdminFinancePage />} />
+            </Route>
+          </Route>
+        </Routes>
       </AuthProvider>
       <Toaster />
     </Router>

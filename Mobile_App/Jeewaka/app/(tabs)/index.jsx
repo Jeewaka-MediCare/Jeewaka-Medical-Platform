@@ -40,22 +40,36 @@ export default function Home() {
     try {
       let result;
       
-      // Check if we have any search filters
-      const hasFilters = Object.values(searchFilters).some(value => 
+      // Extract minRating for client-side filtering and remove from backend filters
+      const { minRating, ...backendFilters } = searchFilters;
+      
+      // Check if we have any backend search filters
+      const hasBackendFilters = Object.values(backendFilters).some(value => 
         value !== undefined && value !== '' && value !== null
       );
       
-      if (hasFilters) {
-        // Use search endpoint for filtered results
-        result = await DoctorSearchService.searchDoctors(searchFilters);
-        setDoctors(result.doctors);
+      if (hasBackendFilters) {
+        // Use search endpoint for filtered results (without minRating)
+        result = await DoctorSearchService.searchDoctors(backendFilters);
       } else {
         // Get all doctors
         result = await DoctorSearchService.getAllDoctors();
-        setDoctors(result.doctors);
       }
       
-      console.log(`Loaded ${result.doctors.length} doctors`);
+      let doctors = result.doctors;
+      
+      // Apply client-side rating filtering if minRating is specified
+      if (minRating && parseFloat(minRating) > 0) {
+        console.log(`🌟 Applying client-side minimum rating filter: ${minRating}`);
+        doctors = doctors.filter(doctor => {
+          const avgRating = doctor.avgRating || 0;
+          return avgRating >= parseFloat(minRating);
+        });
+        console.log(`✅ Rating filter applied: ${doctors.length} doctors match criteria (avg rating >= ${minRating})`);
+      }
+      
+      setDoctors(doctors);
+      console.log(`Loaded ${doctors.length} doctors`);
     } catch (err) {
       console.error('Error fetching doctors:', err);
       setError('Failed to load doctors. Please try again.');
@@ -73,14 +87,23 @@ export default function Home() {
     
     try {
       // Transform AI search results to match expected format
-      const transformedDoctors = aiSearchResult.doctorCards.map(card => ({
-        ...card.doctor,
-        avgRating: card.ratingSummary.avgRating,
-        totalReviews: card.ratingSummary.totalReviews,
-        ratingSummary: card.ratingSummary,
-        sessions: card.sessions,
-        aiScore: card.doctor.score // Keep AI relevance score
-      }));
+      const transformedDoctors = aiSearchResult.doctorCards.map(card => {
+        console.log('AI Search Doctor Card:', {
+          doctorId: card.doctor._id,
+          doctorName: card.doctor.name,
+          avgRating: card.ratingSummary.avgRating,
+          totalReviews: card.ratingSummary.totalReviews
+        });
+        
+        return {
+          ...card.doctor,
+          avgRating: card.ratingSummary.avgRating,
+          totalReviews: card.ratingSummary.totalReviews,
+          ratingSummary: card.ratingSummary,
+          sessions: card.sessions,
+          aiScore: card.doctor.score // Keep AI relevance score
+        };
+      });
       
       setDoctors(transformedDoctors);
       console.log(`AI Search found ${transformedDoctors.length} doctors for query: "${aiSearchResult.query}"`);

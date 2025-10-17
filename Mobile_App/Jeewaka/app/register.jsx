@@ -193,8 +193,8 @@ export default function Register() {
       });
       setUserRole('doctor');
       
-      // Navigate to appointments tab (where dashboard functionality now resides)
-      router.replace('/(tabs)/appointments');
+      // Navigate to certificate upload page for admin verification
+      router.replace(`/AdminVerificationPending?doctorId=${doctor._id}&_id=${doctor._id}&name=${encodeURIComponent(doctor.name)}&email=${encodeURIComponent(doctor.email)}`);
       
     } catch (error) {
       console.error('Doctor registration error:', error);

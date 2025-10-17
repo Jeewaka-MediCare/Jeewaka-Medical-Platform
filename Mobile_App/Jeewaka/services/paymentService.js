@@ -32,11 +32,6 @@ export const paymentService = {
         throw new Error("Authentication required for payment processing");
       }
 
-      console.log(
-        "Mobile PaymentService - Creating payment intent:",
-        paymentData
-      );
-
       // The API interceptor will automatically add the Authorization header
       const response = await api.post(
         "/api/payments/create-intent",
@@ -44,10 +39,7 @@ export const paymentService = {
       );
       return response.data;
     } catch (error) {
-      console.error(
-        "Mobile PaymentService - Error creating payment intent:",
-        error
-      );
+      console.error("Error creating payment intent:", error);
       console.error("Error response:", error.response?.data);
       throw error;
     }

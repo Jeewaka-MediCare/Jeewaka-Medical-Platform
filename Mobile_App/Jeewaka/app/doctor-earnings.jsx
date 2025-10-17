@@ -13,11 +13,13 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { format, parseISO } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import paymentService from '../services/paymentService';
 import useAuthStore from '../store/authStore';
+import pdfExportService from '../services/pdfExportService';
 
 const { width } = Dimensions.get('window');
 
@@ -158,6 +160,52 @@ export default function DoctorEarnings() {
     loadEarnings(true, searchText);
   };
 
+  const handleExport = async () => {
+    try {
+      if (!earnings || earnings.length === 0) {
+        Alert.alert('No Data', 'No earnings data available to export.');
+        return;
+      }
+
+      // Prepare export data
+      const exportData = earnings.map(payment => ({
+        ...payment,
+        // Keep amounts as they are (already in LKR, not cents)
+        amount: payment.amount, // Don't multiply by 100
+        paidDate: payment.paidDate,
+        appointmentDate: payment.appointmentDate,
+        patientName: payment.patientName || 'Unknown Patient'
+      }));
+
+      // Prepare stats for export
+      const totalAmount = earnings.reduce((sum, payment) => sum + payment.amount, 0);
+      const exportStats = {
+        totalPayments: earnings.length,
+        totalAmount: totalAmount, // Don't multiply by 100
+        period: `${startDate ? formatDatePickerDisplay(startDate) : 'All time'} - ${endDate ? formatDatePickerDisplay(endDate) : 'Present'}`
+      };
+
+      // Prepare filters info
+      const exportFilters = {
+        searchTerm: searchText || '',
+        statusFilter: 'all', // Default to 'all' since we don't have status filtering in earnings
+        dateRange: startDate || endDate ? `${formatDatePickerDisplay(startDate) || 'Start'} to ${formatDatePickerDisplay(endDate) || 'End'}` : 'All dates'
+      };
+
+      // Call export service
+      await pdfExportService.exportDoctorEarningsPDF(
+        exportData,
+        exportStats,
+        user,
+        exportFilters
+      );
+
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert('Export Failed', error.message || 'Failed to export earnings data. Please try again.');
+    }
+  };
+
   const toggleCardExpansion = (paymentId) => {
     const newExpandedCards = new Set(expandedCards);
     if (newExpandedCards.has(paymentId)) {
@@ -263,24 +311,54 @@ export default function DoctorEarnings() {
 
   if (loading && earnings.length === 0) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading earnings...</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen 
+          options={{
+            title: 'Earnings',
+            headerShown: true,
+            headerBackTitle: 'Back',
+            headerStyle: {
+              backgroundColor: '#1E293B',
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 0,
+            },
+            headerTitleStyle: {
+              color: 'white',
+              fontSize: 20,
+              fontWeight: '600',
+            },
+            headerTintColor: 'white',
+          }} 
+        />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading earnings...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#ffffff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>View Earnings</Text>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <Stack.Screen 
+        options={{
+          title: 'Earnings',
+          headerShown: true,
+          headerBackTitle: 'Back',
+          headerStyle: {
+            backgroundColor: '#1E293B',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+          },
+          headerTitleStyle: {
+            color: 'white',
+            fontSize: 20,
+            fontWeight: '600',
+          },
+          headerTintColor: 'white',
+        }} 
+      />
 
       {/* Search and Filters */}
       <View style={styles.searchContainer}>
@@ -288,7 +366,7 @@ export default function DoctorEarnings() {
           <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by patient name, payment ID..."
+            placeholder="Patient name / payment ID..."
             placeholderTextColor="#999"
             value={searchText}
             onChangeText={setSearchText}
@@ -315,7 +393,13 @@ export default function DoctorEarnings() {
 
       {/* Date Filters */}
       <View style={styles.dateFiltersContainer}>
-        <Text style={styles.dateFiltersTitle}>Filter by Date:</Text>
+        <View style={styles.dateFiltersHeader}>
+          <Text style={styles.dateFiltersTitle}>Filter by Date:</Text>
+          <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
+            <Ionicons name="download-outline" size={16} color="#008080" />
+            <Text style={styles.exportButtonText}>Export</Text>
+          </TouchableOpacity>
+        </View>
         
         <View style={styles.datePickersRow}>
           <TouchableOpacity
@@ -406,7 +490,7 @@ export default function DoctorEarnings() {
           }}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -424,36 +508,6 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#666',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#1E293B',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  backButton: {
-    marginRight: 15,
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: 0.5,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -496,9 +550,9 @@ const styles = StyleSheet.create({
   },
   searchButton: {
     backgroundColor: '#008080',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 10,
     justifyContent: 'center',
     shadowColor: '#008080',
     shadowOffset: {
@@ -511,8 +565,8 @@ const styles = StyleSheet.create({
   },
   searchButtonText: {
     color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 15,
+    fontWeight: '600',
+    fontSize: 14,
   },
   dateFiltersContainer: {
     backgroundColor: '#f8faff',
@@ -521,12 +575,41 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
   },
+  dateFiltersHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   dateFiltersTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: '#1e293b',
-    marginBottom: 12,
     letterSpacing: 0.3,
+  },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#008080',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  exportButtonText: {
+    color: '#008080',
+    fontSize: 13,
+    fontWeight: '600',
+    marginLeft: 4,
   },
   datePickersRow: {
     flexDirection: 'row',
@@ -564,9 +647,9 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     backgroundColor: '#008080',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
     flex: 0.48,
     shadowColor: '#008080',
     shadowOffset: {
@@ -579,15 +662,15 @@ const styles = StyleSheet.create({
   },
   filterButtonText: {
     color: '#ffffff',
-    fontWeight: '700',
+    fontWeight: '600',
     textAlign: 'center',
-    fontSize: 15,
+    fontSize: 14,
   },
   clearFilterButton: {
     backgroundColor: '#ffffff',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: '#008080',
     flex: 0.48,
@@ -602,9 +685,9 @@ const styles = StyleSheet.create({
   },
   clearFilterButtonText: {
     color: '#008080',
-    fontWeight: '700',
+    fontWeight: '600',
     textAlign: 'center',
-    fontSize: 15,
+    fontSize: 14,
   },
   earningsList: {
     flex: 1,

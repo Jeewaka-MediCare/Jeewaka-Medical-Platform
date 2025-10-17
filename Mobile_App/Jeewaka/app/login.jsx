@@ -8,9 +8,10 @@ import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AntDesign } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
-  const { setUser, setUserRole } = useAuthStore();
+  const { setUser, setUserRole, checkDoctorVerification } = useAuthStore();
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -59,14 +60,10 @@ export default function Login() {
       
       // If role is not set, wait a moment and try again (Firebase claims might be delayed)
       if (!role) {
-        console.log('Role not found in claims, refreshing token...');
         await user.getIdToken(true); // Force token refresh
         idTokenResult = await user.getIdTokenResult();
         role = idTokenResult.claims.role;
       }
-      
-      console.log('User UID:', uid);
-      console.log('User role:', role);
       
       if (!role) {
         throw new Error('User role not found. Please contact support.');
@@ -83,7 +80,26 @@ export default function Login() {
         
         // Navigate based on user role
         if (role === 'doctor') {
-          router.replace('/(tabs)/appointments');  // Direct to My Appointments tab
+          // Check if doctor is verified before allowing access - FRONTEND APPROACH
+          try {
+            const { isVerified, verificationData } = await checkDoctorVerification(userData._id);
+            
+            if (isVerified) {
+              // Doctor is verified, can access dashboard
+              router.replace('/(tabs)/appointments');  // Direct to My Appointments tab
+            } else {
+              // Doctor is not verified, redirect to verification page with data
+              // Store verification data for the AdminVerificationPending page
+              if (verificationData) {
+                await AsyncStorage.setItem('verificationData', JSON.stringify(verificationData));
+              }
+              router.replace(`/AdminVerificationPending?doctorId=${userData._id}&_id=${userData._id}&name=${encodeURIComponent(userData.name)}&email=${encodeURIComponent(userData.email)}`);
+            }
+          } catch (verificationError) {
+            console.error('Error checking verification:', verificationError);
+            // On error, redirect to verification page to be safe
+            router.replace(`/AdminVerificationPending?doctorId=${userData._id}&_id=${userData._id}&name=${encodeURIComponent(userData.name)}&email=${encodeURIComponent(userData.email)}`);
+          }
         } else if (role === 'patient') {
           router.replace('/(tabs)');  // Direct to Jeewaka tab
         } else if (role === 'admin') {

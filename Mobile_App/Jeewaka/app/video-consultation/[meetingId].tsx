@@ -127,7 +127,7 @@ function ControlsContainer({
               toggleWebcam?.();
             }}
             iconName={localWebcamOn ? "videocam" : "videocam-off"}
-            backgroundColor="#1178F8"
+            backgroundColor="#0aa7a7ff"
             isActive={localWebcamOn}
           />
 
@@ -137,7 +137,7 @@ function ControlsContainer({
               toggleMic?.();
             }}
             iconName={localMicOn ? "mic" : "mic-off"}
-            backgroundColor="#1178F8"
+            backgroundColor="#0aa7a7ff"
             isActive={localMicOn}
           />
 
@@ -147,7 +147,7 @@ function ControlsContainer({
               switchCamera?.();
             }}
             iconName="camera-reverse"
-            backgroundColor="#FF9500"
+            backgroundColor="#0aa7a7ff"
             isActive={true}
           />
 
@@ -503,11 +503,11 @@ function MeetingView() {
         <View
           style={{
             padding: 12,
-            backgroundColor: "#E8F4FD",
+            backgroundColor: "#c4e4e4ff",
             alignItems: "center",
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: "bold", color: "#1178F8" }}>
+          <Text style={{ fontSize: 16, fontWeight: "bold", color: "#008080" }}>
             Meeting ID: {meetingId}
           </Text>
           <Text style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
@@ -533,7 +533,7 @@ function MeetingView() {
             onPress={handleJoinMeeting}
             disabled={isJoining}
             style={{
-              backgroundColor: isJoining ? "#ccc" : "#1178F8",
+              backgroundColor: isJoining ? "#15c7c7ff" : "#008080",
               paddingVertical: 15,
               paddingHorizontal: 30,
               borderRadius: 8,
@@ -649,7 +649,7 @@ function JoinScreen({
 
       <TouchableOpacity
         style={{
-          backgroundColor: "#1178F8",
+          backgroundColor: "#008080",
           padding: 12,
           marginTop: 14,
           borderRadius: 6,
