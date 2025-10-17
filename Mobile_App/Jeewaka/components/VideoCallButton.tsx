@@ -21,19 +21,32 @@ export default function VideoCallButton({
 
   const handlePress = () => {
     if (meetingId) {
-      // Join existing meeting
+      // Join existing meeting directly
       router.push(`/video-consultation/${meetingId}` as any);
     } else if (sessionId && slotIndex !== undefined) {
-      // Create meeting for this specific appointment
-      router.push(
-        `/video-consultation/appointment/${sessionId}/${slotIndex}` as any
-      );
+      // Route to video consultation with appointment parameters
+      router.push({
+        pathname: "/video-consultation/[meetingId]",
+        params: {
+          meetingId: "new",
+          sessionId,
+          slotIndex,
+          type: "appointment",
+        },
+      } as any);
     } else if (sessionId) {
-      // Create meeting for this session (legacy fallback)
-      router.push(`/video-consultation/session/${sessionId}` as any);
+      // Route to video consultation with session parameters
+      router.push({
+        pathname: "/video-consultation/[meetingId]",
+        params: {
+          meetingId: "new",
+          sessionId,
+          type: "session",
+        },
+      } as any);
     } else {
-      // Create new meeting
-      router.push("/video-consultation/new" as any);
+      // Create completely new meeting
+      router.push(`/video-consultation/new-meeting` as any);
     }
   };
 

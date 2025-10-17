@@ -103,10 +103,6 @@ export default function RootLayout() {
             name="video-consultation/[meetingId]"
             options={{ headerShown: false }}
           />
-          <Stack.Screen
-            name="video-consultation/appointment/[sessionId]/[slotIndex]"
-            options={{ headerShown: false }}
-          />
           <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>

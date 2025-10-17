@@ -61,6 +61,7 @@ export default function PatientDashboard() {
               _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
               sessionId: session._id,
               slotIndex: originalSlotIndex, // Add slot index for appointment-specific video calls
+              meetingId: slot.meetingId, // Add appointment-specific meetingId
               date: session.date,
               startTime: slot.startTime,
               endTime: slot.endTime,
@@ -209,6 +210,7 @@ export default function PatientDashboard() {
                 <VideoCallButton
                   style={[styles.actionButton, styles.videoCallButton]}
                   title="Join Video Call"
+                  meetingId={appointment.meetingId}
                   sessionId={appointment.sessionId}
                   slotIndex={appointment.slotIndex}
                 />

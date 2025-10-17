@@ -45,6 +45,7 @@ export const useAppointments = (user, userRole) => {
               _id: `${session._id}_${slot.startTime}_${slot.endTime}`,
               sessionId: session._id,
               slotIndex: originalSlotIndex,
+              meetingId: slot.meetingId, // Add appointment-specific meetingId
               date: session.date,
               startTime: slot.startTime,
               endTime: slot.endTime,

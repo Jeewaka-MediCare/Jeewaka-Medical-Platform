@@ -89,6 +89,7 @@ export default function AppointmentCard({
           <VideoCallButton
             style={[styles.actionButton, styles.videoCallButton]}
             title="Video Call"
+            meetingId={appointment.meetingId}
             sessionId={appointment.sessionId}
             slotIndex={appointment.slotIndex}
           />

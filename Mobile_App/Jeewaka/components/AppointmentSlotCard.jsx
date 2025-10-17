@@ -96,6 +96,7 @@ const AppointmentSlotCard = ({
               <VideoCallButton
                 style={[styles.actionButton, styles.videoCallButton]}
                 title="Join Video Call"
+                meetingId={slot.meetingId}
                 sessionId={sessionId}
                 slotIndex={slot.slotIndex}
               />

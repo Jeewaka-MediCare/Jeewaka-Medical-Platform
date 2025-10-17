@@ -238,15 +238,23 @@ export const updateSessionMeetingId = async (req, res) => {
     const { sessionId } = req.params;
     const { meetingId } = req.body;
 
-    const session = await Session.findByIdAndUpdate(
-      sessionId,
-      { meetingId },
-      { new: true }
-    );
-
+    const session = await Session.findById(sessionId);
     if (!session) return res.status(404).json({ error: "Session not found" });
 
-    res.json({ success: true, session });
+    // Only update if meeting ID doesn't already exist (prevents race conditions)
+    if (!session.meetingId) {
+      session.meetingId = meetingId;
+      await session.save();
+      res.json({ success: true, meetingId, session });
+    } else {
+      // Return existing meeting ID if already set
+      res.json({
+        success: true,
+        meetingId: session.meetingId,
+        message: "Meeting ID already exists",
+        session,
+      });
+    }
   } catch (err) {
     console.error("Error updating session meeting ID:", err);
     res.status(400).json({ error: err.message });
@@ -266,11 +274,20 @@ export const updateAppointmentMeetingId = async (req, res) => {
       return res.status(400).json({ error: "Invalid slot index" });
     }
 
-    // Update the specific timeSlot's meeting ID
-    session.timeSlots[slotIndex].meetingId = meetingId;
-    await session.save();
-
-    res.json({ success: true, session });
+    // Only update if meeting ID doesn't already exist (prevents race conditions)
+    if (!session.timeSlots[slotIndex].meetingId) {
+      session.timeSlots[slotIndex].meetingId = meetingId;
+      await session.save();
+      res.json({ success: true, meetingId, session });
+    } else {
+      // Return existing meeting ID if already set
+      res.json({
+        success: true,
+        meetingId: session.timeSlots[slotIndex].meetingId,
+        message: "Meeting ID already exists",
+        session,
+      });
+    }
   } catch (err) {
     console.error("Error updating appointment meeting ID:", err);
     res.status(400).json({ error: err.message });
