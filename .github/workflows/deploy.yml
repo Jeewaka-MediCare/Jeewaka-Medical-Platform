@@ -198,22 +198,20 @@ jobs:
         # Create Google Cloud service account key file
         echo "${GOOGLE_SERVICE_ACCOUNT_KEY}" | base64 -d > service-account-key.json
         
-        # Copy files to EC2
+        # Copy files to EC2 user's home directory (avoids permission issues writing to /opt)
+        ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} "mkdir -p /home/${USER_NAME}/jeewaka-medical-platform && mkdir -p /home/${USER_NAME}/jeewaka-medical-platform/BackEnd"
         scp -o StrictHostKeyChecking=no -i private_key \
           .env.production service-account-key.json docker-compose.micro.yml scripts/deploy-micro.sh \
-          ${USER_NAME}@${HOSTNAME}:/opt/jeewaka-medical-platform/
-        
-        # Copy service account key to BackEnd directory on EC2
+          ${USER_NAME}@${HOSTNAME}:/home/${USER_NAME}/jeewaka-medical-platform/
+
+        # Copy service account key to BackEnd directory in the user's home
         scp -o StrictHostKeyChecking=no -i private_key \
           service-account-key.json \
-          ${USER_NAME}@${HOSTNAME}:/opt/jeewaka-medical-platform/BackEnd/
-        
-        # Deploy on EC2
+          ${USER_NAME}@${HOSTNAME}:/home/${USER_NAME}/jeewaka-medical-platform/BackEnd/
+
+        # Move files into /opt with sudo and run deploy script as the remote user
         ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} \
-          'cd /opt/jeewaka-medical-platform && \
-           git pull origin main && \
-           chmod +x scripts/deploy-micro.sh && \
-           ./scripts/deploy-micro.sh'
+          "sudo mkdir -p /opt/jeewaka-medical-platform && sudo cp -r /home/${USER_NAME}/jeewaka-medical-platform/* /opt/jeewaka-medical-platform/ && sudo cp -r /home/${USER_NAME}/jeewaka-medical-platform/BackEnd/service-account-key.json /opt/jeewaka-medical-platform/BackEnd/ || true && sudo chown -R ${USER_NAME}:${USER_NAME} /opt/jeewaka-medical-platform || true && cd /opt/jeewaka-medical-platform && git pull origin main || true && chmod +x scripts/deploy-micro.sh && ./scripts/deploy-micro.sh"
     
     - name: Health check
       env:
