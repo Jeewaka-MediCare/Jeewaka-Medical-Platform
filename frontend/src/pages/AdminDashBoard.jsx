@@ -81,6 +81,7 @@ export default function AdminDashboard() {
   },[])
 
   const handleVerifyDoctor = async (doctorId, isVerified) => {
+    console.log('[DEBUG] handleVerifyDoctor called with doctorId:', doctorId, 'isVerified:', isVerified, 'verificationComment:', verificationComment);
     if (!doctorId) {
       alert('Doctor ID is required to update verification status');
       return;
@@ -412,7 +413,7 @@ export default function AdminDashboard() {
                                       Reject
                                     </Button>
                                     <Button 
-                                      onClick={() => handleVerifyDoctor(selectedDoctor?._id, true)}
+                                      onClick={() => handleVerifyDoctor(selectedDoctor?.doctorId, true)}
                                       className="bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white shadow-md"
                                     >
                                       <CheckCircle className="h-4 w-4 mr-2" />

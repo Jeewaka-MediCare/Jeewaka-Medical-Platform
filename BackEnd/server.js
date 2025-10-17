@@ -15,6 +15,7 @@ import adminVerificationRouter from "./modules/doctorCertificates/doctorVerifica
 import paymentsRouter from "./modules/payments/paymentsRoutes.js";
 import financeRouter from "./modules/finance/financeRoutes.js";
 import medicalRecordsRouter from "./modules/records/recordsRoutes.js";
+import authRouter from "./modules/auth/authRoutes.js";
 
 // Load environment variables
 dotenv.config();
