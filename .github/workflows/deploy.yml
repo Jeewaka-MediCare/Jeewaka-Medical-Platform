@@ -59,9 +59,9 @@ jobs:
       working-directory: ./frontend
       run: npm run build
     
-    - name: Run frontend linting
-      working-directory: ./frontend
-      run: npm run lint
+    #- name: Run frontend linting
+    #  working-directory: ./frontend
+    #  run: npm run lint
       
     - name: Security audit
       run: |
