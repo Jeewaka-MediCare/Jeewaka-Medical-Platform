@@ -17,11 +17,17 @@ export default function Home() {
   const router = useRouter();
   
   const [doctors, setDoctors] = useState([]);
+  const [allDoctors, setAllDoctors] = useState([]); // Store all doctors for filtering
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [searchType, setSearchType] = useState('normal'); // Track if using AI search
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  
+  const DOCTORS_PER_PAGE = 15;
   
   const [filters, setFilters] = useState({
     query: '',
@@ -32,8 +38,12 @@ export default function Home() {
   });
 
   // Fetch doctors using normal search
-  const fetchDoctors = async (searchFilters = {}) => {
-    setLoading(true);
+  const fetchDoctors = async (searchFilters = {}, reset = true) => {
+    if (reset) {
+      setLoading(true);
+      setCurrentPage(1);
+      setDoctors([]);
+    }
     setError(null);
     setSearchType('normal');
     
@@ -51,25 +61,47 @@ export default function Home() {
       if (hasBackendFilters) {
         // Use search endpoint for filtered results (without minRating)
         result = await DoctorSearchService.searchDoctors(backendFilters);
+        // For search results, show all at once (no pagination)
+        let doctors = result.doctors;
+        
+        // Apply client-side rating filtering if minRating is specified
+        if (minRating && parseFloat(minRating) > 0) {
+          console.log(`🌟 Applying client-side minimum rating filter: ${minRating}`);
+          doctors = doctors.filter(doctor => {
+            const avgRating = doctor.avgRating || 0;
+            return avgRating >= parseFloat(minRating);
+          });
+          console.log(`✅ Rating filter applied: ${doctors.length} doctors match criteria (avg rating >= ${minRating})`);
+        }
+        
+        setDoctors(doctors);
+        setAllDoctors(doctors);
+        setHasMore(false); // No pagination for search results
+        console.log(`Loaded ${doctors.length} filtered doctors`);
       } else {
-        // Get all doctors
-        result = await DoctorSearchService.getAllDoctors();
+        // Get first page of all doctors
+        result = await DoctorSearchService.getAllDoctors(1, DOCTORS_PER_PAGE);
+        let doctors = result.doctors;
+        
+        // Apply client-side rating filtering if minRating is specified
+        if (minRating && parseFloat(minRating) > 0) {
+          console.log(`🌟 Applying client-side minimum rating filter: ${minRating}`);
+          const filteredAll = result.allDoctors.filter(doctor => {
+            const avgRating = doctor.avgRating || 0;
+            return avgRating >= parseFloat(minRating);
+          });
+          setAllDoctors(filteredAll);
+          doctors = filteredAll.slice(0, DOCTORS_PER_PAGE);
+          setHasMore(filteredAll.length > DOCTORS_PER_PAGE);
+          console.log(`✅ Rating filter applied: ${filteredAll.length} doctors match criteria (avg rating >= ${minRating})`);
+        } else {
+          setAllDoctors(result.allDoctors);
+          setHasMore(result.hasMore);
+        }
+        
+        setDoctors(doctors);
+        console.log(`Loaded ${doctors.length} doctors (page 1)`);
       }
-      
-      let doctors = result.doctors;
-      
-      // Apply client-side rating filtering if minRating is specified
-      if (minRating && parseFloat(minRating) > 0) {
-        console.log(`🌟 Applying client-side minimum rating filter: ${minRating}`);
-        doctors = doctors.filter(doctor => {
-          const avgRating = doctor.avgRating || 0;
-          return avgRating >= parseFloat(minRating);
-        });
-        console.log(`✅ Rating filter applied: ${doctors.length} doctors match criteria (avg rating >= ${minRating})`);
-      }
-      
-      setDoctors(doctors);
-      console.log(`Loaded ${doctors.length} doctors`);
     } catch (err) {
       console.error('Error fetching doctors:', err);
       setError('Failed to load doctors. Please try again.');
@@ -79,11 +111,41 @@ export default function Home() {
     }
   };
 
+  // Load more doctors (pagination)
+  const loadMoreDoctors = async () => {
+    if (loadingMore || !hasMore || searchType === 'ai') return;
+    
+    setLoadingMore(true);
+    try {
+      const nextPageNum = currentPage + 1;
+      const startIndex = (nextPageNum - 1) * DOCTORS_PER_PAGE;
+      const endIndex = startIndex + DOCTORS_PER_PAGE;
+      
+      // Get next batch from already loaded data
+      const nextDoctors = allDoctors.slice(startIndex, endIndex);
+      
+      if (nextDoctors.length > 0) {
+        setDoctors(prev => [...prev, ...nextDoctors]);
+        setCurrentPage(nextPageNum);
+        setHasMore(endIndex < allDoctors.length);
+        
+        console.log(`Loaded ${nextDoctors.length} more doctors (page ${nextPageNum})`);
+      } else {
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error('Error loading more doctors:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   // Handle AI search
   const handleAISearch = async (aiSearchResult) => {
     setLoading(true);
     setError(null);
     setSearchType('ai');
+    setCurrentPage(1);
     
     try {
       // Transform AI search results to match expected format
@@ -106,6 +168,8 @@ export default function Home() {
       });
       
       setDoctors(transformedDoctors);
+      setAllDoctors(transformedDoctors);
+      setHasMore(false); // No pagination for AI search results
       console.log(`AI Search found ${transformedDoctors.length} doctors for query: "${aiSearchResult.query}"`);
     } catch (err) {
       console.error('Error processing AI search results:', err);
@@ -214,7 +278,10 @@ export default function Home() {
           <DoctorList 
             doctors={doctors} 
             loading={loading} 
-            error={error} 
+            error={error}
+            onLoadMore={loadMoreDoctors}
+            hasMore={hasMore}
+            loadingMore={loadingMore}
             refreshControl={
               <RefreshControl 
                 refreshing={refreshing}

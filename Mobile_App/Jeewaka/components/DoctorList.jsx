@@ -2,10 +2,18 @@ import React from 'react';
 import { FlatList, StyleSheet, View, Text, ActivityIndicator } from 'react-native';
 import { DoctorCard } from './DoctorCard';
 
-export const DoctorList = ({ doctors, loading, error }) => {
+export const DoctorList = ({ 
+  doctors, 
+  loading, 
+  error, 
+  onLoadMore, 
+  hasMore, 
+  loadingMore,
+  refreshControl 
+}) => {
   console.log('DoctorList received:', { doctorsCount: doctors?.length, loading, error });
   
-  if (loading) {
+  if (loading && doctors.length === 0) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#008080" />
@@ -33,6 +41,16 @@ export const DoctorList = ({ doctors, loading, error }) => {
     );
   }
 
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color="#008080" />
+        <Text style={styles.loadingText}>Loading more doctors...</Text>
+      </View>
+    );
+  };
+
   return (
     <FlatList
       data={doctors}
@@ -57,6 +75,25 @@ export const DoctorList = ({ doctors, loading, error }) => {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.listContainer}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
+      
+      // Pagination props
+      initialNumToRender={15}
+      maxToRenderPerBatch={10}
+      windowSize={10}
+      onEndReached={hasMore ? onLoadMore : null}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={renderFooter}
+      
+      // Performance optimizations
+      removeClippedSubviews={true}
+      getItemLayout={(data, index) => ({
+        length: 120, // Approximate height of DoctorCard
+        offset: 120 * index,
+        index,
+      })}
+      
+      // Pull to refresh
+      refreshControl={refreshControl}
     />
   );
 };
@@ -84,5 +121,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#64748B',
     textAlign: 'center',
+  },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#64748B',
   },
 });
