@@ -1,7 +1,21 @@
+<<<<<<< HEAD
+import Doctor from './doctorModel.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { generateVertexEmbedding } from '../../utils/vertexAI.js';
+import { registrationEmail } from '../email/templates/registrationEmail.js';
+
+
+import Session from '../session/sessionModel.js';
+import Rating from '../ratings/ratingModel.js';
+import mongoose from 'mongoose';
+import adminVerificationSchema from '../doctorCertificates/doctorCertificateModel.js';
+import { sendRegistrationEmail } from '../email/emailService.js';
+=======
 import Doctor from "./doctorModel.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { generateVertexEmbedding } from "../../utils/vertexAI.js";
 import { registrationEmail } from "../email/templates/registrationEmail.js";
+>>>>>>> 07ef0c61f2ee1f49f3bf9562dcf065527b9f92a5
 
 import Session from "../session/sessionModel.js";
 import Rating from "../ratings/ratingModel.js";
