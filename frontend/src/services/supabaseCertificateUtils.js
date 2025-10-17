@@ -10,8 +10,8 @@ export async function uploadCertificateFile(doctorId, file) {
   });
   if (error) throw error;
   // Get the public URL
-  const { publicURL } = supabase.storage.from(BUCKET).getPublicUrl(filePath).data;
-  return publicURL;
+  const publicData = supabase.storage.from(BUCKET).getPublicUrl(filePath).data || {};
+  return publicData.publicUrl || publicData.publicURL || null;
 }
 
 // List all certificate files for a doctor
@@ -21,7 +21,7 @@ export async function listCertificateFiles(doctorId) {
   // Return array of { name, url }
   return (data || []).map(item => ({
     name: item.name,
-    url: supabase.storage.from(BUCKET).getPublicUrl(`${doctorId}/${item.name}`).data.publicURL
+    url: (supabase.storage.from(BUCKET).getPublicUrl(`${doctorId}/${item.name}`).data || {}).publicUrl || null
   }));
 }
 

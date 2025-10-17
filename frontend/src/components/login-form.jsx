@@ -14,6 +14,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from '../store/authStore';
 import api from "../services/api";
+import { Mail, Lock, AlertCircle, Heart } from "lucide-react";
 
 export function LoginForm({ className, ...props }) {
   const navigate = useNavigate();
@@ -87,89 +88,115 @@ export function LoginForm({ className, ...props }) {
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>
-            Login with your Apple or Google account
+    <div className={cn("flex flex-col gap-6 w-full max-w-md mx-auto", className)} {...props}>
+      <Card className="border-2 border-emerald-100 shadow-lg">
+        <CardHeader className="text-center space-y-2 pb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-md">
+            <Heart className="w-8 h-8 text-white" />
+          </div>
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-700 bg-clip-text text-transparent">
+            Welcome back
+          </CardTitle>
+          <CardDescription className="text-base text-gray-600">
+            Login to access your healthcare portal
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pb-8">
           <form onSubmit={handleSubmit}>
             <div className="grid gap-6">
               <div className="flex flex-col gap-4">
-                <Button variant="outline" className="w-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path
-                      d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  Login with Apple
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path
-                      d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  Login with Google
-                </Button>
+               
               </div>
               <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                <span className="bg-card text-muted-foreground relative z-10 px-2">
-                  Or continue with
-                </span>
+             
               </div>
               <div className="grid gap-6">
                 <div className="grid gap-3">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    required
-                    value={form.email}
-                    onChange={handleChange}
-                  />
+                  <Label htmlFor="email" className="text-sm font-semibold flex items-center gap-2 text-gray-700">
+                    <Mail className="w-4 h-4 text-emerald-600" />
+                    Email Address
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="m@example.com"
+                      required
+                      value={form.email}
+                      onChange={handleChange}
+                      className={cn(
+                        "pl-10 h-11 transition-all duration-200 border-gray-200",
+                        errors.email 
+                          ? "border-red-500 focus-visible:ring-red-500" 
+                          : "focus-visible:ring-emerald-500 focus-visible:border-emerald-500"
+                      )}
+                    />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  </div>
                   {errors.email && (
-                    <span className="text-red-500 text-xs">
-                      {errors.email}
-                    </span>
+                    <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 p-2 rounded-md border border-red-200">
+                      <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                      <span>{errors.email}</span>
+                    </div>
                   )}
                 </div>
                 <div className="grid gap-3">
-                  <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-sm font-semibold flex items-center gap-2 text-gray-700">
+                      <Lock className="w-4 h-4 text-emerald-600" />
+                      Password
+                    </Label>
                     <a
                       href="#"
-                      className="ml-auto text-sm underline-offset-4 hover:underline"
+                      className="text-sm text-emerald-600 hover:text-emerald-700 underline-offset-4 hover:underline transition-colors"
                     >
-                      Forgot your password?
+                      Forgot password?
                     </a>
                   </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    value={form.password}
-                    onChange={handleChange}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type="password"
+                      required
+                      value={form.password}
+                      onChange={handleChange}
+                      className={cn(
+                        "pl-10 h-11 transition-all duration-200 border-gray-200",
+                        errors.password 
+                          ? "border-red-500 focus-visible:ring-red-500" 
+                          : "focus-visible:ring-emerald-500 focus-visible:border-emerald-500"
+                      )}
+                    />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  </div>
                   {errors.password && (
-                    <span className="text-red-500 text-xs">
-                      {errors.password}
-                    </span>
+                    <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 p-2 rounded-md border border-red-200">
+                      <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                      <span>{errors.password}</span>
+                    </div>
                   )}
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Loading..." : "Login"}
+                <Button 
+                  type="submit" 
+                  className="w-full h-11 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200" 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Logging in...
+                    </span>
+                  ) : (
+                    "Login"
+                  )}
                 </Button>
               </div>
-              <div className="text-center text-sm">
+              <div className="text-center text-sm bg-emerald-50 p-3 rounded-lg border border-emerald-100">
                 Don&apos;t have an account?{" "}
-                <Link to="/sign-up" className="underline underline-offset-4">
+                <Link to="/sign-up" className="text-emerald-700 font-semibold hover:text-emerald-800 underline underline-offset-4 transition-colors">
                   Sign up
                 </Link>
               </div>
@@ -177,9 +204,10 @@ export function LoginForm({ className, ...props }) {
           </form>
         </CardContent>
       </Card>
-      <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+      <div className="text-muted-foreground text-center text-xs text-balance px-4">
         By clicking continue, you agree to our{" "}
-        <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+        <a href="#" className="text-emerald-600 hover:text-emerald-700 underline underline-offset-4 transition-colors">Terms of Service</a> and{" "}
+        <a href="#" className="text-emerald-600 hover:text-emerald-700 underline underline-offset-4 transition-colors">Privacy Policy</a>.
       </div>
     </div>
   );

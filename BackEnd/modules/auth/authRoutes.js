@@ -2,7 +2,7 @@ import express from 'express';
 import { setUserRole, updateUserRole, getUserRole } from './authControllers.js';
 import { authMiddleware, requireRole } from '../../middleware/authMiddleware.js';
 
-const router = express.Router();
+const authRouter = express.Router();
 
 // ============================================
 // PUBLIC ROUTES (No authentication required)
@@ -14,7 +14,7 @@ const router = express.Router();
  * Body: { uid: string, role: 'patient' | 'doctor' }
  * Note: Only allows setting patient/doctor roles, not admin
  */
-router.post('/role', setUserRole);
+authRouter.post('/role', setUserRole);
 
 // ============================================
 // AUTHENTICATED ROUTES
@@ -25,7 +25,7 @@ router.post('/role', setUserRole);
  * Get user's role and custom claims
  * Requires: Authentication
  */
-router.get('/users/:uid/role', authMiddleware, getUserRole);
+authRouter.get('/users/:uid/role', authMiddleware, getUserRole);
 
 // ============================================
 // ADMIN ONLY ROUTES
@@ -37,10 +37,10 @@ router.get('/users/:uid/role', authMiddleware, getUserRole);
  * Body: { uid: string, role: 'patient' | 'doctor' | 'admin' }
  * Requires: Authentication + Admin role
  */
-router.put('/users/:uid/role', 
+authRouter.put('/users/:uid/role', 
   authMiddleware, 
   requireRole(['admin']), 
   updateUserRole
 );
 
-export default router; 
+export default authRouter; 

@@ -1,19 +1,120 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, Trash2, Clock } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 import api from '../services/api';
+import useAuthStore from '../store/authStore';
 
 
 export default function AdminVerificationPending() {
     const location = useLocation();
-    console.log("Location state:", location.state);
-  const initialDoctor = (location.state && location.state[0]) || {};
+  console.log("Location state:", location.state);
+  console.log('AdminVerificationPending: initialDoctor (from location):', initialDoctor);
+  console.log('AdminVerificationPending: initial doctorData state:', doctorData);
+    // Support both navigate(state) that passes an object or an array [doctor]
+    const initialDoctor = (location.state && (Array.isArray(location.state) ? location.state[0] : location.state)) || {};
   if (!initialDoctor.certificates) initialDoctor.certificates = [];
   const [doctorData, setDoctorData] = useState(initialDoctor);
 
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+
+  // On mount or when authUser becomes available, fetch existing verification data and stored documents for this doctor
+  const authUser = useAuthStore(state => state.user);
+
+  // helper to resolve a usable doctorId from various shapes
+  const resolveDoctorId = (obj) => {
+    if (!obj) return null;
+    return obj.doctorId || obj._id || obj.id || obj.uuid || obj.userId || null;
+  };
+
+  useEffect(() => {
+    const loadExisting = async () => {
+      try {
+  // Prefer explicit doctorId from local state, then fall back to authenticated user
+  const doctorId = resolveDoctorId(doctorData) || resolveDoctorId(authUser);
+  console.log('AdminVerificationPending: resolved doctorId =', doctorId);
+        // If doctorData is empty but we have an authenticated doctor profile, merge it in so UI shows consistent info
+        if ((!doctorData || !resolveDoctorId(doctorData)) && authUser) {
+          // Merge authUser fields and ensure both _id and doctorId are set for compatibility
+          const merged = { ...(doctorData || {}), ...authUser };
+          const resolvedId = resolveDoctorId(merged);
+          if (resolvedId) {
+            merged._id = merged._id || resolvedId;
+            merged.doctorId = merged.doctorId || resolvedId;
+          }
+          setDoctorData(merged);
+        }
+        if (!doctorId) {
+          console.log('AdminVerificationPending: no doctorId resolved, aborting loadExisting. doctorData:', doctorData, 'authUser:', authUser);
+          return;
+        }
+
+        // Fetch verification record (if any) to populate doctorData
+        let verificationFound = false;
+        try {
+          const verUrl = `/api/admin-verification/${doctorId}`;
+          console.log('AdminVerificationPending: about to GET verification at', verUrl);
+          const verRes = await api.get(verUrl);
+          console.log('AdminVerificationPending: verification GET response:', verRes.data);
+          // API returns an array in backend controller; pick first
+          const ver = Array.isArray(verRes.data) ? verRes.data[0] : verRes.data;
+          console.log('AdminVerificationPending: selected verification object:', ver);
+          if (ver) {
+            verificationFound = true;
+            // Update doctor data with verification fields
+            setDoctorData(prev => ({ ...prev, ...ver }));
+
+            // If the verification record includes a certificates array, prefer that as the source of truth
+            if (Array.isArray(ver.certificates) && ver.certificates.length > 0) {
+              console.log('AdminVerificationPending: verification.certificates (from DB):', ver.certificates);
+              const filesFromCerts = ver.certificates.map((c, idx) => ({
+                id: `${Date.now()}_cert_${idx}`,
+                name: (typeof c === 'string' ? c.split('/').pop() : `certificate_${idx}`),
+                url: c,
+                uploadedAt: ver.updatedAt || ver.createdAt || new Date().toISOString(),
+                raw: c
+              }));
+              console.log('AdminVerificationPending: filesFromCerts built:', filesFromCerts);
+              setUploadedFiles(filesFromCerts);
+              // Ensure doctorData.certificates is set from verification
+              setDoctorData(prev => ({ ...prev, certificates: ver.certificates }));
+            }
+          }
+        } catch (e) {
+          console.error('AdminVerificationPending: verification GET failed:', e?.response?.status, e?.response?.data || e.message || e);
+        }
+
+        // If verification record didn't provide certificates, fetch stored documents (signed URLs) from backend storage service
+        if (!verificationFound) {
+          console.log('AdminVerificationPending: no verificationFound; falling back to storage listing');
+          try {
+            const docsRes = await api.get(`/api/admin-verification/documents/${doctorId}`);
+            console.log('AdminVerificationPending: documents listing response:', docsRes.data);
+            const docs = docsRes.data?.documents || [];
+            const files = (docs || []).map((d, idx) => ({
+              id: `${Date.now()}_${idx}`,
+              name: d.name || d.filename || `file_${idx}`,
+              url: d.url || d.signedUrl || d.publicUrl || d.path || '',
+              uploadedAt: d.uploadedAt || d.lastModified || new Date().toISOString(),
+              raw: d
+            }));
+            setUploadedFiles(files);
+            setDoctorData(prev => ({ ...prev, certificates: files.map(f => f.url) }));
+          } catch (e) {
+            // ignore errors listing files
+            console.error('Failed to load existing documents', e);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading existing verification data', err);
+      }
+    };
+
+    loadExisting();
+    // Re-run when authUser or location changes (e.g. after page refresh/auth hydration)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser, location.key]);
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -47,6 +148,7 @@ export default function AdminVerificationPending() {
     }
 
     try {
+      const newUrls = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const form = new FormData();
@@ -72,8 +174,20 @@ export default function AdminVerificationPending() {
           certificates: [...(prev.certificates || []), newFile.url],
           updatedAt: new Date().toISOString()
         }));
+        if (newFile.url) newUrls.push(newFile.url);
       }
-      alert('Certificates uploaded successfully! Waiting for admin verification.');
+      // After successful upload(s), persist the certificates list to backend
+      try {
+        const doctorIdResolved = resolveDoctorId(doctorData) || resolveDoctorId(authUser);
+        if (doctorIdResolved) {
+          const existing = doctorData.certificates || [];
+          const certificatesList = Array.from(new Set([...existing, ...newUrls]));
+          await saveCertificates(doctorIdResolved, certificatesList);
+        }
+      } catch (saveErr) {
+        console.error('Failed to auto-save certificates after upload', saveErr);
+      }
+      alert('Certificates uploaded successfully! Saved to your profile and waiting for admin verification.');
     } catch (error) {
       console.error('Upload error', error);
       const msg = error?.response?.data?.message || error.message || 'Failed to upload document';
@@ -82,6 +196,37 @@ export default function AdminVerificationPending() {
       setUploading(false);
     }
   };
+
+  // Persist certificates list to backend (used after upload/delete)
+  async function saveCertificates(doctorId, certificatesList) {
+    if (!doctorId) throw new Error('Doctor ID is required to save certificates');
+    try {
+      // Check if verification exists
+      let exists = false;
+      try {
+        await api.get(`/api/admin-verification/${doctorId}`);
+        exists = true;
+      } catch (err) {
+        exists = false;
+      }
+      if (exists) {
+        await api.put(`/api/admin-verification/${doctorId}`, {
+          certificates: certificatesList
+        });
+      } else {
+        await api.post(`/api/admin-verification/`, {
+          doctorId,
+          certificates: certificatesList
+        });
+      }
+      // Update local state to reflect saved list
+      setDoctorData(prev => ({ ...prev, certificates: certificatesList, updatedAt: new Date().toISOString() }));
+      return true;
+    } catch (error) {
+      console.error('Error saving certificates', error);
+      throw error;
+    }
+  }
 
   const removeFile = async (id) => {
     const fileToRemove = uploadedFiles.find(f => f.id === id);
@@ -95,11 +240,19 @@ export default function AdminVerificationPending() {
       // Call backend API to delete the file
       await api.delete(`/api/admin-verification/documents/${doctorId}/${encodeURIComponent(fileToRemove.name)}`);
       setUploadedFiles(prev => prev.filter(f => f.id !== id));
+      const newCerts = (doctorData.certificates || []).filter(url => url !== fileToRemove.url);
       setDoctorData(prev => ({
         ...prev,
-        certificates: prev.certificates.filter(url => url !== fileToRemove.url),
+        certificates: newCerts,
         updatedAt: new Date().toISOString()
       }));
+      // Persist deletion to backend
+      try {
+        const did = resolveDoctorId(doctorData) || resolveDoctorId(authUser);
+        if (did) await saveCertificates(did, newCerts);
+      } catch (saveErr) {
+        console.error('Failed to auto-save certificates after delete', saveErr);
+      }
     } catch (error) {
       alert('Failed to delete file from storage.');
     }
@@ -272,12 +425,13 @@ export default function AdminVerificationPending() {
                     <div className="flex-1">
                       <a
                         href={file.url}
-                        download={file.name}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="font-semibold text-blue-700 hover:underline break-all"
                       >
                         {file.name}
                       </a>
-                      <p className="text-xs text-gray-500 break-all">{file.url}</p>
+                      {/* Don't show raw signed URL to avoid clutter; filename is a clickable link */}
                       <p className="text-xs text-gray-400 mt-1">
                         Uploaded: {formatDate(file.uploadedAt)}
                       </p>
@@ -303,6 +457,19 @@ export default function AdminVerificationPending() {
               </div>
             </div>
           )}
+
+          {/* Debug panel - developer only */}
+          <div className="mt-6 p-4 bg-gray-50 border rounded text-xs text-gray-700">
+            <div className="font-semibold mb-2">Debug (developer):</div>
+            <div>
+              <strong>doctorData:</strong>
+              <pre style={{ whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto' }}>{JSON.stringify(doctorData, null, 2)}</pre>
+            </div>
+            <div>
+              <strong>uploadedFiles:</strong>
+              <pre style={{ whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto' }}>{JSON.stringify(uploadedFiles, null, 2)}</pre>
+            </div>
+          </div>
 
           {/* Action Button */}
           <div className="mt-8 pt-6 border-t flex justify-between items-center">
