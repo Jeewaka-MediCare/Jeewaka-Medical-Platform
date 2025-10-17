@@ -1,3 +1,4 @@
+
 import Doctor from "./doctorModel.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { generateVertexEmbedding } from "../../utils/vertexAI.js";
@@ -7,6 +8,7 @@ import Rating from "../ratings/ratingModel.js";
 import mongoose from "mongoose";
 import adminVerificationSchema from "../doctorCertificates/doctorCertificateModel.js";
 import { sendRegistrationEmail } from "../email/emailService.js";
+
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);

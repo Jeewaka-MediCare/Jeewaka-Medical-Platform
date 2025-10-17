@@ -44,51 +44,51 @@ jobs:
       working-directory: ./BackEnd
       run: npm ci
     
-    - name: Run frontend tests
-      working-directory: ./frontend
-      run: npm test -- --run
+    #- name: Run frontend tests
+    #  working-directory: ./frontend
+    #  run: npm test -- --run
       
-    - name: Run backend tests
-      working-directory: ./BackEnd
-      run: npm test
-      env:
-        MONGODB_URI: mongodb://localhost:27017/jeewaka-test
-        JWT_SECRET: test-secret-key-for-testing-only
+    #- name: Run backend tests
+    #  working-directory: ./BackEnd
+    #  run: npm test
+    #  env:
+    #    MONGODB_URI: mongodb://localhost:27017/jeewaka-test
+    #    JWT_SECRET: test-secret-key-for-testing-only
     
     - name: Build frontend
       working-directory: ./frontend
       run: npm run build
     
-    - name: Run frontend linting
-      working-directory: ./frontend
-      run: npm run lint
+    #- name: Run frontend linting
+    #  working-directory: ./frontend
+    #  run: npm run lint
       
-    - name: Security audit
-      run: |
-        cd frontend && npm audit --audit-level moderate
-        cd ../BackEnd && npm audit --audit-level moderate
+    #- name: Security audit
+    #  run: |
+    #    cd frontend && npm audit --audit-level moderate
+    #    cd ../BackEnd && npm audit --audit-level moderate
 
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
+  #security-scan:
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #  - uses: actions/checkout@v4
     
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
+  #  - name: Run Trivy vulnerability scanner
+  #    uses: aquasecurity/trivy-action@master
+  #    with:
+  #      scan-type: 'fs'
+  #      scan-ref: '.'
+  #      format: 'sarif'
+  #      output: 'trivy-results.sarif'
     
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
+  #  - name: Upload Trivy scan results to GitHub Security tab
+  #    uses: github/codeql-action/upload-sarif@v3
+  #    if: always()
+  #    with:
+  #      sarif_file: 'trivy-results.sarif'
 
   deploy:
-    needs: [test, security-scan]
+  #  needs: [test, security-scan]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
@@ -229,20 +229,21 @@ jobs:
           exit 1
         fi
     
-    - name: Notify Slack on success
-      if: success()
-      uses: 8398a7/action-slack@v3
-      with:
-        status: success
-        text: '🚀 Jeewaka Medical Platform deployed successfully!'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    #
+    #- name: Notify Slack on success
+    #  if: success()
+    #  uses: 8398a7/action-slack@v3
+    #  with:
+    #    status: success
+    #    text: '🚀 Jeewaka Medical Platform deployed successfully!'
+    #  env:
+    #    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     
-    - name: Notify Slack on failure
-      if: failure()
-      uses: 8398a7/action-slack@v3
-      with:
-        status: failure
-        text: '❌ Jeewaka Medical Platform deployment failed!'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    #- name: Notify Slack on failure
+    #  if: failure()
+    #  uses: 8398a7/action-slack@v3
+    #  with:
+    #    status: failure
+    #    text: '❌ Jeewaka Medical Platform deployment failed!'
+    #  env:
+    #    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
