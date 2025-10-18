@@ -11,6 +11,7 @@ import SideBarApp from "./Layout.jsx/mainLayout";
 import DoctorLayout from "./Layout.jsx/doctorLayout"; // Import DoctorLayout
 import DoctorProfileSetting from "./pages/DoctorProfileSetting";
 import DoctorDetailsPage from "./pages/DoctorViewPage";
+
 import AppointmentsPage from "./pages/appointmentPage";
 import AppointmentDetails from "./pages/AppointmentDetails";
 import AdminDashboard from "./pages/AdminDashBoard";

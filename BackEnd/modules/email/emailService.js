@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { registrationEmail } from './templates/registrationEmail.js';
 import { doctorVerificationEmail } from './templates/adminVerificationEmail.js';
+import { sessionInitializedEmail } from './templates/sessionInitializedEmail.js';
 
 
 // Create transporter (Gmail example)
@@ -90,3 +91,55 @@ export async function sendDoctorVerificationEmail({
   }
 }
 
+export async function sendSessionInitializedEmail({
+  to,
+  doctorName,
+  sessionDate,
+  type,
+  hospitalName = "",
+  hospitalAddress = "",
+  meetingLink = "",
+  timeSlots = [],
+  manageUrl = "#",
+  calendarIcsUrl = "",
+}) {
+  try {
+    const subject = `🗓️ Session initialized (${type === "online" ? "Online" : "In-person"}) – ${doctorName}`;
+    const html = sessionInitializedEmail({
+      doctorName,
+      sessionDate,
+      type,
+      hospitalName,
+      hospitalAddress,
+      meetingLink,
+      timeSlots,
+      manageUrl,
+      calendarIcsUrl,
+      supportEmail: "support@healthcare.example",
+    });
+
+    const textLines = [
+      `Dear ${doctorName}, your ${type} session has been created.`,
+      `Date: ${new Date(sessionDate).toLocaleDateString("en-GB")}`,
+      timeSlots?.length ? `Time slots: ${timeSlots.slice(0,3).map(s=>`${s.startTime}-${s.endTime}`).join(", ")}${timeSlots.length>3?` +${timeSlots.length-3} more`:""}` : "",
+      type === "online" && meetingLink ? `Meeting link: ${meetingLink}` : "",
+      type === "in-person" && hospitalName ? `Hospital/Clinic: ${hospitalName}` : "",
+      manageUrl ? `Manage: ${manageUrl}` : "",
+    ].filter(Boolean).join("\n");
+
+    const mailOptions = {
+      from: '"HealthCare Platform" <trinith.22@cse.mrt.ac.lk>',
+      to,
+      subject,
+      text: textLines,
+      html,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Session initialized email sent:", info.response);
+    return info;
+  } catch (error) {
+    console.error("❌ Error sending session initialized email:", error);
+    throw error;
+  }
+}
