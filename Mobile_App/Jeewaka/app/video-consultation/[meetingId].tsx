@@ -63,7 +63,10 @@ export default function VideoConsultationPage() {
           headerTintColor: "white",
         }}
       />
-      {meetingId && typeof meetingId === "string" ? (
+      {meetingId &&
+      typeof meetingId === "string" &&
+      meetingId !== "new" &&
+      meetingId !== "new-meeting" ? (
         <MeetingProvider
           config={{
             meetingId,

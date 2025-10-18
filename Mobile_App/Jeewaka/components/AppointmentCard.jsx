@@ -88,10 +88,13 @@ export default function AppointmentCard({
         {(appointment.type === 'online' || appointment.type === 'video') && !isPast && (
           <VideoCallButton
             style={[styles.actionButton, styles.videoCallButton]}
-            title="Video Call"
+            title="Join Video Call"
             meetingId={appointment.meetingId}
             sessionId={appointment.sessionId}
             slotIndex={appointment.slotIndex}
+            appointmentDate={appointment.date}
+            appointmentStartTime={appointment.startTime}
+            appointmentEndTime={appointment.endTime}
           />
         )}
         

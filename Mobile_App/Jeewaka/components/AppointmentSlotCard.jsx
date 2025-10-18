@@ -102,8 +102,11 @@ const AppointmentSlotCard = ({
                 title={isPast ? "Call Ended" : "Join Video Call"}
                 meetingId={slot.meetingId}
                 sessionId={sessionId}
-                slotIndex={slot.slotIndex}
+                slotIndex={slot.slotIndex || index}
                 disabled={isPast}
+                appointmentDate={slot.date}
+                appointmentStartTime={slot.startTime}
+                appointmentEndTime={slot.endTime}
               />
             )}
             
