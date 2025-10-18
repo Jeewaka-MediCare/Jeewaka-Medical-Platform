@@ -145,9 +145,9 @@ exports[`DoctorCard matches snapshot 1`] = `
           style={
             {
               "alignSelf": "flex-start",
-              "backgroundColor": "#EFF6FF",
+              "backgroundColor": "#E6FFFE",
               "borderRadius": 4,
-              "color": "#2563EB",
+              "color": "#008080",
               "fontSize": 12,
               "fontWeight": "600",
               "paddingHorizontal": 8,
@@ -224,7 +224,7 @@ exports[`DoctorCard matches snapshot 1`] = `
       <Text
         style={
           {
-            "color": "#2563EB",
+            "color": "#008080",
             "fontSize": 18,
             "fontWeight": "700",
           }

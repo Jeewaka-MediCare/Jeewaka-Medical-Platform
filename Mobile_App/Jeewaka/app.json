@@ -24,8 +24,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.yashwick.Jeewaka",
-      "versionCode": 1
+      "package": "com.yashwick.Jeewaka"
     },
     "web": {
       "bundler": "metro",

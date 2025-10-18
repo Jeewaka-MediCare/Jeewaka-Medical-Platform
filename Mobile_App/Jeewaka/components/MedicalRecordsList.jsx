@@ -188,7 +188,7 @@ export default function MedicalRecordsList({
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#008080" />
+        <ActivityIndicator testID="activity-indicator" size="large" color="#008080" />
         <Text style={styles.loadingText}>Loading medical records...</Text>
       </View>
     );
@@ -199,6 +199,7 @@ export default function MedicalRecordsList({
       {records.length > 0 && renderHeader()}
       
       <ScrollView
+        testID="medical-records-scroll"
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
