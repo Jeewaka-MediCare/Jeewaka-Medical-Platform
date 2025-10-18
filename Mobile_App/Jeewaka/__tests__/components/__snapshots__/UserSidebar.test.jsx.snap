@@ -81,6 +81,7 @@ exports[`UserSidebar matches snapshot when user is logged in 1`] = `
               "height": 36,
               "justifyContent": "center",
               "marginRight": 12,
+              "overflow": "hidden",
               "width": 36,
             }
           }
