@@ -34,6 +34,7 @@ export default function DoctorViewPage() {
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [loading, setLoading] = useState(false);
   const location = useLocation();
   const params = useParams();
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ export default function DoctorViewPage() {
 
     const doctorIdFromState = passedData && passedData.doctor && passedData.doctor._id;
     const doctorId = doctorIdFromState || params.id;
+    console.log('🔐 DoctorViewPage - Determined doctorId:', doctorId);
 
     if (!doctorId) {
       console.error('🔐 DoctorViewPage - No doctor id provided via state or route param');
@@ -150,25 +152,24 @@ export default function DoctorViewPage() {
     console.log("Appointment Status:", "booked");
   };
 
-  const handleSubmitReview = (reviewData) => {
-    console.log("Review submitted:", {
+  const handleSubmitReview = async(reviewData) => {
+    try{
+    setLoading(true);
+
+    const  review_object = {
       doctor: data.doctor._id,
-      patient: "current-patient-id", // This should come from auth context
+      patient: user._id, // This should come from auth context
       rating: reviewData.rating,
       comment: reviewData.comment,
       createdAt: new Date().toISOString(),
-    });
-    // const  review_object = {
-    //   doctor: data.doctor._id,
-    //   patient: "current-patient-id", // This should come from auth context
-    //   rating: reviewData.rating,
-    //   comment: reviewData.comment,
-    //   createdAt: new Date().toISOString(),
-    // }
+    }
+    console.log("review_object",review_object);
     //todo: please add zuzstang login user id for current patient id
+    
 
-    const res = api.post('/api/review', review_object);
+    const res = await api.post('/api/rating', review_object);
     if(res.data.succuess){
+      setLoading(false);
       const newReview = res.data.review;
       setData((prevData) => ({
       ...prevData,
@@ -185,16 +186,18 @@ export default function DoctorViewPage() {
     }));
 
     setShowReviewDialog(false);
+    }else{
+      setLoading(false);
+      alert("Failed to submit review. Please try again.");
+    }
+    }catch(error){
+      setLoading(false);
+      console.error("Error submitting review:", error);
+      alert("An error occurred while submitting your review. Please try again.");
     }
     
 
-    // Add the new review to local state
-    // const newReview = {
-    //   rating: reviewData.rating,
-    //   comment: reviewData.comment,
-    //   patient: { name: "You" }, // This should come from auth context
-    //   createdAt: new Date().toISOString(),
-    // };
+    
 
     
   };
@@ -483,6 +486,7 @@ export default function DoctorViewPage() {
           onOpenChange={setShowReviewDialog}
           doctor={doctor}
           onSubmit={handleSubmitReview}
+          loading={loading}
         />
       </main>
     </div>

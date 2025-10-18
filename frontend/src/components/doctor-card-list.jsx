@@ -50,6 +50,7 @@ export function DoctorCardList({
           // Handle both new search API format and old doctorCard format
           const doctorData = doctor.doctor || doctor;
           const ratingData = doctor.ratingSummary || {};
+          console.log("ratingData:", ratingData);
           
           return (
             <DoctorCard 
@@ -59,7 +60,7 @@ export function DoctorCardList({
               specialization={doctorData.specialization}
               profile={doctorData.profile}
               consultationFee={doctorData.consultationFee}
-              avgRating={ratingData.avgRating || 4.5}
+              avgRating={ratingData?.avgRating || 0}
               totalReviews={ratingData.totalReviews || 0}
               education={doctorData.qualifications || []}
               sessions={doctor.sessions || []}

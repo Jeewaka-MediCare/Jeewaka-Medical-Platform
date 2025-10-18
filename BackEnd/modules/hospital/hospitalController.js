@@ -4,7 +4,7 @@ import Hospital from "./hospitalModel.js";
 export const createHospital = async (req, res) => {
   try {
     const hospital = await Hospital.create(req.body);
-    res.status(201).json(hospital);
+    res.status(201).json({message: "Hospital created successfully", success:true, hospital });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

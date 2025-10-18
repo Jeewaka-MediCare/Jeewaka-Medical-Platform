@@ -1,8 +1,8 @@
-
 import Doctor from "./doctorModel.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { generateVertexEmbedding } from "../../utils/vertexAI.js";
 import { registrationEmail } from "../email/templates/registrationEmail.js";
+
 import Session from "../session/sessionModel.js";
 import Rating from "../ratings/ratingModel.js";
 import mongoose from "mongoose";
@@ -282,8 +282,8 @@ export const updateDoctor = async (req, res) => {
     const doctor = await Doctor.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });
-    if (!doctor) return res.status(404).json({ error: "Doctor not found" });
-    res.json({ success: true, doctor: doctor });
+    if (!doctor) return res.status(404).json({  success:false, message: "Doctor not found" });
+    res.json({ success: true, doctor: doctor , message: "Doctor updated successfully" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -292,9 +292,11 @@ export const updateDoctor = async (req, res) => {
 // Delete doctor
 export const deleteDoctor = async (req, res) => {
   try {
+  
     const doctor = await Doctor.findByIdAndDelete(req.params.id);
+    console.log("Deleted doctor:", doctor);
     if (!doctor) return res.status(404).json({ error: "Doctor not found" });
-    res.json({ message: "Doctor deleted" });
+    res.json({ message: "Doctor deleted" , success:true   });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -335,6 +337,7 @@ export const aiSearchDoctors = async (req, res) => {
           qualifications: 1,
           yearsOfExperience: 1,
           consultationFee: 1,
+          profile: 1,
           bio: 1,
           score: { $meta: "vectorSearchScore" },
         },

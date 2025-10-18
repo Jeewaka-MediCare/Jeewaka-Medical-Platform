@@ -46,6 +46,7 @@ export function Navbar() {
         { to: "/doctor-overview", label: "Overview", icon: BarChart3 },
         { to: "/doctor-dashboard", label: "Sessions", icon: CalendarDays },
         { to: "/doctor-profile-setting", label: "Profile Settings", icon: User },
+        { to: "/doctor-finance", label: "Finance", icon: CreditCard },
       ];
     } else if (userRole === 'admin') {
       return [

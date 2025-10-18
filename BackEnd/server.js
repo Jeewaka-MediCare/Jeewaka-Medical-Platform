@@ -62,7 +62,9 @@ app.use("/api/admin", adminRouter);
 app.use("/api/admin-verification", adminVerificationRouter);
 
 // Register rating/review routes
-app.use("/api/ratings", ratingRouter);
+app.use("/api/rating", ratingRouter);
+// Register payments routes
+app.use("/api/payments", paymentsRouter);
 
 // Connect to MongoDB
 connectDB();

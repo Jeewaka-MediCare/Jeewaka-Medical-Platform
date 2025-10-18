@@ -47,8 +47,10 @@ export async function sendRegistrationEmail(to, name, role) {
  * @returns {Promise<import("nodemailer").SentMessageInfo>}
  */
 export async function sendDoctorVerificationEmail({
-  to,
+  
   doctorName,
+  
+  to,
   isVerified,
   adminComments = "",
   dashboardUrl = "#",
