@@ -565,7 +565,7 @@ export const getPaymentHistory = async (req, res) => {
         const paymentDate = new Date(payment.date);
         let start = startDate ? new Date(startDate) : null;
         let end = endDate ? new Date(endDate) : null;
-        
+
         // Normalize dates to handle same-day filtering correctly (UTC)
         if (start) {
           start.setUTCHours(0, 0, 0, 0); // Start of day in UTC
@@ -747,7 +747,7 @@ export const getDoctorEarnings = async (req, res) => {
       // Normalize start date to beginning of day (UTC)
       startDateFilter = new Date(startDate);
       startDateFilter.setUTCHours(0, 0, 0, 0); // Start of the selected day in UTC
-      
+
       // Normalize end date to end of day (UTC)
       endDateFilter = new Date(endDate);
       endDateFilter.setUTCHours(23, 59, 59, 999); // End of the selected day in UTC
@@ -803,7 +803,7 @@ export const getDoctorEarnings = async (req, res) => {
     for (const session of sessionsWithPayments) {
       for (let index = 0; index < session.timeSlots.length; index++) {
         const slot = session.timeSlots[index];
-        
+
         // Since we already filtered in the MongoDB query, we just need to check if payment exists and is in date range
         if (
           slot.paymentIntentId &&
@@ -818,7 +818,9 @@ export const getDoctorEarnings = async (req, res) => {
           let patientName = "Unknown Patient";
           if (slot.patientId) {
             try {
-              const patient = await Patient.findById(slot.patientId).select('name').lean();
+              const patient = await Patient.findById(slot.patientId)
+                .select("name")
+                .lean();
               if (patient && patient.name) {
                 patientName = patient.name;
               }
@@ -871,6 +873,106 @@ export const getDoctorEarnings = async (req, res) => {
   }
 };
 
+// Utility function to get Monday of a given week
+const getMondayOfWeek = (date) => {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday being 0
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+// Calculate daily earnings for last 4 weeks (ending on current day)
+const calculateDailyEarningsForWeeks = () => {
+  const periods = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today
+
+  // Start from 27 days ago (28 days total including today)
+  const startDate = new Date(today.getTime() - 27 * 24 * 60 * 60 * 1000);
+
+  for (let i = 0; i < 28; i++) {
+    const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+    const nextDay = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+
+    periods.push({
+      start: date,
+      end: nextDay,
+      label: date.getDate().toString(), // Actual day number from date
+      date: date.toISOString().split("T")[0],
+      dayOfWeek: date.toLocaleDateString("en-US", { weekday: "short" }),
+      weekNumber: Math.floor(i / 7) + 1,
+    });
+  }
+
+  return periods;
+};
+
+// Calculate daily earnings for last week (7 days ending on current day)
+const calculateDailyEarningsForLastWeek = () => {
+  const periods = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today
+
+  // Start from 6 days ago (7 days total including today)
+  const startDate = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000);
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+    const nextDay = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+
+    periods.push({
+      start: date,
+      end: nextDay,
+      label: date.getDate().toString(), // Actual day number from date
+      date: date.toISOString().split("T")[0],
+      dayOfWeek: date.toLocaleDateString("en-US", { weekday: "short" }),
+    });
+  }
+
+  return periods;
+};
+
+// Calculate daily earnings for a specific month
+const calculateDailyEarningsForMonth = (year, month) => {
+  const periods = [];
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+  const currentDay = now.getDate();
+
+  // Check if this is a future month - if so, return empty periods
+  const isFutureMonth =
+    year > currentYear || (year === currentYear && month > currentMonth);
+  if (isFutureMonth) {
+    return periods; // Return empty array for future months
+  }
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  // If it's the current month and year, only go up to current day
+  // If it's a past month, include all days
+  const maxDay =
+    year === currentYear && month === currentMonth ? currentDay : daysInMonth;
+
+  for (let day = 1; day <= maxDay; day++) {
+    const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const nextDay = new Date(year, month - 1, day + 1, 0, 0, 0, 0);
+
+    periods.push({
+      start: date,
+      end: nextDay,
+      label: day.toString(),
+      date: date.toISOString().split("T")[0],
+      dayOfWeek: date.toLocaleDateString("en-US", { weekday: "short" }),
+      dayOfMonth: day,
+    });
+  }
+
+  return periods;
+};
+
 // Get doctor earnings statistics (daily breakdown for charts)
 export const getDoctorEarningsStats = async (req, res) => {
   try {
@@ -881,8 +983,14 @@ export const getDoctorEarningsStats = async (req, res) => {
       });
     }
 
-    // Get time range from query parameter (default to 4weeks)
-    const timeRange = req.query.timeRange || "4weeks";
+    // Get parameters from query
+    const timeRange = req.query.timeRange || "4weeks-daily";
+    const year = req.query.year
+      ? parseInt(req.query.year)
+      : new Date().getFullYear();
+    const month = req.query.month
+      ? parseInt(req.query.month)
+      : new Date().getMonth() + 1;
 
     // Find doctor by Firebase UID
     const { default: Doctor } = await import("../doctor/doctorModel.js");
@@ -897,123 +1005,50 @@ export const getDoctorEarningsStats = async (req, res) => {
     const doctorObjectId = new mongoose.Types.ObjectId(doctor._id);
     const { default: Session } = await import("../session/sessionModel.js");
 
-    // Calculate date ranges based on timeRange parameter
+    // Calculate periods based on timeRange parameter
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
     let periods = [];
-    let labelPrefix = "W";
 
+    // Determine which calculation method to use
     switch (timeRange) {
+      case "4weeks-daily":
+        periods = calculateDailyEarningsForWeeks();
+        break;
+
+      case "last-week":
+        periods = calculateDailyEarningsForLastWeek();
+        break;
+
+      case "monthly":
+        // Validate year and month parameters
+        if (year < 2020 || year > new Date().getFullYear() + 1) {
+          return res.status(400).json({
+            error: "Invalid year parameter",
+            message: "Year must be between 2020 and current year + 1",
+          });
+        }
+        if (month < 1 || month > 12) {
+          return res.status(400).json({
+            error: "Invalid month parameter",
+            message: "Month must be between 1 and 12",
+          });
+        }
+        periods = calculateDailyEarningsForMonth(year, month);
+        break;
+
+      // Keep backward compatibility for old timeRange values
       case "4weeks":
-        for (let i = 3; i >= 0; i--) {
-          const weekStart = new Date(
-            today.getTime() - (i * 7 + 6) * 24 * 60 * 60 * 1000
-          );
-          const weekEnd = i === 0 
-            ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today
-            : new Date(today.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-          periods.push({
-            start: weekStart,
-            end: weekEnd,
-            label: `W${4 - i}`,
-            date: weekStart.toISOString().split("T")[0],
-          });
-        }
-        break;
-
-      case "8weeks":
-        for (let i = 7; i >= 0; i--) {
-          const weekStart = new Date(
-            today.getTime() - (i * 7 + 6) * 24 * 60 * 60 * 1000
-          );
-          const weekEnd = i === 0 
-            ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today
-            : new Date(today.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-          periods.push({
-            start: weekStart,
-            end: weekEnd,
-            label: `W${8 - i}`,
-            date: weekStart.toISOString().split("T")[0],
-          });
-        }
-        break;
-
-      case "3months":
-        for (let i = 2; i >= 0; i--) {
-          const monthStart = new Date(
-            today.getFullYear(),
-            today.getMonth() - i,
-            1
-          );
-          const monthEnd = i === 0 
-            ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today for current month
-            : new Date(today.getFullYear(), today.getMonth() - i + 1, 0, 23, 59, 59, 999);
-          const monthNames = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ];
-          periods.push({
-            start: monthStart,
-            end: monthEnd,
-            label: monthNames[monthStart.getMonth()],
-            date: monthStart.toISOString().split("T")[0],
-          });
-        }
-        break;
-
-      case "6months":
-        for (let i = 5; i >= 0; i--) {
-          const monthStart = new Date(
-            today.getFullYear(),
-            today.getMonth() - i,
-            1
-          );
-          const monthEnd = i === 0 
-            ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today for current month
-            : new Date(today.getFullYear(), today.getMonth() - i + 1, 0, 23, 59, 59, 999);
-          const monthNames = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ];
-          periods.push({
-            start: monthStart,
-            end: monthEnd,
-            label: monthNames[monthStart.getMonth()],
-            date: monthStart.toISOString().split("T")[0],
-          });
-        }
-        break;
-
       default:
-        // Default to 4 weeks
+        // Fall back to old weekly aggregation logic for backward compatibility
         for (let i = 3; i >= 0; i--) {
           const weekStart = new Date(
             today.getTime() - (i * 7 + 6) * 24 * 60 * 60 * 1000
           );
-          const weekEnd = i === 0 
-            ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today
-            : new Date(today.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+          const weekEnd =
+            i === 0
+              ? new Date(today.getTime() + 24 * 60 * 60 * 1000) // Include today
+              : new Date(today.getTime() - i * 7 * 24 * 60 * 60 * 1000);
           periods.push({
             start: weekStart,
             end: weekEnd,
@@ -1021,6 +1056,7 @@ export const getDoctorEarningsStats = async (req, res) => {
             date: weekStart.toISOString().split("T")[0],
           });
         }
+        break;
     }
 
     // Get today's earnings
@@ -1126,8 +1162,11 @@ export const getDoctorEarningsStats = async (req, res) => {
 
       breakdown.push({
         date: period.date,
-        week: period.label,
+        label: period.label,
         earnings: periodEarnings * 100, // Convert to cents for frontend
+        dayOfWeek: period.dayOfWeek,
+        weekNumber: period.weekNumber || null,
+        dayOfMonth: period.dayOfMonth || null,
       });
     }
 
@@ -1138,6 +1177,9 @@ export const getDoctorEarningsStats = async (req, res) => {
         weeklyEarnings: weeklyEarnings * 100, // Convert to cents (Monday to today)
         currency: "lkr",
         chartData: breakdown,
+        timeRange: timeRange,
+        period: timeRange === "monthly" ? { year, month } : null,
+        totalDataPoints: breakdown.length,
       },
     });
   } catch (error) {

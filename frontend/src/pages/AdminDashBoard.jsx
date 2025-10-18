@@ -106,6 +106,7 @@ export default function AdminDashboard() {
   }, []);
 
   const handleVerifyDoctor = async (doctorId, isVerified) => {
+    console.log('[DEBUG] handleVerifyDoctor called with doctorId:', doctorId, 'isVerified:', isVerified, 'verificationComment:', verificationComment);
     if (!doctorId) {
       alert("Doctor ID is required to update verification status");
       return;
