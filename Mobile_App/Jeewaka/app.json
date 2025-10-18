@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "extra": {
-      "BACKEND_URL": "http://10.14.138.57:5000",
+      "BACKEND_URL": "http://13.53.53.29:5000",
       "router": {},
       "eas": {
         "projectId": "9419cffd-cf19-4e12-9d2f-8160315f211c"
@@ -24,7 +24,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.yashwick.Jeewaka"
+      "package": "com.yashwick.Jeewaka",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
