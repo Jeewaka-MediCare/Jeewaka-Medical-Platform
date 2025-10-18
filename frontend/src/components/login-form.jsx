@@ -14,7 +14,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from '../store/authStore';
 import api from "../services/api";
-import { Mail, Lock, AlertCircle, Heart } from "lucide-react";
+import { Mail, Lock, AlertCircle, Heart, User } from "lucide-react";
 
 export function LoginForm({ className, ...props }) {
   const navigate = useNavigate();
@@ -92,7 +92,7 @@ export function LoginForm({ className, ...props }) {
       <Card className="border-2 border-emerald-100 shadow-lg">
         <CardHeader className="text-center space-y-2 pb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-md">
-            <Heart className="w-8 h-8 text-white" />
+            <User className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-700 bg-clip-text text-transparent">
             Welcome back

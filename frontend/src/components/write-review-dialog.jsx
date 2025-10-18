@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 
 
 
-export function WriteReviewDialog({ open, onOpenChange, doctor, onSubmit }) {
+export function WriteReviewDialog({ open, onOpenChange, doctor, onSubmit , loading }) {
   const [rating, setRating] = useState(0)
   const [hoveredRating, setHoveredRating] = useState(0)
   const [comment, setComment] = useState("")
@@ -118,8 +118,8 @@ export function WriteReviewDialog({ open, onOpenChange, doctor, onSubmit }) {
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700" disabled={rating === 0}>
-            Submit Review
+          <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700" disabled={rating === 0||loading} >
+            {loading ? "Submitting..." : "Submit Review"}
           </Button>
         </DialogFooter>
       </DialogContent>

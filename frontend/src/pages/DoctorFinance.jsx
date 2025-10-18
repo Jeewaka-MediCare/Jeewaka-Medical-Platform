@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar, TrendingUp, TrendingDown, DollarSign, Users, FileText, Filter, RefreshCw } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import api from "../services/api";
+import useAuthStore from "../store/authStore";
+
 
 function DoctorFinance() {
   const [overview, setOverview] = useState(null);
@@ -11,6 +13,8 @@ function DoctorFinance() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const user = useAuthStore((state) => state.user);
+  
   
   // Query parameters state
   const [months, setMonths] = useState(12);
@@ -19,7 +23,7 @@ function DoctorFinance() {
     to: "2025-12-31"
   });
   
-  const doctorId = "68e274a18e7cf75f167a7f02";
+  const doctorId = user._id;
 
   useEffect(() => {
     fetchFinanceData();
@@ -31,17 +35,17 @@ function DoctorFinance() {
     
     try {
       // Fetch overview with months query parameter
-      const resOverview = await api.get(`/api/doctors/${doctorId}/finance/overview`, {
+      const resOverview = await api.get(`/api/finance/doctors/${doctorId}/finance/overview`, {
         params: { months }
       });
       setOverview(resOverview.data.data);
 
       // Fetch quick stats
-      const resQuick = await api.get(`/api/doctors/${doctorId}/finance/quick`);
+      const resQuick = await api.get(`/api/finance/doctors/${doctorId}/finance/quick`);
       setQuickStats(resQuick.data.data);
 
       // Fetch payments with date range query parameters
-      const resPayments = await api.get(`/api/doctors/${doctorId}/finance/payments`, {
+      const resPayments = await api.get(`/api/finance/doctors/${doctorId}/finance/payments`, {
         params: {
           from: dateRange.from,
           to: dateRange.to
