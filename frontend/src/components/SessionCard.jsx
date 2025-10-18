@@ -125,7 +125,7 @@ export function SessionCard({
             </div>
           </div>
           <div className="flex items-center space-x-1">
-            <Button
+            {/* <Button
               size="sm"
               variant="ghost"
               onClick={(e) => {
@@ -135,7 +135,7 @@ export function SessionCard({
               className={`h-8 w-8 p-0 ${isOnline ? 'text-slate-600 hover:text-slate-800 hover:bg-slate-300' : ''}`}
             >
               <Edit className="h-4 w-4" />
-            </Button>
+            </Button> */}
             <Button
               size="sm"
               variant="ghost"

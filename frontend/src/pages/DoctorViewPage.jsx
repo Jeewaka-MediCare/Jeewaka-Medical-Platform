@@ -27,8 +27,11 @@ import useAuthStore from "../store/authStore";
 export default function DoctorViewPage() {
   // Use Zustand auth store instead of localStorage
   const { user, userRole } = useAuthStore();
-  console.log('🔐 DoctorViewPage - Component rendered');
-  console.log('🔐 DoctorViewPage - authStore state:', { user: user?._id, userRole });
+  console.log("🔐 DoctorViewPage - Component rendered");
+  console.log("🔐 DoctorViewPage - authStore state:", {
+    user: user?._id,
+    userRole,
+  });
 
   const [data, setData] = useState(null);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
@@ -41,21 +44,24 @@ export default function DoctorViewPage() {
   const passedData = location.state;
 
   useEffect(() => {
-    console.log('🔐 DoctorViewPage - useEffect triggered');
-    console.log('🔐 DoctorViewPage - authStore user data:', { 
-      userId: user?._id, 
-      userName: user?.name, 
-      userRole 
+    console.log("🔐 DoctorViewPage - useEffect triggered");
+    console.log("🔐 DoctorViewPage - authStore user data:", {
+      userId: user?._id,
+      userName: user?.name,
+      userRole,
     });
 
-    const doctorIdFromState = passedData && passedData.doctor && passedData.doctor._id;
+    const doctorIdFromState =
+      passedData && passedData.doctor && passedData.doctor._id;
     const doctorId = doctorIdFromState || params.id;
-    console.log('🔐 DoctorViewPage - Determined doctorId:', doctorId);
+    console.log("🔐 DoctorViewPage - Determined doctorId:", doctorId);
 
     if (!doctorId) {
-      console.error('🔐 DoctorViewPage - No doctor id provided via state or route param');
+      console.error(
+        "🔐 DoctorViewPage - No doctor id provided via state or route param"
+      );
       // Navigate back to doctors list or show an error page
-      navigate('/patient-dashboard');
+      navigate("/patient-dashboard");
       return;
     }
 
@@ -67,11 +73,11 @@ export default function DoctorViewPage() {
           doctor: res.data.doctor,
           ratingSummary: res.data.ratingSummary,
           sessions: res.data.sessions,
-          reviews: res.data.reviews
+          reviews: res.data.reviews,
         });
       } catch (err) {
-        console.error('🔐 DoctorViewPage - Error fetching doctor data:', err);
-        navigate('/patient-dashboard');
+        console.error("🔐 DoctorViewPage - Error fetching doctor data:", err);
+        navigate("/patient-dashboard");
       }
     };
     getDoctorData();
@@ -98,9 +104,9 @@ export default function DoctorViewPage() {
 
     const { sessionId, timeSlotIndex, timeSlot } = selectedBooking;
 
-    console.log('🔐 DoctorViewPage - Booking attempt - authStore state:', {
+    console.log("🔐 DoctorViewPage - Booking attempt - authStore state:", {
       userId: user?._id,
-      userRole: userRole
+      userRole: userRole,
     });
 
     console.log("🔐 DoctorViewPage - User data for booking:", user);
@@ -152,54 +158,50 @@ export default function DoctorViewPage() {
     console.log("Appointment Status:", "booked");
   };
 
-  const handleSubmitReview = async(reviewData) => {
-    try{
-    setLoading(true);
+  const handleSubmitReview = async (reviewData) => {
+    try {
+      setLoading(true);
 
-    const  review_object = {
-      doctor: data.doctor._id,
-      patient: user._id, // This should come from auth context
-      rating: reviewData.rating,
-      comment: reviewData.comment,
-      createdAt: new Date().toISOString(),
-    }
-    console.log("review_object",review_object);
-    //todo: please add zuzstang login user id for current patient id
-    
+      const review_object = {
+        doctor: data.doctor._id,
+        patient: user._id, // This should come from auth context
+        rating: reviewData.rating,
+        comment: reviewData.comment,
+        createdAt: new Date().toISOString(),
+      };
+      console.log("review_object", review_object);
+      //todo: please add zuzstang login user id for current patient id
 
-    const res = await api.post('/api/rating', review_object);
-    if(res.data.succuess){
-      setLoading(false);
-      const newReview = res.data.review;
-      setData((prevData) => ({
-      ...prevData,
-      reviews: [newReview, ...prevData.reviews],
-      ratingSummary: {
-        ...prevData.ratingSummary,
-        totalReviews: prevData.ratingSummary.totalReviews + 1,
-        avgRating:
-          (prevData.ratingSummary.avgRating *
-            prevData.ratingSummary.totalReviews +
-            reviewData.rating) /
-          (prevData.ratingSummary.totalReviews + 1),
-      },
-    }));
+      const res = await api.post("/api/rating", review_object);
+      if (res.data.succuess) {
+        setLoading(false);
+        const newReview = res.data.review;
+        setData((prevData) => ({
+          ...prevData,
+          reviews: [newReview, ...prevData.reviews],
+          ratingSummary: {
+            ...prevData.ratingSummary,
+            totalReviews: prevData.ratingSummary.totalReviews + 1,
+            avgRating:
+              (prevData.ratingSummary.avgRating *
+                prevData.ratingSummary.totalReviews +
+                reviewData.rating) /
+              (prevData.ratingSummary.totalReviews + 1),
+          },
+        }));
 
-    setShowReviewDialog(false);
-    }else{
-      setLoading(false);
-      alert("Failed to submit review. Please try again.");
-    }
-    }catch(error){
+        setShowReviewDialog(false);
+      } else {
+        setLoading(false);
+        alert("Failed to submit review. Please try again.");
+      }
+    } catch (error) {
       setLoading(false);
       console.error("Error submitting review:", error);
-      alert("An error occurred while submitting your review. Please try again.");
+      alert(
+        "An error occurred while submitting your review. Please try again."
+      );
     }
-    
-
-    
-
-    
   };
 
   if (!data) {
@@ -207,7 +209,9 @@ export default function DoctorViewPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-lg text-muted-foreground">Loading doctor information...</p>
+          <p className="text-lg text-muted-foreground">
+            Loading doctor information...
+          </p>
         </div>
       </div>
     );
@@ -217,7 +221,7 @@ export default function DoctorViewPage() {
 
   return (
     <div className="min-h-screen bg-background">
-  <main className="container mx-auto py-8 px-6 max-w-6xl">
+      <main className="container mx-auto py-8 px-6 max-w-6xl">
         {/* Back link */}
         <div className="mb-4">
           <Link
@@ -230,7 +234,7 @@ export default function DoctorViewPage() {
         </div>
 
         {/* Profile section */}
-  <div className="bg-card/95 rounded-md shadow-md border-0 p-8 mb-6 backdrop-blur-sm">
+        <div className="bg-card/95 rounded-md shadow-md border-0 p-8 mb-6 backdrop-blur-sm">
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Doctor Image */}
             <div className="w-full lg:w-1/4">
@@ -261,22 +265,34 @@ export default function DoctorViewPage() {
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-primary text-primary-foreground px-6 py-4 rounded-md shadow">
-                  <p className="text-xl font-semibold">LKR {doctor.consultationFee}</p>
-                  <p className="text-primary-foreground text-sm">Consultation Fee</p>
+                  <p className="text-xl font-semibold">
+                    LKR {doctor.consultationFee}
+                  </p>
+                  <p className="text-primary-foreground text-sm">
+                    Consultation Fee
+                  </p>
                 </div>
                 <div className="bg-accent text-accent-foreground px-6 py-4 rounded-md shadow">
                   <div className="flex items-center gap-2">
                     <Star className="h-5 w-5" />
-                    <span className="text-xl font-semibold">{ratingSummary.avgRating || 0}</span>
+                    <span className="text-xl font-semibold">
+                      {ratingSummary.avgRating || 0}
+                    </span>
                   </div>
-                  <p className="text-accent-foreground text-sm">{ratingSummary.totalReviews} reviews</p>
+                  <p className="text-accent-foreground text-sm">
+                    {ratingSummary.totalReviews} reviews
+                  </p>
                 </div>
                 <div className="bg-secondary text-secondary-foreground px-6 py-4 rounded-md shadow">
                   <div className="flex items-center gap-2">
                     <Clock className="h-5 w-5" />
-                    <span className="text-xl font-semibold">{doctor.yearsOfExperience}</span>
+                    <span className="text-xl font-semibold">
+                      {doctor.yearsOfExperience}
+                    </span>
                   </div>
-                  <p className="text-secondary-foreground text-sm">Years Experience</p>
+                  <p className="text-secondary-foreground text-sm">
+                    Years Experience
+                  </p>
                 </div>
               </div>
 
@@ -285,11 +301,15 @@ export default function DoctorViewPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="flex items-center gap-3">
                     <Phone className="h-4 w-4 text-primary" />
-                    <span className="text-muted-foreground">{doctor.phone}</span>
+                    <span className="text-muted-foreground">
+                      {doctor.phone}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-primary" />
-                    <span className="text-muted-foreground">{doctor.email}</span>
+                    <span className="text-muted-foreground">
+                      {doctor.email}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -297,18 +317,15 @@ export default function DoctorViewPage() {
               {/* Additional Info */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-          <div className="flex items-center gap-2">
-          <Languages className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-foreground">
+                  <div className="flex items-center gap-2">
+                    <Languages className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-foreground">
                       Languages
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {doctor.languagesSpoken?.map((lang) => (
-                      <Badge
-                        key={lang}
-            variant="secondary"
-                      >
+                      <Badge key={lang} variant="secondary">
                         {lang}
                       </Badge>
                     ))}
@@ -316,17 +333,14 @@ export default function DoctorViewPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-          <Award className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-foreground">
+                    <Award className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-foreground">
                       Sub-specializations
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {doctor.subSpecializations?.map((s) => (
-                      <Badge
-                        key={s}
-            variant="secondary"
-                      >
+                      <Badge key={s} variant="secondary">
                         {s}
                       </Badge>
                     ))}
@@ -334,8 +348,8 @@ export default function DoctorViewPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-          <GraduationCap className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-foreground">
+                    <GraduationCap className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-foreground">
                       Qualifications
                     </span>
                   </div>
@@ -344,7 +358,7 @@ export default function DoctorViewPage() {
                       <Badge
                         key={idx}
                         variant="outline"
-            className="block w-fit"
+                        className="block w-fit"
                       >
                         {q}
                       </Badge>
