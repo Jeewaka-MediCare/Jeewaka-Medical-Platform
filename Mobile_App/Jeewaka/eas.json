@@ -12,7 +12,22 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {"buildType": "app-bundle"},
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "http://13.53.53.29:5000",
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51S0zCgD3q2KwZfFnSj8Xf1cidCYG19y1ircVKuiOcCqagqSEioq2D1su9lvN6HpKoQnpY8gzgjaF4XJuuVnlPuor00dB2S7xTs"
+      }
+    },
+    "release-apk": {
+        "distribution": "internal",
+        "android": {
+          "buildType": "apk"
+        },
+        "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "http://13.53.53.29:5000",
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51S0zCgD3q2KwZfFnSj8Xf1cidCYG19y1ircVKuiOcCqagqSEioq2D1su9lvN6HpKoQnpY8gzgjaF4XJuuVnlPuor00dB2S7xTs"
+      }
     }
   },
   "submit": {

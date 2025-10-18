@@ -89,7 +89,7 @@ export default function PaymentSuccess() {
     // Role-aware return: send logged-in users to their dashboards
     if (user && userRole) {
       if (userRole === 'patient') {
-        router.replace('/patient-dashboard');
+        router.replace('/(tabs)/appointments');
         return;
       }
       if (userRole === 'doctor') {
