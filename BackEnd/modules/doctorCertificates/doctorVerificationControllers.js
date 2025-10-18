@@ -2,7 +2,7 @@ import adminVerificationSchema from "./doctorCertificateModel.js";
 import storageService from "../../services/supabaseStorageService.js";
 import multer from "multer";
 import path from "path";
-import { doctorVerificationEmail } from "../email/templates/adminVerificationEmail.js";
+import { sendDoctorVerificationEmail } from "../email/emailService.js";
 import Doctor from "../doctor/doctorModel.js";
 
 // Configure multer for file uploads
@@ -69,7 +69,7 @@ export const getAllVerifications = async (req, res) => {
   .find()
   .populate({            // one populate is enough
     path: 'doctorId',
-    select: 'name email specialization regNo', // _id comes automatically
+    select: 'name email specialization regNo uuid', // _id comes automatically
   })
   .lean();               // plain JS objects
 
@@ -93,18 +93,26 @@ res.status(200).json(verifications);
 };
 export const updateVerificationStatus = async (req, res) => {
   const { doctorId } = req.params; // doctor ID from route
+  console.log("doctorId" , doctorId)
   const updates = req.body; // fields to update
   const { isVerified, commentFromAdmin } = updates;
+  console.log("updates",updates)
   const doctor = await Doctor.findById(doctorId);
 
   const name = doctor ? doctor.name : "Doctor";
   const email = doctor ? doctor.email : null;
+  console.log("doctor",doctor)
   
  
 
 
   try {
     // Find the document by doctorId and update
+    const certificate = await adminVerificationSchema.findOne({ "doctorId":doctorId });
+    console.log("certificate",certificate)
+    if (!certificate) {
+      return res.status(404).json({ message: "Doctor certificate not found" });
+    }
     const updatedCertificate = await adminVerificationSchema.findOneAndUpdate(
       { doctorId },
       { $set: updates },
@@ -117,8 +125,14 @@ export const updateVerificationStatus = async (req, res) => {
     }
     // Send email notification to doctor about status change
     if(email){
+      console.log("email",email)
+     
       try {
-         doctorVerificationEmail(email, name, isVerified, commentFromAdmin);
+       
+         await sendDoctorVerificationEmail({ to: email,
+  doctorName: name,
+  isVerified,
+  adminComments: commentFromAdmin})
       }
       catch(emailError){
         console.error('⚠️ Verification updated but failed to send email:', emailError.message);

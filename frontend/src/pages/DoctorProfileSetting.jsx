@@ -73,6 +73,7 @@ const SUB_SPECIALIZATIONS = {
 }
 
 const LANGUAGES = [
+  "Sinhala",
   "English",
   "Spanish",
   "French",
@@ -131,6 +132,7 @@ export default function DoctorProfileUpdate() {
   const [openLanguages, setOpenLanguages] = useState(false)
   const [openQualifications, setOpenQualifications] = useState(false)
   const [incompleteFields, setIncompleteFields] = useState([])
+  const [isloading ,setIsLoading]= useState(false)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -203,16 +205,30 @@ export default function DoctorProfileUpdate() {
     return changes
   }
 
-  const handleSave = () => {
+  const handleSave = async() => {
+    setIsLoading(true)
     const changedFields = getChangedFields()
 
     if (Object.keys(changedFields).length > 0) {
       console.log("🔄 Changed Fields:", changedFields)
       const { sessions, uuid, _id ,...payload } = formData
-      const res= api.put(`api/doctor/${formData._id}`, payload)
+      try{
+
+        const res= await api.put(`api/doctor/${formData._id}`, payload)
       if(res.data.success){
+
+        setIsLoading(false)
         console.log(res.data.doctor)
+      }else{
+        setIsLoading(false)
+        console.log("Error updating doctor profile:", res.data.message)
       }
+
+
+      }catch(err){
+        console.log(err)
+      }
+      
 
 
     console.log("📋 Complete Updated Data (without sessions/uuid):", payload)
@@ -253,7 +269,7 @@ export default function DoctorProfileUpdate() {
           {!isEditMode ? (
             <Button onClick={handleEdit} className="bg-gray-800 hover:bg-gray-900 text-white shadow-lg">
               <Edit3 className="h-4 w-4 mr-2" />
-              Edit Profile
+              {isloading?"Saving...":"Edit Profile"}
             </Button>
           ) : (
             <div className="flex gap-3">

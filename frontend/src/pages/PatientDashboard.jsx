@@ -93,7 +93,8 @@ export default function PatientDashBoard() {
   const clearSearch = () => {
     setQuery("");
     setNameSearch("");
-    setFilteredDoctors(defaultDoctors);
+  
+    setInitialDoctors(defaultDoctors);
   };
 
   return (
