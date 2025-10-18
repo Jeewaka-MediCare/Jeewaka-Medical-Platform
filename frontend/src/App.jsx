@@ -28,7 +28,7 @@ import DoctorFinance from "./pages/DoctorFinance";
 import { AuthProvider } from "./components/AuthProvider";
 import { Toaster } from "./components/ui/sonner";
 import AdminVerificationPending from "./pages/AdminVerificationPending";
-
+import UserManualPage from "./pages/UserManualPage";
 function App() {
   useEffect(() => {
     console.log("🔐 App - Component mounted");
@@ -105,6 +105,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/sign-up" element={<SignupPage />} />
+          <Route path="/user-manual" element={<UserManualPage />} />
 
           {/* Doctor routes */}
           <Route element={<DoctorLayout />}>
