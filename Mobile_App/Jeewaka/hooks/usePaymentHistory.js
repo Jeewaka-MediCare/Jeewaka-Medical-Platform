@@ -276,6 +276,10 @@ export default function usePaymentHistory(user, userRole) {
       await pdfExportService.exportPaymentsPDF(payments, stats, user, {
         searchTerm: searchText,
         statusFilter,
+        dateFilterType,
+        selectedDate,
+        startDate,
+        endDate,
       });
     } catch (error) {
       Alert.alert(
