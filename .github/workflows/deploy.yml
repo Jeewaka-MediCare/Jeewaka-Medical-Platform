@@ -20,7 +20,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            /opt/Jeewaka-Medical-Platform
+            cd /opt/Jeewaka-Medical-Platform
             git fetch origin main
             git reset --hard origin/main
 
