@@ -25,5 +25,5 @@ jobs:
             git reset --hard origin/main
 
             # Rebuild and restart Docker (uses existing .env)
-            docker-compose -f docker-compose.micro.yml --env-file .env.production down
-            docker-compose -f docker-compose.micro.yml --env-file .env.production up -d --build
+            docker-compose -f docker-compose.micro.yml --env-file /opt/Jeewaka-Medical-Platform/.env.production down
+            docker-compose -f docker-compose.micro.yml --env-file /opt/Jeewaka-Medical-Platform/.env.production up -d --build
