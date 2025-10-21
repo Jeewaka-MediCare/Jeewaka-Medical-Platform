@@ -351,6 +351,9 @@ export const paymentService = {
       throw error;
     }
   },
+
+  // Export waitForAuth method for testing
+  waitForAuth,
 };
 
 export default paymentService;

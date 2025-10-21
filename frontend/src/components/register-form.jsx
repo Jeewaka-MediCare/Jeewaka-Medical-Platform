@@ -790,7 +790,7 @@ export function SignupForm({ className, ...props }) {
               Already have an account?{" "}
               <Button
                 type="button"
-                className="font-medium text-emerald-600 hover:text-emerald-700 underline underline-offset-4 transition-colors"
+                className="font-medium text-white hover:bg-green-500 underline underline-offset-4 transition-colors"
                 onClick={() => navigate("/login")}
               >
                 Sign in here

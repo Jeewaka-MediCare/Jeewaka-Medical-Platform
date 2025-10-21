@@ -10,227 +10,121 @@ exports[`LandingPage matches snapshot 1`] = `
   }
 >
   <View
+    accessibilityIgnoresInvertColors={true}
     style={
       {
-        "alignItems": "center",
         "flex": 1,
-        "justifyContent": "center",
-        "paddingHorizontal": 20,
+        "height": "100%",
+        "width": "100%",
       }
     }
   >
+    <Image
+      resizeMode="contain"
+      source={
+        {
+          "testUri": "../../../assets/images/homeimage.png",
+        }
+      }
+      style={
+        [
+          {
+            "bottom": 0,
+            "left": 0,
+            "position": "absolute",
+            "right": 0,
+            "top": 0,
+          },
+          {
+            "height": "100%",
+            "width": "100%",
+          },
+          {
+            "transform": [
+              {
+                "translateY": -90,
+              },
+            ],
+          },
+        ]
+      }
+    />
     <View
-      collapsable={false}
+      style={
+        {
+          "backgroundColor": "rgba(255, 255, 255, 0.6)",
+          "bottom": 0,
+          "left": 0,
+          "position": "absolute",
+          "right": 0,
+          "top": 0,
+        }
+      }
+    />
+    <View
       style={
         {
           "alignItems": "center",
-          "marginBottom": 40,
-          "opacity": 0,
-          "transform": [
-            {
-              "translateY": 30,
-            },
-          ],
-        }
-      }
-    >
-      <Text
-        style={
-          {
-            "color": "#008080",
-            "fontSize": 24,
-            "fontStyle": "italic",
-            "fontWeight": "600",
-            "textAlign": "center",
-          }
-        }
-      >
-        Your Health, Our Priority
-      </Text>
-    </View>
-    <View
-      collapsable={false}
-      style={
-        {
-          "alignItems": "center",
-          "marginBottom": 30,
-          "opacity": 0,
+          "flex": 1,
+          "justifyContent": "space-between",
+          "paddingBottom": 100,
           "paddingHorizontal": 20,
-          "transform": [
-            {
-              "translateY": 30,
-            },
-          ],
-        }
-      }
-    >
-      <Text
-        style={
-          {
-            "color": "#008080",
-            "fontSize": 28,
-            "fontWeight": "700",
-            "marginBottom": 12,
-          }
-        }
-      >
-        Welcome Back!
-      </Text>
-      <Text
-        style={
-          {
-            "color": "#008080",
-            "fontSize": 16,
-            "lineHeight": 24,
-            "textAlign": "center",
-          }
-        }
-      >
-        We're excited to see you again. Please sign in to continue your healthcare journey.
-      </Text>
-    </View>
-    <View
-      style={
-        {
-          "paddingHorizontal": 20,
-          "width": "80%",
+          "paddingTop": 60,
+          "zIndex": 1,
         }
       }
     >
       <View
-        collapsable={false}
         style={
           {
-            "marginBottom": 12,
-            "opacity": 0,
-            "transform": [
-              {
-                "scale": 0.5,
-              },
-            ],
+            "alignItems": "center",
+            "flex": 0,
+            "top": 100,
           }
         }
       >
         <View
-          accessibilityState={
-            {
-              "busy": undefined,
-              "checked": undefined,
-              "disabled": undefined,
-              "expanded": undefined,
-              "selected": undefined,
-            }
-          }
-          accessibilityValue={
-            {
-              "max": undefined,
-              "min": undefined,
-              "now": undefined,
-              "text": undefined,
-            }
-          }
-          accessible={true}
           collapsable={false}
-          focusable={true}
-          onClick={[Function]}
-          onResponderGrant={[Function]}
-          onResponderMove={[Function]}
-          onResponderRelease={[Function]}
-          onResponderTerminate={[Function]}
-          onResponderTerminationRequest={[Function]}
-          onStartShouldSetResponder={[Function]}
           style={
             {
               "alignItems": "center",
-              "backgroundColor": "#008080",
-              "borderRadius": 8,
-              "elevation": 2,
-              "opacity": 1,
-              "paddingHorizontal": 24,
-              "paddingVertical": 12,
-              "shadowColor": "#008080",
-              "shadowOffset": {
-                "height": 2,
-                "width": 0,
-              },
-              "shadowOpacity": 0.2,
-              "shadowRadius": 4,
+              "marginBottom": 40,
+              "opacity": 0,
+              "transform": [
+                {
+                  "translateY": 30,
+                },
+              ],
             }
           }
         >
           <Text
             style={
               {
-                "color": "white",
-                "fontSize": 16,
+                "color": "#1b4641ff",
+                "fontSize": 24,
+                "fontStyle": "italic",
                 "fontWeight": "600",
+                "textAlign": "center",
               }
             }
           >
-            Sign In
+            Your Health, Our Priority
           </Text>
         </View>
-      </View>
-      <View
-        collapsable={false}
-        style={
-          {
-            "marginBottom": 12,
-            "opacity": 0,
-            "transform": [
-              {
-                "scale": 0.5,
-              },
-            ],
-          }
-        }
-      >
         <View
-          accessibilityState={
-            {
-              "busy": undefined,
-              "checked": undefined,
-              "disabled": undefined,
-              "expanded": undefined,
-              "selected": undefined,
-            }
-          }
-          accessibilityValue={
-            {
-              "max": undefined,
-              "min": undefined,
-              "now": undefined,
-              "text": undefined,
-            }
-          }
-          accessible={true}
           collapsable={false}
-          focusable={true}
-          onClick={[Function]}
-          onResponderGrant={[Function]}
-          onResponderMove={[Function]}
-          onResponderRelease={[Function]}
-          onResponderTerminate={[Function]}
-          onResponderTerminationRequest={[Function]}
-          onStartShouldSetResponder={[Function]}
           style={
             {
               "alignItems": "center",
-              "backgroundColor": "transparent",
-              "borderColor": "#008080",
-              "borderRadius": 8,
-              "borderWidth": 2,
-              "elevation": 1,
-              "opacity": 1,
-              "paddingHorizontal": 24,
-              "paddingVertical": 12,
-              "shadowColor": "#000",
-              "shadowOffset": {
-                "height": 1,
-                "width": 0,
-              },
-              "shadowOpacity": 0.1,
-              "shadowRadius": 2,
+              "marginBottom": 30,
+              "opacity": 0,
+              "paddingHorizontal": 20,
+              "transform": [
+                {
+                  "translateY": 30,
+                },
+              ],
             }
           }
         >
@@ -238,13 +132,190 @@ exports[`LandingPage matches snapshot 1`] = `
             style={
               {
                 "color": "#008080",
-                "fontSize": 16,
-                "fontWeight": "600",
+                "fontSize": 28,
+                "fontWeight": "700",
+                "marginBottom": 12,
               }
             }
           >
-            Create New Account
+            Welcome Back!
           </Text>
+          <Text
+            style={
+              {
+                "color": "#008080",
+                "fontSize": 16,
+                "lineHeight": 24,
+                "textAlign": "center",
+              }
+            }
+          >
+            We're excited to see you again. Please sign in to continue your healthcare journey.
+          </Text>
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flex": 0,
+            "width": "100%",
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "paddingHorizontal": 0,
+              "width": "100%",
+            }
+          }
+        >
+          <View
+            collapsable={false}
+            style={
+              {
+                "marginBottom": 12,
+                "opacity": 0,
+                "transform": [
+                  {
+                    "scale": 0.5,
+                  },
+                ],
+                "width": "80%",
+              }
+            }
+          >
+            <View
+              accessibilityState={
+                {
+                  "busy": undefined,
+                  "checked": undefined,
+                  "disabled": undefined,
+                  "expanded": undefined,
+                  "selected": undefined,
+                }
+              }
+              accessibilityValue={
+                {
+                  "max": undefined,
+                  "min": undefined,
+                  "now": undefined,
+                  "text": undefined,
+                }
+              }
+              accessible={true}
+              collapsable={false}
+              focusable={true}
+              onClick={[Function]}
+              onResponderGrant={[Function]}
+              onResponderMove={[Function]}
+              onResponderRelease={[Function]}
+              onResponderTerminate={[Function]}
+              onResponderTerminationRequest={[Function]}
+              onStartShouldSetResponder={[Function]}
+              style={
+                {
+                  "alignItems": "center",
+                  "backgroundColor": "#008080",
+                  "borderRadius": 8,
+                  "elevation": 2,
+                  "opacity": 1,
+                  "paddingHorizontal": 24,
+                  "paddingVertical": 12,
+                  "shadowColor": "#008080",
+                  "shadowOffset": {
+                    "height": 2,
+                    "width": 0,
+                  },
+                  "shadowOpacity": 0.2,
+                  "shadowRadius": 4,
+                }
+              }
+            >
+              <Text
+                style={
+                  {
+                    "color": "white",
+                    "fontSize": 16,
+                    "fontWeight": "600",
+                  }
+                }
+              >
+                Sign In
+              </Text>
+            </View>
+          </View>
+          <View
+            collapsable={false}
+            style={
+              {
+                "marginBottom": 12,
+                "opacity": 0,
+                "transform": [
+                  {
+                    "scale": 0.5,
+                  },
+                ],
+                "width": "80%",
+              }
+            }
+          >
+            <View
+              accessibilityState={
+                {
+                  "busy": undefined,
+                  "checked": undefined,
+                  "disabled": undefined,
+                  "expanded": undefined,
+                  "selected": undefined,
+                }
+              }
+              accessibilityValue={
+                {
+                  "max": undefined,
+                  "min": undefined,
+                  "now": undefined,
+                  "text": undefined,
+                }
+              }
+              accessible={true}
+              collapsable={false}
+              focusable={true}
+              onClick={[Function]}
+              onResponderGrant={[Function]}
+              onResponderMove={[Function]}
+              onResponderRelease={[Function]}
+              onResponderTerminate={[Function]}
+              onResponderTerminationRequest={[Function]}
+              onStartShouldSetResponder={[Function]}
+              style={
+                {
+                  "alignItems": "center",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#047878ff",
+                  "borderRadius": 8,
+                  "borderWidth": 2,
+                  "opacity": 1,
+                  "paddingHorizontal": 24,
+                  "paddingVertical": 12,
+                }
+              }
+            >
+              <Text
+                style={
+                  {
+                    "color": "#058686ff",
+                    "fontSize": 16,
+                    "fontWeight": "600",
+                  }
+                }
+              >
+                Create New Account
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
     </View>

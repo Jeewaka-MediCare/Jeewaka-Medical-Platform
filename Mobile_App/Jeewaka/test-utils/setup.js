@@ -26,11 +26,60 @@ jest.mock('firebase/app', () => ({
   getApp: jest.fn(() => ({})),
 }));
 
+// Modal mocks - only mock if the module exists
+try {
+  jest.mock('react-native-modal', () => 'Modal');
+} catch (e) {
+  // Module doesn't exist, skip mock
+}
+
 // Mock react-native-gifted-charts - used by components for charts
 jest.mock('react-native-gifted-charts', () => ({
   LineChart: jest.fn(({ children, ...props }) => null),
   BarChart: jest.fn(({ children, ...props }) => null),
   PieChart: jest.fn(({ children, ...props }) => null),
+}));
+
+// Mock date-fns
+jest.mock('date-fns', () => {
+  const actual = jest.requireActual('date-fns');
+  return {
+    ...actual,
+    format: jest.fn((date, formatStr) => {
+      // Return appropriate format based on format string
+      if (formatStr && formatStr.includes('EEE')) {
+        return 'Thu, Feb 15, 2024';
+      }
+      return '2024-02-15';
+    }),
+    parseISO: jest.fn((dateString) => {
+      return new Date(dateString);
+    }),
+    isValid: jest.fn(() => true),
+  };
+});
+
+// Mock VideoSDK
+jest.mock('@videosdk.live/react-native-sdk', () => ({
+  MeetingProvider: ({ children }) => children,
+  useMeeting: () => ({
+    join: jest.fn(),
+    leave: jest.fn(),
+    end: jest.fn(),
+    meetingId: 'test-meeting-id',
+  }),
+  useParticipant: () => ({
+    displayName: 'Test User',
+  }),
+}));
+
+// Mock Stripe
+jest.mock('@stripe/stripe-react-native', () => ({
+  StripeProvider: ({ children }) => children,
+  useStripe: () => ({
+    initPaymentSheet: jest.fn(),
+    presentPaymentSheet: jest.fn(),
+  }),
 }));
 
 // Mock Expo modules
@@ -83,6 +132,11 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   removeItem: jest.fn(() => Promise.resolve()),
   clear: jest.fn(() => Promise.resolve()),
 }));
+
+// Mock React Native Alert globally
+global.Alert = {
+  alert: jest.fn(),
+};
 
 // Mock Reanimated
 jest.mock('react-native-reanimated', () => {

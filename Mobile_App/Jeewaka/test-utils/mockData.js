@@ -13,6 +13,7 @@ export const mockDoctor = {
   consultationFee: 150,
   avgRating: 4.5,
   totalRatings: 120,
+  totalReviews: 120,
   profilePicture: 'https://example.com/doctor.jpg',
   bio: 'Experienced cardiologist with 15 years of practice.',
   isAvailable: true,
@@ -56,7 +57,9 @@ export const mockAppointment = {
   _id: '507f1f77bcf86cd799439013',
   patientId: mockPatient._id,
   doctorId: mockDoctor._id,
-  date: '2024-02-15T10:00:00.000Z',
+  date: '2024-02-15',
+  startTime: '10:00 AM',
+  endTime: '10:30 AM', 
   duration: 30,
   type: 'consultation',
   status: 'confirmed',
@@ -64,6 +67,10 @@ export const mockAppointment = {
   paymentStatus: 'paid',
   notes: 'Regular checkup',
   sessionId: 'session-123',
+  doctorName: mockDoctor.name,
+  doctorSpecialization: mockDoctor.specialization,
+  patientName: mockPatient.name,
+  isOngoing: false,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
@@ -74,10 +81,15 @@ export const mockPayment = {
   patientId: mockPatient._id,
   doctorId: mockDoctor._id,
   amount: 150,
-  currency: 'USD',
-  paymentMethod: 'card',
+  currency: 'LKR',
+  paymentMethod: 'stripe',
   stripePaymentIntentId: 'pi_test_123',
-  status: 'succeeded',
+  status: 'completed',
+  doctorName: mockDoctor.name,
+  doctorSpecialization: mockDoctor.specialization,
+  date: '2024-01-01',
+  appointmentDate: '2024-02-15',
+  type: 'consultation',
   paidAt: '2024-01-01T12:00:00.000Z',
   createdAt: '2024-01-01T12:00:00.000Z',
 };
@@ -105,6 +117,7 @@ export const mockDoctorsList = [
     consultationFee: 120,
     avgRating: 4.8,
     totalRatings: 95,
+    totalReviews: 95, // Add both fields for compatibility
   },
   {
     ...mockDoctor,
@@ -117,6 +130,7 @@ export const mockDoctorsList = [
     consultationFee: 100,
     avgRating: 4.6,
     totalRatings: 87,
+    totalReviews: 87, // Add both fields for compatibility
   },
 ];
 
@@ -142,6 +156,58 @@ export const mockAuthUser = {
     claims: { role: 'patient' }
   })),
 };
+
+export const mockMedicalRecord = {
+  _id: '507f1f77bcf86cd799439018',
+  patientId: mockPatient._id,
+  doctorId: mockDoctor._id,
+  appointmentId: mockAppointment._id,
+  title: 'Cardiology Consultation',
+  diagnosis: 'Hypertension',
+  treatment: 'Prescribed medication and lifestyle changes',
+  medications: ['Lisinopril 10mg', 'Amlodipine 5mg'],
+  notes: 'Patient shows good response to treatment',
+  labResults: 'Blood pressure: 130/80 mmHg',
+  attachments: ['test-result.pdf'],
+  date: '2024-02-15',
+  createdAt: '2024-02-15T10:30:00.000Z',
+  updatedAt: '2024-02-15T10:30:00.000Z',
+};
+
+export const mockVideoCallSession = {
+  sessionId: 'session-123',
+  participantId: 'participant-456',
+  meetingId: 'meeting-789',
+  status: 'ready',
+  isConnected: false,
+  localParticipant: null,
+  participants: [],
+  error: null,
+};
+
+export const mockAppointmentsList = [
+  mockAppointment,
+  {
+    ...mockAppointment,
+    _id: '507f1f77bcf86cd799439019',
+    date: '2024-03-01',
+    startTime: '2:00 PM',
+    endTime: '2:30 PM',
+    status: 'pending',
+    paymentStatus: 'pending',
+    isOngoing: false,
+  },
+  {
+    ...mockAppointment,
+    _id: '507f1f77bcf86cd799439020',
+    date: '2024-01-15',
+    startTime: '11:00 AM',
+    endTime: '11:30 AM',
+    status: 'completed',
+    paymentStatus: 'paid',
+    isOngoing: false,
+  },
+];
 
 export const mockNavigationProps = {
   navigation: {

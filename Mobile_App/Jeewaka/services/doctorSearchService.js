@@ -179,9 +179,11 @@ export class DoctorSearchService {
 
   /**
    * Get all doctors (fallback for when no search is performed)
-   * @returns {Promise} - All doctors
+   * @param {number} page - Page number (1-based)
+   * @param {number} limit - Number of doctors per page
+   * @returns {Promise} - Paginated doctors
    */
-  static async getAllDoctors() {
+  static async getAllDoctors(page = 1, limit = 15) {
     try {
       // Use the doctorCard endpoint to get properly structured doctor data
       const response = await api.get("/api/doctorCard");
@@ -196,9 +198,19 @@ export class DoctorSearchService {
         sessions: card.sessions || [],
       }));
 
+      // Apply client-side pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedDoctors = transformedDoctors.slice(startIndex, endIndex);
+
       return {
         success: true,
-        doctors: transformedDoctors,
+        doctors: paginatedDoctors,
+        totalDoctors: transformedDoctors.length,
+        currentPage: page,
+        totalPages: Math.ceil(transformedDoctors.length / limit),
+        hasMore: endIndex < transformedDoctors.length,
+        allDoctors: transformedDoctors, // Keep for local filtering/sorting
       };
     } catch (error) {
       console.error("Get all doctors error:", error);

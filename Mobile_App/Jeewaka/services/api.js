@@ -4,7 +4,7 @@ import { Platform } from "react-native";
 import { auth } from "../config/firebase";
 
 // Function to determine the appropriate baseURL
-const getBaseUrl = () => {
+export const getBaseUrl = () => {
   // Check if we have environment variable from .env file
   const envBackendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
   if (envBackendUrl) {
@@ -12,7 +12,7 @@ const getBaseUrl = () => {
   }
 
   // Always use your specific backend server
-  return "http://10.14.138.57:5000";
+  return "http://13.53.53.29:5000";
 };
 
 const api = axios.create({
@@ -106,8 +106,12 @@ export const createMeeting = async ({ token }) => {
     body: JSON.stringify({}),
   });
 
+  if (!res.ok) {
+    throw new Error(`HTTP error! status: ${res.status}`);
+  }
+
   const { roomId } = await res.json();
-  return roomId;
+  return { roomId };
 };
 
 export default api;

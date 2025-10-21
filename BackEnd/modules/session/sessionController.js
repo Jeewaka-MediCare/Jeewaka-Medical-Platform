@@ -1,6 +1,8 @@
 import Session from "./sessionModel.js";
 import Doctor from "../doctor/doctorModel.js";
 import Patient from "../patient/patientModel.js";
+import Hospital from "../hospital/hospitalModel.js";
+import { sendSessionInitializedEmail } from "../email/emailService.js";
 import mongoose from "mongoose";
 import Stripe from "stripe";
 import dotenv from "dotenv";
@@ -23,30 +25,97 @@ try {
 }
 
 // Create a new session
+// export const createSession = async (req, res) => {
+//   const { doctorId, ...rest } = req.body;
+
+//   try {
+//     console.log("Creating session with payload:", req.body);
+
+//     // Create session
+//     const session = await Session.create({ doctorId, ...rest });
+
+//     // Update doctor's sessions array with spread operator
+//     const doctor = await Doctor.findById(doctorId);
+//     if (!doctor) {
+//       return res.status(404).json({ error: "Doctor not found" });
+//     }
+
+//     doctor.sessions = [...doctor.sessions, session._id]; // ✅ spread operator
+//     await doctor.save();
+
+//     res.status(200).json({ success: true, session });
+//   } catch (err) {
+//     console.error("Error creating session:", err);
+//     res.status(400).json({ error: err.message });
+//   }
+// };
+// controllers/sessionController.js
+
+
 export const createSession = async (req, res) => {
   const { doctorId, ...rest } = req.body;
 
   try {
     console.log("Creating session with payload:", req.body);
 
-    // Create session
+    // 1) Create the session
     const session = await Session.create({ doctorId, ...rest });
 
-    // Update doctor's sessions array with spread operator
+    // 2) Attach session to doctor (spread operator)
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) {
       return res.status(404).json({ error: "Doctor not found" });
     }
-
-    doctor.sessions = [...doctor.sessions, session._id]; // ✅ spread operator
+    doctor.sessions = [...doctor.sessions, session._id];
     await doctor.save();
 
-    res.status(200).json({ success: true, session });
+    // 3) Email: session initialized (best-effort; don't block success)
+    try {
+      // doctor name + email
+      const doctorName = `Dr. ${doctor.name ?? ""}`
+      const to = doctor.email;
+
+      // resolve hospital info if needed
+      let hospitalName = "", hospitalAddress = "";
+      if (String(session.type).toLowerCase() === "in-person" && session.hospital) {
+        const hosp = await Hospital.findById(session.hospital).lean();
+        hospitalName = hosp?.name || "";
+        hospitalAddress = hosp?.location || "";
+      }
+
+      // build a dashboard URL to manage the just-created session
+      const manageUrl = `https://app.healthcare.example/doctor/sessions/${session._id}`;
+
+      // send the email
+      await sendSessionInitializedEmail({
+        to,
+        doctorName,
+        sessionDate: session.date,                 // Date
+        type: session.type,                        // "online" | "in-person"
+        hospitalName,
+        hospitalAddress,
+        meetingLink: session.meetingLink || "",    // for online type
+        timeSlots: (session.timeSlots || []).map(s => ({
+          startTime: s.startTime,
+          endTime: s.endTime
+        })),
+        manageUrl,
+        // calendarIcsUrl: 'https://app.healthcare.example/api/sessions/${session._id}/ics' // optional
+      });
+      console.log("✅ Session initialized email queued/sent.");
+    } catch (mailErr) {
+      console.warn("⚠️ Session created, but failed to send email:", mailErr?.message || mailErr);
+      // do not throw; we still return 200 for successful creation
+    }
+
+    // 4) Respond success
+    return res.status(200).json({ success: true, session });
   } catch (err) {
     console.error("Error creating session:", err);
-    res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
   }
 };
+
 
 export const getSessions = async (req, res) => {
   try {
