@@ -1,166 +1,29 @@
-name: Deploy to AWS EC2
+name: Deploy to Server
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
-env:
-  NODE_VERSION: '18'
-  
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    services:
-      mongodb:
-        image: mongo:7.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: |
-          frontend/package-lock.json
-          BackEnd/package-lock.json
-    
-    - name: Install frontend dependencies
-      working-directory: ./frontend
-      run: npm ci
-    
-    - name: Install backend dependencies
-      working-directory: ./BackEnd
-      run: npm ci
-    
-    - name: Build frontend
-      working-directory: ./frontend
-      run: npm run build
-
   deploy:
-    needs: [test]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Deploy to EC2
-      env:
-        PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        HOSTNAME: ${{ secrets.EC2_HOSTNAME }}
-        USER_NAME: ${{ secrets.EC2_USER_NAME }}
-        
-        # Database
-        MONGO_URI: ${{ secrets.MONGO_URI }}
-        JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-        
-        # Google Cloud
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        GOOGLE_CLOUD_PROJECT_ID: ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}
-        GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
-        
-        # Firebase
-        FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-        FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-        FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-        
-        # Stripe
-        STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-        STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
-        STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-        
-        # Supabase
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        SUPABASE_MEDICAL_RECORDS_BUCKET: ${{ secrets.SUPABASE_MEDICAL_RECORDS_BUCKET }}
-        ENABLE_SUPABASE_BACKUP: ${{ secrets.ENABLE_SUPABASE_BACKUP }}
-        
-        # Frontend
-        VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
-        
-      run: |
-        echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-        
-        # Create .env.production file
-        cat > .env.production << 'ENVEOF'
-        MONGO_URI=${MONGO_URI}
-        NODE_ENV=production
-        PORT=5000
-        JWT_SECRET=${JWT_SECRET}
-        SESSION_SECRET=${SESSION_SECRET}
-        GEMINI_API_KEY=${GEMINI_API_KEY}
-        GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
-        GOOGLE_APPLICATION_CREDENTIALS=/app/service-account-key.json
-        FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
-        FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
-        FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
-        STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-        STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
-        STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-        SUPABASE_URL=${SUPABASE_URL}
-        SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-        SUPABASE_MEDICAL_RECORDS_BUCKET=${SUPABASE_MEDICAL_RECORDS_BUCKET}
-        ENABLE_SUPABASE_BACKUP=${ENABLE_SUPABASE_BACKUP}
-        VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
-        VITE_API_URL=http://backend:5000/api
-        VITE_BACKEND_URL=http://backend:5000
-        NODE_OPTIONS=--max-old-space-size=768 --optimize-for-size
-        ENVEOF
-        
-        # Decode and create service account key
-        echo "${GOOGLE_SERVICE_ACCOUNT_KEY}" | base64 -d > service-account-key.json
-        
-        # Copy files to EC2
-        scp -o StrictHostKeyChecking=no -i private_key \
-          .env.production service-account-key.json \
-          ${USER_NAME}@${HOSTNAME}:/opt/jeewaka-medical-platform/
-        
-        scp -o StrictHostKeyChecking=no -i private_key \
-          service-account-key.json \
-          ${USER_NAME}@${HOSTNAME}:/opt/jeewaka-medical-platform/BackEnd/
-        
-        # Deploy via SSH - pull, stop, install deps, start
-        ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} << 'SSHEOF'
-        cd /opt/jeewaka-medical-platform
-        
-        # Pull latest code
-        git pull origin main
-        
-        # Stop running containers
-        docker-compose -f docker-compose.micro.yml down || true
-        
-        # Install dependencies
-        npm ci --prefix ./BackEnd --omit=dev
-        npm ci --prefix ./frontend --omit=dev
-        
-        # Start containers
-        docker-compose -f docker-compose.micro.yml up -d
-        
-        SSHEOF
-        
-        rm private_key
-    
-    - name: Health check
-      env:
-        HOSTNAME: ${{ secrets.EC2_HOSTNAME }}
-      run: |
-        sleep 30
-        if curl -f http://${HOSTNAME}:80/health > /dev/null 2>&1; then
-          echo "✅ Deployment successful"
-        else
-          echo "❌ Health check failed"
-          exit 1
-        fi
+      - uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.9
+        with:
+          host: ${{ secrets.EC2_HOSTNAME }}
+          username: ${{ secrets.EC2_USER_NAME }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            /opt/Jeewaka-Medical-Platform
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Rebuild and restart Docker (uses existing .env)
+            docker-compose -f docker-compose.micro.yml --env-file .env.production down
+            docker-compose -f docker-compose.micro.yml --env-file .env.production up -d --build
