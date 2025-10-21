@@ -64,22 +64,7 @@ if [ "$AVAILABLE_MEM" -lt 400 ]; then
     print_micro_tip "Run: sudo systemctl stop snapd unattended-upgrades"
 fi
 
-# Check swap space (important for t3.micro)
-SWAP_SIZE=$(free -m | awk '/Swap/{print $2}')
-if [ "$SWAP_SIZE" -lt 512 ]; then
-    print_warning "No swap space detected. Creating swap for t3.micro stability..."
-    
-    # Create 512MB swap file
-    sudo fallocate -l 512M /swapfile
-    sudo chmod 600 /swapfile
-    sudo mkswap /swapfile
-    sudo swapon /swapfile
-    
-    # Make swap permanent
-    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-    
-    print_status "✅ Created 512MB swap space for better memory management"
-fi
+
 
 # Set swap usage to be more aggressive (good for t3.micro)
 echo 'vm.swappiness=60' | sudo tee -a /etc/sysctl.conf
