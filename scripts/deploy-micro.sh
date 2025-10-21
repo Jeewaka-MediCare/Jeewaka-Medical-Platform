@@ -65,7 +65,7 @@ if [ "$AVAILABLE_MEM" -lt 400 ]; then
 fi
 
 # Check swap space (important for t3.micro)
-SWAP_SIZE=$(free -m | awk 'NR==3{print $2}')
+SWAP_SIZE=$(free -m | awk '/Swap/{print $2}')
 if [ "$SWAP_SIZE" -lt 512 ]; then
     print_warning "No swap space detected. Creating swap for t3.micro stability..."
     
