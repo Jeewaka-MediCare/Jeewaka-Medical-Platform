@@ -22,7 +22,11 @@
     "release-apk": {
         "distribution": "internal",
         "android": {
-          "buildType": "apk"
+          "buildType": "apk",
+          "gradleCommand": ":app:assembleRelease"
+        },
+        "cache": {
+          "disabled": false
         },
         "env": {
         "EXPO_PUBLIC_BACKEND_URL": "http://13.53.53.29:5000",

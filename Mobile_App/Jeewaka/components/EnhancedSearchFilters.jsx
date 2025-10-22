@@ -446,6 +446,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   input: {
+    color: '#1F2937',
     flex: 1,
     minHeight: 40,
     fontSize: 16,

@@ -12,6 +12,7 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
+import reviewService from '../services/reviewService';
 import ReviewsComponent from '../components/ReviewsComponent';
 
 export default function DoctorReviews() {
@@ -35,8 +36,7 @@ export default function DoctorReviews() {
       // Fetch reviews separately from the ratings API
       let reviews = [];
       try {
-        const reviewsResponse = await api.get(`/api/ratings/doctor/${doctorId}`);
-        reviews = reviewsResponse.data || [];
+        reviews = await reviewService.getDoctorReviews(doctorId);
         console.log('Reviews fetched:', reviews.length);
       } catch (reviewError) {
         console.error('Failed to fetch reviews:', reviewError);

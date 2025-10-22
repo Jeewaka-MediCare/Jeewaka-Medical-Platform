@@ -85,8 +85,8 @@ export default function Login() {
             const { isVerified, verificationData } = await checkDoctorVerification(userData._id);
             
             if (isVerified) {
-              // Doctor is verified, can access dashboard
-              router.replace('/(tabs)/appointments');  // Direct to My Appointments tab
+              // Doctor is verified, can access dashboard - direct to main index tab first
+              router.replace('/(tabs)');  // Direct to main Jeewaka tab (index.jsx)
             } else {
               // Doctor is not verified, redirect to verification page with data
               // Store verification data for the AdminVerificationPending page

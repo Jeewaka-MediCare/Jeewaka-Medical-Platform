@@ -11,6 +11,7 @@ import { debugNetworkInfo } from '../../services/networkTest';
 import UserDropdown from '../../components/UserSidebar';
 import DoctorDashboard from '../../components/DoctorDashboard';
 import LandingPage from '../../components/LandingPage';
+import LoggingOut from '../../components/LoggingOut';
 
 export default function Home() {
   const { user, userRole, loading: authLoading, logout } = useAuthStore();
@@ -26,8 +27,9 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchType, setSearchType] = useState('normal'); // Track if using AI search
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
-  const DOCTORS_PER_PAGE = 15;
+  const DOCTORS_PER_PAGE = 10;
   
   const [filters, setFilters] = useState({
     query: '',
@@ -217,9 +219,16 @@ export default function Home() {
 
   const handleLogout = async () => {
     setSidebarVisible(false);
-    await logout();
-    // Stay on current page (index.jsx) which will show LandingPage for logged-out users
-    // Removed: router.push('/login');
+    setIsLoggingOut(true);
+    
+    try {
+      await logout();
+      // After successful logout, the component will re-render and show LandingPage
+      setIsLoggingOut(false);
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -249,7 +258,10 @@ export default function Home() {
       />
       
       {/* Conditional rendering based on user authentication and role */}
-      {!user ? (
+      {isLoggingOut ? (
+        // User is logging out - show loading screen
+        <LoggingOut />
+      ) : !user ? (
         // User is logged out - show landing page
         <LandingPage />
       ) : userRole === 'doctor' ? (

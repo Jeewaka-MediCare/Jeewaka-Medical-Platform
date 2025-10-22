@@ -15,7 +15,14 @@ import PagerView from "react-native-pager-view";
 import useAuthStore from "../store/authStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+
+// Responsive font scaling helper
+const scaleFont = (size: number) => {
+  const { width } = Dimensions.get("window");
+  // Base width is 375 (iPhone 11/12/13/14)
+  return Math.round((size * width) / 375);
+};
 
 export default function HomePage() {
   const router = useRouter();
@@ -336,7 +343,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    paddingTop: 20,
+    paddingTop: Math.round(height * 0.05), // 5% of screen height
     marginBottom: 40,
   },
   logoContainer: {
@@ -364,7 +371,7 @@ const styles = StyleSheet.create({
     color: "#1F2937",
   },
   tagline: {
-    fontSize: 16,
+    fontSize: scaleFont(16),
     color: "#6B7280",
     fontStyle: "italic",
   },
@@ -377,17 +384,17 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   welcomeText: {
-    fontSize: 32,
+    fontSize: scaleFont(32),
     fontWeight: "bold",
     color: "#1F2937",
     textAlign: "center",
     marginBottom: 16,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: scaleFont(16),
     color: "#6B7280",
     textAlign: "center",
-    lineHeight: 24,
+    lineHeight: scaleFont(24),
     paddingHorizontal: 20,
   },
   heroImageContainer: {
@@ -397,8 +404,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   heroImage: {
-    width: 350,
-    height: 350,
+    width: "80%",
+    height: "80%",
   },
   featuresSection: {
     paddingVertical: 30,
@@ -407,7 +414,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontWeight: "bold",
     color: "#1F2937",
     textAlign: "center",
@@ -444,15 +451,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontWeight: "600",
     color: "#1F2937",
     marginBottom: 4,
   },
   featureDescription: {
-    fontSize: 14,
+    fontSize: scaleFont(14),
     color: "#6B7280",
-    lineHeight: 20,
+    lineHeight: scaleFont(20),
   },
   ctaSection: {
     paddingVertical: 40,
@@ -465,17 +472,17 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   ctaTitle: {
-    fontSize: 28,
+    fontSize: scaleFont(28),
     fontWeight: "bold",
     color: "#1F2937",
     textAlign: "center",
     marginBottom: 12,
   },
   ctaSubtitle: {
-    fontSize: 16,
+    fontSize: scaleFont(16),
     color: "#6B7280",
     textAlign: "center",
-    lineHeight: 24,
+    lineHeight: scaleFont(24),
     marginBottom: 30,
   },
   buttonContainer: {
@@ -504,7 +511,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryButtonText: {
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: "600",
     color: "#FFFFFF",
   },
@@ -514,7 +521,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: {
-    fontSize: 14,
+    fontSize: scaleFont(14),
     color: "#008080",
     fontWeight: "500",
   },
@@ -527,7 +534,7 @@ const styles = StyleSheet.create({
     marginTop: "auto",
   },
   footerText: {
-    fontSize: 12,
+    fontSize: scaleFont(12),
     color: "#9CA3AF",
     textAlign: "center",
   },
@@ -566,7 +573,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   navButtonText: {
-    fontSize: 16,
+    fontSize: scaleFont(16),
     color: "#008080",
     fontWeight: "500",
   },
