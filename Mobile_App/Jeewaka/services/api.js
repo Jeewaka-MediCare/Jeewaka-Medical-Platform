@@ -111,7 +111,7 @@ export const createMeeting = async ({ token }) => {
   }
 
   const { roomId } = await res.json();
-  return { roomId };
+  return roomId;
 };
 
 export default api;
