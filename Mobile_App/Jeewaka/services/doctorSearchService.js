@@ -1,4 +1,5 @@
 import api from "./api";
+import reviewService from "./reviewService";
 
 /**
  * Doctor Search Service
@@ -46,38 +47,33 @@ export class DoctorSearchService {
       const response = await api.get(url);
       const doctors = response.data?.data?.doctors || [];
 
-      // Fetch rating data for each doctor in search results
-      const doctorsWithRatings = await Promise.all(
-        doctors.map(async (doctor) => {
-          try {
-            const ratingResponse = await api.get(
-              `/api/ratings/doctor/${doctor._id}/average`
-            );
-            return {
-              ...doctor,
-              avgRating: ratingResponse.data.avgRating || 0,
-              totalReviews: ratingResponse.data.totalReviews || 0,
-              ratingSummary: {
-                avgRating: ratingResponse.data.avgRating || 0,
-                totalReviews: ratingResponse.data.totalReviews || 0,
-              },
-              sessions: [],
-            };
-          } catch (error) {
-            console.error(
-              `Error fetching rating for doctor ${doctor._id}:`,
-              error
-            );
-            return {
-              ...doctor,
-              avgRating: 0,
-              totalReviews: 0,
-              ratingSummary: { avgRating: 0, totalReviews: 0 },
-              sessions: [],
-            };
-          }
-        })
-      );
+      // Fetch rating data for all doctors at once for better performance
+      const doctorIds = doctors.map((doctor) => doctor._id);
+      const bulkRatings = await reviewService.getBulkDoctorRatings(doctorIds);
+
+      // Create a map for quick lookup
+      const ratingsMap = bulkRatings.reduce((map, rating) => {
+        map[rating.doctorId] = rating;
+        return map;
+      }, {});
+
+      // Merge doctors with their rating data
+      const doctorsWithRatings = doctors.map((doctor) => {
+        const ratingData = ratingsMap[doctor._id] || {
+          avgRating: 0,
+          totalReviews: 0,
+        };
+        return {
+          ...doctor,
+          avgRating: ratingData.avgRating || 0,
+          totalReviews: ratingData.totalReviews || 0,
+          ratingSummary: {
+            avgRating: ratingData.avgRating || 0,
+            totalReviews: ratingData.totalReviews || 0,
+          },
+          sessions: [],
+        };
+      });
 
       return {
         success: true,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import ProfileMenuItem from './ProfileMenuItem';
 
 export default function ProfileMenuSection({ user, userRole }) {
@@ -66,11 +67,20 @@ export default function ProfileMenuSection({ user, userRole }) {
     }
   ];
 
+  const handleHelpSupport = async () => {
+    try {
+      await WebBrowser.openBrowserAsync('http://13.53.53.29/user-manual?src=header_help');
+    } catch (error) {
+      console.error('Error opening help page:', error);
+      Alert.alert('Error', 'Unable to open help page. Please try again.');
+    }
+  };
+
   const commonMenuItems = [
     {
       icon: 'help-circle-outline',
       title: 'Help & Support',
-      onPress: () => router.push('/help-support')
+      onPress: handleHelpSupport
     }
   ];
 

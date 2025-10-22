@@ -29,6 +29,7 @@ export default function Appointments() {
   const {
     filteredUpcomingAppointments,
     filteredPastAppointments,
+    appointmentsLoading,
     refreshing,
     selectedPayment,
     showPaymentDetails,
@@ -132,6 +133,22 @@ export default function Appointments() {
         />
         
         <LoadingState text="Loading..." />
+      </SafeAreaView>
+    );
+  }
+
+  // Show loading state while fetching appointments
+  if (appointmentsLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: 'My Appointments',
+            headerShown: true,
+          }}
+        />
+        
+        <LoadingState text="Loading appointments..." />
       </SafeAreaView>
     );
   }

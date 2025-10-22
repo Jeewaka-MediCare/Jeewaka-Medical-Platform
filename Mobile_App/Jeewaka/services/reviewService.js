@@ -4,7 +4,7 @@ export const reviewService = {
   // Submit a new review or update existing one
   submitReview: async (reviewData) => {
     try {
-      const response = await api.post("/api/ratings", reviewData);
+      const response = await api.post("/api/rating", reviewData);
       return response.data;
     } catch (error) {
       console.error("ReviewService - Error submitting review:", error);
@@ -15,7 +15,7 @@ export const reviewService = {
   // Get all reviews for a doctor
   getDoctorReviews: async (doctorId) => {
     try {
-      const response = await api.get(`/api/ratings/doctor/${doctorId}`);
+      const response = await api.get(`/api/rating/doctor/${doctorId}`);
       return response.data;
     } catch (error) {
       console.error("ReviewService - Error fetching doctor reviews:", error);
@@ -26,7 +26,7 @@ export const reviewService = {
   // Get average rating for a doctor
   getDoctorAverageRating: async (doctorId) => {
     try {
-      const response = await api.get(`/api/ratings/doctor/${doctorId}/average`);
+      const response = await api.get(`/api/rating/doctor/${doctorId}/average`);
       return response.data;
     } catch (error) {
       console.error(
@@ -41,7 +41,7 @@ export const reviewService = {
   getAppointmentReview: async (appointmentId, patientId) => {
     try {
       const response = await api.get(
-        `/api/ratings/appointment/${appointmentId}/patient/${patientId}`
+        `/api/rating/appointment/${appointmentId}/patient/${patientId}`
       );
       return response.data;
     } catch (error) {
@@ -66,6 +66,35 @@ export const reviewService = {
     } catch (error) {
       console.error("ReviewService - Error checking existing review:", error);
       return null;
+    }
+  },
+
+  // Bulk fetch ratings for multiple doctors (for search results)
+  getBulkDoctorRatings: async (doctorIds) => {
+    try {
+      const ratingsPromises = doctorIds.map(async (doctorId) => {
+        try {
+          const ratingData = await reviewService.getDoctorAverageRating(
+            doctorId
+          );
+          return {
+            doctorId,
+            ...ratingData,
+          };
+        } catch (error) {
+          console.error(`Error fetching rating for doctor ${doctorId}:`, error);
+          return {
+            doctorId,
+            avgRating: 0,
+            totalReviews: 0,
+          };
+        }
+      });
+
+      return await Promise.all(ratingsPromises);
+    } catch (error) {
+      console.error("ReviewService - Error fetching bulk ratings:", error);
+      throw error;
     }
   },
 };

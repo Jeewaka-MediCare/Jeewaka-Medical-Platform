@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Alert } from "react-native";
 import api from "../services/api";
+import reviewService from "../services/reviewService";
 
 export const useDoctorData = (id, fallbackData, router) => {
   const [doctor, setDoctor] = useState(null);
@@ -35,8 +36,7 @@ export const useDoctorData = (id, fallbackData, router) => {
         // Fetch reviews separately from the ratings API
         let reviews = [];
         try {
-          const reviewsResponse = await api.get(`/api/ratings/doctor/${id}`);
-          reviews = reviewsResponse.data || [];
+          reviews = await reviewService.getDoctorReviews(id);
           console.log("Reviews fetched separately:", reviews.length);
         } catch (reviewError) {
           console.error("Error fetching reviews:", reviewError);
