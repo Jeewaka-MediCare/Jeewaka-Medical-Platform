@@ -27,6 +27,8 @@ import { AdminLayout } from "./Layout.jsx/adminLayOut";
 import DoctorFinance from "./pages/DoctorFinance";
 import { AuthProvider } from "./components/AuthProvider";
 import { Toaster } from "./components/ui/sonner";
+import MedicalChatWidget from "./components/MedicalChatWidget";
+import useAuthStore from "./store/authStore";
 import AdminVerificationPending from "./pages/AdminVerificationPending";
 import UserManualPage from "./pages/UserManualPage";
 function App() {
@@ -96,6 +98,11 @@ function App() {
   }, []);
 
   console.log("🔐 App - Rendering App component");
+  // Read auth at top-level of the component (Rules of Hooks)
+  const { user } = useAuthStore();
+  const widgetUser = user
+    ? { ...user, token: user?.stsTokenManager?.accessToken || user?.accessToken || user?.token }
+    : null;
 
   return (
     <Router>
@@ -145,6 +152,10 @@ function App() {
           </Route>
         </Routes>
       </AuthProvider>
+      {/* Global medical assistant chat widget - show only to patients */}
+      {user?.role === "patient" && (
+        <MedicalChatWidget user={widgetUser} apiBaseUrl="/api/agent" />
+      )}
       <Toaster />
     </Router>
   );

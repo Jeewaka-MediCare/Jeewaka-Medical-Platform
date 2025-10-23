@@ -16,6 +16,7 @@ import paymentsRouter from "./modules/payments/paymentsRoutes.js";
 import financeRouter from "./modules/finance/financeRoutes.js";
 import medicalRecordsRouter from "./modules/records/recordsRoutes.js";
 import authRouter from "./modules/auth/authRoutes.js";
+import agentRouter from "./modules/agent/agentRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -39,6 +40,9 @@ app.use("/api/hospital", hospitalRouter);
 
 // Register session routes
 app.use("/api/session", sessionRouter);
+
+// Register agent (medical assistant) routes
+app.use("/api/agent", agentRouter);
 
 // Register patient routes
 app.use("/api/patient", patientRouter);
