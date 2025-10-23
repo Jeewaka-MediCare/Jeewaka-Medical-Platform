@@ -1,4 +1,4 @@
-import { startGeminiChat, generateContent } from './geminiHelpers.js';
+import { startSession, sendMessage, extractData, closeSession } from './agentController.js';
 import readline from 'readline';
 import fs from 'fs';
 import dotenv from 'dotenv';
@@ -45,12 +45,12 @@ async function main() {
         output: process.stdout
     });
 
-    const chat = startGeminiChat(interviewerSystemPrompt);
+    // Start a session using the shared agent controller
+    const { id: sessionId } = await startSession(interviewerSystemPrompt);
     let fullTranscriptForExtraction = "";
 
     // Manually start the conversation
-    const initialResponse = await chat.sendMessage("Start the interview now.");
-    const firstQuestion = initialResponse.response.text();
+    const firstQuestion = await sendMessage(sessionId, "Start the interview now.");
     console.log(`Clinical Assistant (Kai): ${firstQuestion}`);
     fullTranscriptForExtraction += `Kai: ${firstQuestion}\n`;
 
@@ -64,8 +64,7 @@ async function main() {
             break;
         }
 
-        const response = await chat.sendMessage(userInput);
-        const assistantResponse = response.response.text().trim();
+    const assistantResponse = (await sendMessage(sessionId, userInput)).trim();
 
         if (assistantResponse.includes("[END_INTERVIEW]")) {
             const finalMessage = assistantResponse.replace("[END_INTERVIEW]", "").trim();
@@ -82,13 +81,9 @@ async function main() {
     // --- Data Extraction and Report Generation ---
     try {
         console.log("\nExtracting data from transcript...");
-        // CORRECTED: Call generateContent with the system prompt and user prompt as separate arguments.
-        const userPromptForExtraction = `<transcript>\n${fullTranscriptForExtraction}</transcript>`;
-        const extractionResult = await generateContent(dataExtractorSystemPrompt, userPromptForExtraction);
-        
-        // Clean the response to ensure it's valid JSON
-        const jsonText = extractionResult.replace(/```json/g, "").replace(/```/g, "").trim();
-        const patient = JSON.parse(jsonText);
+        const result = await extractData(fullTranscriptForExtraction, dataExtractorSystemPrompt);
+        if (!result.ok) throw new Error(result.error || 'extraction_failed');
+        const patient = result.data;
 
         // --- Format the Final Report ---
         const report = `
@@ -123,11 +118,13 @@ async function main() {
 
         fs.writeFileSync("patient_record.json", JSON.stringify(patient, null, 4));
         console.log("\nSuccessfully saved detailed record to patient_record.json");
-
+        // close the session (cleanup)
+        try { await closeSession(sessionId); } catch (e) { /* noop */ }
     } catch (e) {
         console.error("\nAn error occurred while generating the report:", e);
         console.log("Could not finalize the patient record. Full transcript saved for manual review.");
         fs.writeFileSync("interview_transcript.txt", fullTranscriptForExtraction);
+        try { await closeSession(sessionId); } catch (e) { /* noop */ }
     }
 }
 

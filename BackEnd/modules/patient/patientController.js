@@ -63,8 +63,7 @@ export const createPatient = async (req, res) => {
 - ${patient.emergencyContact || 'Not provided'}
 
 ---
-*Record created on: ${new Date().toLocaleDateString()}*
-*This is an initial medical record. Healthcare providers will update this during consultations.*`;
+*Record created on: ${new Date().toLocaleDateString()}*`;
 
       const initialVersion = await Version.createNewVersion(
         initialRecord._id,
