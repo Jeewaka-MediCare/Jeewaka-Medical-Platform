@@ -17,13 +17,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get("window");
 
-// Responsive font scaling helper
-const scaleFont = (size: number) => {
-  const { width } = Dimensions.get("window");
-  // Base width is 375 (iPhone 11/12/13/14)
-  return Math.round((size * width) / 375);
-};
-
 export default function HomePage() {
   const router = useRouter();
   const { user, userRole, loading, initializeAuth, checkDoctorVerification } =
@@ -343,7 +336,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    paddingTop: Math.round(height * 0.05), // 5% of screen height
+    paddingTop: Math.round(height * 0.08), // 8% of screen height for better visibility
     marginBottom: 40,
   },
   logoContainer: {
@@ -371,7 +364,7 @@ const styles = StyleSheet.create({
     color: "#1F2937",
   },
   tagline: {
-    fontSize: scaleFont(16),
+    fontSize: 16,
     color: "#6B7280",
     fontStyle: "italic",
   },
@@ -384,17 +377,17 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   welcomeText: {
-    fontSize: scaleFont(32),
+    fontSize: 32,
     fontWeight: "bold",
     color: "#1F2937",
     textAlign: "center",
     marginBottom: 16,
   },
   subtitle: {
-    fontSize: scaleFont(16),
+    fontSize: 16,
     color: "#6B7280",
     textAlign: "center",
-    lineHeight: scaleFont(24),
+    lineHeight: 24,
     paddingHorizontal: 20,
   },
   heroImageContainer: {
@@ -414,7 +407,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   sectionTitle: {
-    fontSize: scaleFont(24),
+    fontSize: 24,
     fontWeight: "bold",
     color: "#1F2937",
     textAlign: "center",
@@ -451,15 +444,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
-    fontSize: scaleFont(18),
+    fontSize: 18,
     fontWeight: "600",
     color: "#1F2937",
     marginBottom: 4,
   },
   featureDescription: {
-    fontSize: scaleFont(14),
+    fontSize: 14,
     color: "#6B7280",
-    lineHeight: scaleFont(20),
+    lineHeight: 20,
   },
   ctaSection: {
     paddingVertical: 40,
@@ -472,17 +465,17 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   ctaTitle: {
-    fontSize: scaleFont(28),
+    fontSize: 28,
     fontWeight: "bold",
     color: "#1F2937",
     textAlign: "center",
     marginBottom: 12,
   },
   ctaSubtitle: {
-    fontSize: scaleFont(16),
+    fontSize: 16,
     color: "#6B7280",
     textAlign: "center",
-    lineHeight: scaleFont(24),
+    lineHeight: 24,
     marginBottom: 30,
   },
   buttonContainer: {
@@ -511,7 +504,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryButtonText: {
-    fontSize: scaleFont(16),
+    fontSize: 16,
     fontWeight: "600",
     color: "#FFFFFF",
   },
@@ -521,7 +514,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: {
-    fontSize: scaleFont(14),
+    fontSize: 14,
     color: "#008080",
     fontWeight: "500",
   },
@@ -534,7 +527,7 @@ const styles = StyleSheet.create({
     marginTop: "auto",
   },
   footerText: {
-    fontSize: scaleFont(12),
+    fontSize: 12,
     color: "#9CA3AF",
     textAlign: "center",
   },
@@ -573,7 +566,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   navButtonText: {
-    fontSize: scaleFont(16),
+    fontSize: 16,
     color: "#008080",
     fontWeight: "500",
   },
