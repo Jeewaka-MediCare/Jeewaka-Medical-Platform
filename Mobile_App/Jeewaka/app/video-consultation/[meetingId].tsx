@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text } from "react-native";
 import { MeetingProvider } from "@videosdk.live/react-native-sdk";
 import { useLocalSearchParams, Stack } from "expo-router";
-import { token } from "../../services/api";
 import VideoMeetingView from "./components/VideoMeetingView";
 import { useVideoRouting } from "./hooks/useVideoRouting";
 
@@ -14,6 +13,9 @@ export default function VideoConsultationPage() {
     slotIndex,
     type,
   } = useLocalSearchParams();
+
+  // Get VideoSDK token from environment variables
+  const token = process.env.EXPO_PUBLIC_VIDEOSDK_TOKEN || "";
 
   const {
     meetingId,

@@ -92,8 +92,7 @@ api.interceptors.response.use(
 );
 
 // VideoSDK Configuration
-export const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiIyYjEyMDdkMy0zMTMwLTQ5ZjAtYmZkYS01OTAyNDQ1N2ZhMTciLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sImlhdCI6MTc1NzUwMjExOCwiZXhwIjoxNzY1Mjc4MTE4fQ.tZ_PyETvrvAQamQ2dBo2CXZyMXZj9gBCdvQIVwjXsaA";
+export const token = process.env.EXPO_PUBLIC_VIDEOSDK_TOKEN;
 
 // API call to create meeting
 export const createMeeting = async ({ token }) => {
