@@ -17,7 +17,6 @@ pnpm-debug.log*
 # Firebase keys and sensitive config
 config/fireBaseKey.json
 firebase-adminsdk-*.json
-service-account-key.json
 auth.json
 credentials.json
 secrets.json
