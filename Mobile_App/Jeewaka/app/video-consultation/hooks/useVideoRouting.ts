@@ -49,7 +49,7 @@ export function useVideoRouting(urlMeetingId: string | string[] | undefined) {
     }
   }, [router]);
 
-  // Handle session-based video consultation
+  // Handle session-based video consultation (uses session.meetingId)
   const handleSessionMeeting = useCallback(async (sessionId: string) => {
     try {
       setLoading(true);
@@ -58,7 +58,7 @@ export function useVideoRouting(urlMeetingId: string | string[] | undefined) {
         throw new Error('Session ID is required');
       }
 
-      // First, get the session to check if it already has a meeting ID
+      // For SESSION-level meetings, check session.meetingId (NOT timeSlots)
       const sessionResponse = await api.get(`/api/session/${sessionId}`);
       const session = sessionResponse.data;
 
@@ -66,7 +66,7 @@ export function useVideoRouting(urlMeetingId: string | string[] | undefined) {
         throw new Error('Session not found');
       }
 
-      let meetingId = session.meetingId;
+      let meetingId = session.meetingId; // Session-level meetingId
 
       if (!meetingId) {
         // Create a valid VideoSDK meeting ID through the API
@@ -104,7 +104,7 @@ export function useVideoRouting(urlMeetingId: string | string[] | undefined) {
     }
   }, [router]);
 
-  // Handle appointment-based video consultation
+  // Handle appointment-based video consultation (uses timeSlots[index].meetingId)
   const handleAppointmentMeeting = useCallback(async (sessionId: string, slotIndex: string) => {
     try {
       setLoading(true);
@@ -174,28 +174,86 @@ export function useVideoRouting(urlMeetingId: string | string[] | undefined) {
         return;
       }
 
-      let meetingId = appointment.meetingId;
-
-      if (!meetingId) {
-        // Create a valid VideoSDK meeting ID through the API
-        meetingId = await createMeeting({ token });
-
-        if (!meetingId) {
-          throw new Error('Failed to create VideoSDK meeting room');
-        }
-
-        // Update the appointment with the new meeting ID (backend will handle race conditions)
-        const response = await api.patch(`/api/session/${sessionId}/appointment/${slotIndex}/meeting-id`, {
-          meetingId: meetingId,
-        });
+      // ✅ ALWAYS check database first before creating new meeting ID
+      let meetingId;
+      
+      try {
+        // Step 1: Get fresh session data to check for existing timeSlot meetingId
+        console.log(`🔍 Checking for existing timeSlot[${appointmentIndex}].meetingId in database...`);
+        const checkResponse = await api.get(`/api/session/${sessionId}`);
+        const latestSession = checkResponse.data;
+        const latestAppointment = latestSession?.timeSlots?.[appointmentIndex];
         
-        if (!response.data || !response.data.success) {
-          throw new Error('Failed to update appointment with meeting ID');
-        }
+        console.log(`📊 Session-level meetingId (should be ignored):`, latestSession?.meetingId);
+        console.log(`📊 TimeSlot[${appointmentIndex}] meetingId:`, latestAppointment?.meetingId);
         
-        // Use the meeting ID from the updated session (backend returns the full session)
-        const updatedAppointment = response.data.session.timeSlots[appointmentIndex];
-        meetingId = updatedAppointment.meetingId || meetingId;
+        if (latestAppointment?.meetingId) {
+          // ✅ TimeSlot meeting ID exists in database - use it directly
+          meetingId = latestAppointment.meetingId;
+          console.log(`✅ Found existing timeSlot meetingId in database: ${meetingId}`);
+        } else {
+          // ❌ No timeSlot meetingId in database - create new one
+          console.log(`❌ No timeSlot[${appointmentIndex}].meetingId found. Creating new VideoSDK room...`);
+          
+          // 🔄 Small delay to check if another participant is already creating one
+          console.log(`⏳ Waiting 1 second to check for concurrent meeting creation...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Re-check database after delay
+          const recheckResponse = await api.get(`/api/session/${sessionId}`);
+          const recheckSession = recheckResponse.data;
+          const recheckAppointment = recheckSession?.timeSlots?.[appointmentIndex];
+          
+          if (recheckAppointment?.meetingId) {
+            console.log(`✅ Another participant created meeting ID during delay: ${recheckAppointment.meetingId}`);
+            meetingId = recheckAppointment.meetingId;
+          } else {
+            // Still no meeting ID, proceed with creation
+            const newMeetingId = await createMeeting({ token });
+
+            if (!newMeetingId) {
+              throw new Error('Failed to create VideoSDK meeting room');
+            }
+
+            console.log(`🆔 Created new VideoSDK meeting ID: ${newMeetingId}`);
+
+            // Step 2: Try to store the new meeting ID atomically
+            const response = await api.patch(`/api/session/${sessionId}/appointment/${slotIndex}/meeting-id`, {
+              meetingId: newMeetingId,
+            });
+            
+            if (!response.data || !response.data.success) {
+              throw new Error('Failed to store meeting ID for appointment');
+            }
+            
+            // ✅ Use the meeting ID returned by backend (handles race conditions)
+            meetingId = response.data.meetingId;
+            
+            if (meetingId === newMeetingId) {
+              console.log(`✅ Successfully stored new meeting ID: ${meetingId}`);
+            } else {
+              console.log(`⚠️ Race condition handled - using existing meeting ID: ${meetingId} instead of created ID: ${newMeetingId}`);
+            }
+
+            // 🔄 CRITICAL: Double-check the database to ensure meeting ID is properly stored
+            console.log(`🔄 Double-checking database for stored meeting ID...`);
+            const verifyResponse = await api.get(`/api/session/${sessionId}`);
+            const verifiedSession = verifyResponse.data;
+            const verifiedAppointment = verifiedSession?.timeSlots?.[appointmentIndex];
+            
+            if (verifiedAppointment?.meetingId && verifiedAppointment.meetingId !== meetingId) {
+              console.log(`⚠️ Meeting ID mismatch! Using database value: ${verifiedAppointment.meetingId} instead of response: ${meetingId}`);
+              meetingId = verifiedAppointment.meetingId;
+            } else if (verifiedAppointment?.meetingId) {
+              console.log(`✅ Database verification successful: ${verifiedAppointment.meetingId}`);
+            } else {
+              console.log(`❌ WARNING: Meeting ID not found in database after storage!`);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error managing meeting ID:', error);
+        throw error;
       }
 
       if (!meetingId) {
@@ -213,18 +271,15 @@ export function useVideoRouting(urlMeetingId: string | string[] | undefined) {
     }
   }, [router]);
 
-  // Auto-join if meetingId is provided in URL, or create new meeting if "new"
+  // Auto-join if meetingId is provided in URL
+  // NOTE: Do NOT auto-create meetings for "new" - let the parent component handle appointment/session flows
   useEffect(() => {
-    if (urlMeetingId && typeof urlMeetingId === 'string') {
-      if (urlMeetingId === 'new') {
-        // Trigger meeting creation for "new" meetings
-        getMeetingId('new');
-      } else {
-        // Use existing meeting ID
-        setMeetingId(urlMeetingId);
-      }
+    if (urlMeetingId && typeof urlMeetingId === 'string' && urlMeetingId !== 'new') {
+      // Only set meeting ID for actual meeting IDs, not "new"
+      setMeetingId(urlMeetingId);
+      console.log(`🔗 Using meeting ID from URL: ${urlMeetingId}`);
     }
-  }, [urlMeetingId, getMeetingId]);
+  }, [urlMeetingId]);
 
   // Generate unique participant name based on user info
   const getParticipantName = useCallback(() => {

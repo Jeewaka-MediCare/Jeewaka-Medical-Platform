@@ -51,7 +51,6 @@ try {
 // };
 // controllers/sessionController.js
 
-
 export const createSession = async (req, res) => {
   const { doctorId, ...rest } = req.body;
 
@@ -72,12 +71,16 @@ export const createSession = async (req, res) => {
     // 3) Email: session initialized (best-effort; don't block success)
     try {
       // doctor name + email
-      const doctorName = `Dr. ${doctor.name ?? ""}`
+      const doctorName = `Dr. ${doctor.name ?? ""}`;
       const to = doctor.email;
 
       // resolve hospital info if needed
-      let hospitalName = "", hospitalAddress = "";
-      if (String(session.type).toLowerCase() === "in-person" && session.hospital) {
+      let hospitalName = "",
+        hospitalAddress = "";
+      if (
+        String(session.type).toLowerCase() === "in-person" &&
+        session.hospital
+      ) {
         const hosp = await Hospital.findById(session.hospital).lean();
         hospitalName = hosp?.name || "";
         hospitalAddress = hosp?.location || "";
@@ -90,21 +93,24 @@ export const createSession = async (req, res) => {
       await sendSessionInitializedEmail({
         to,
         doctorName,
-        sessionDate: session.date,                 // Date
-        type: session.type,                        // "online" | "in-person"
+        sessionDate: session.date, // Date
+        type: session.type, // "online" | "in-person"
         hospitalName,
         hospitalAddress,
-        meetingLink: session.meetingLink || "",    // for online type
-        timeSlots: (session.timeSlots || []).map(s => ({
+        meetingLink: session.meetingLink || "", // for online type
+        timeSlots: (session.timeSlots || []).map((s) => ({
           startTime: s.startTime,
-          endTime: s.endTime
+          endTime: s.endTime,
         })),
         manageUrl,
         // calendarIcsUrl: 'https://app.healthcare.example/api/sessions/${session._id}/ics' // optional
       });
       console.log("✅ Session initialized email queued/sent.");
     } catch (mailErr) {
-      console.warn("⚠️ Session created, but failed to send email:", mailErr?.message || mailErr);
+      console.warn(
+        "⚠️ Session created, but failed to send email:",
+        mailErr?.message || mailErr
+      );
       // do not throw; we still return 200 for successful creation
     }
 
@@ -115,7 +121,6 @@ export const createSession = async (req, res) => {
     return res.status(400).json({ error: err.message });
   }
 };
-
 
 export const getSessions = async (req, res) => {
   try {
@@ -322,26 +327,108 @@ export const updateSessionMeetingId = async (req, res) => {
   }
 };
 
-// Update appointment (timeSlot) meeting ID
+// Get or create appointment (timeSlot) meeting ID - atomic operation
 export const updateAppointmentMeetingId = async (req, res) => {
   try {
     const { sessionId, slotIndex } = req.params;
-    const { meetingId } = req.body;
+    const slotIndexNum = parseInt(slotIndex);
 
+    // First, get the session to check current state
     const session = await Session.findById(sessionId);
     if (!session) return res.status(404).json({ error: "Session not found" });
 
-    if (slotIndex < 0 || slotIndex >= session.timeSlots.length) {
+    if (slotIndexNum < 0 || slotIndexNum >= session.timeSlots.length) {
       return res.status(400).json({ error: "Invalid slot index" });
     }
 
-    // Update the specific timeSlot's meeting ID
-    session.timeSlots[slotIndex].meetingId = meetingId;
-    await session.save();
+    // ✅ ALWAYS check timeSlot meetingId first (NOT session-level meetingId)
+    console.log(
+      `🔍 Checking timeSlot[${slotIndexNum}].meetingId for session ${sessionId}`
+    );
+    console.log(
+      `📊 Current timeSlot[${slotIndexNum}].meetingId value:`,
+      session.timeSlots[slotIndexNum].meetingId
+    );
+    console.log(
+      `📊 Session-level meetingId (should be ignored for appointments):`,
+      session.meetingId
+    );
 
-    res.json({ success: true, session });
+    if (session.timeSlots[slotIndexNum].meetingId) {
+      console.log(
+        `✅ Found existing timeSlot meetingId: ${session.timeSlots[slotIndexNum].meetingId} for session ${sessionId}, slot ${slotIndex}`
+      );
+      return res.json({
+        success: true,
+        meetingId: session.timeSlots[slotIndexNum].meetingId,
+        session,
+      });
+    }
+
+    // ❌ REJECT if no meeting ID provided (frontend should create it)
+    const { meetingId } = req.body;
+    if (!meetingId) {
+      return res.status(400).json({
+        error:
+          "No existing meeting ID found and no new meeting ID provided. Frontend should create meeting ID first.",
+      });
+    }
+
+    console.log(
+      `🔄 Attempting to store new meeting ID: ${meetingId} for session ${sessionId}, slot ${slotIndex}`
+    );
+    console.log(
+      `📊 Current meetingId value in slot ${slotIndex}:`,
+      session.timeSlots[slotIndexNum].meetingId
+    );
+
+    // ✅ Simple atomic operation: Only update if meetingId field is null or doesn't exist
+    const updatedSession = await Session.findOneAndUpdate(
+      {
+        _id: sessionId,
+        [`timeSlots.${slotIndexNum}.meetingId`]: null,
+      },
+      {
+        $set: { [`timeSlots.${slotIndexNum}.meetingId`]: meetingId },
+      },
+      { new: true }
+    );
+
+    console.log(
+      `📊 Update result:`,
+      updatedSession
+        ? "SUCCESS"
+        : "FAILED - Document not found or already has meetingId"
+    );
+
+    if (!updatedSession) {
+      // ⚠️ Race condition: Another request already set a meeting ID
+      console.log(
+        `⚠️ Race condition detected! Another request already set meeting ID for session ${sessionId}, slot ${slotIndex}`
+      );
+      const refreshedSession = await Session.findById(sessionId);
+      const existingMeetingId =
+        refreshedSession.timeSlots[slotIndexNum].meetingId;
+      console.log(
+        `✅ Returning existing meeting ID from race condition: ${existingMeetingId}`
+      );
+      return res.json({
+        success: true,
+        meetingId: existingMeetingId,
+        session: refreshedSession,
+      });
+    }
+
+    console.log(
+      `✅ Successfully stored new meeting ID: ${meetingId} for session ${sessionId}, slot ${slotIndex}`
+    );
+    res.json({
+      success: true,
+      meetingId: meetingId,
+      session: updatedSession,
+    });
   } catch (err) {
-    console.error("Error updating appointment meeting ID:", err);
+    console.error("Error managing appointment meeting ID:", err);
     res.status(400).json({ error: err.message });
   }
 };

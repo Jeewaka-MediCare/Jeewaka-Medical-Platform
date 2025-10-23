@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Alert, Animated } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../services/api";
+import reviewService from "../services/reviewService";
 
 export default function useDoctorDashboard(user, router) {
   // Core data state
@@ -206,10 +207,7 @@ export default function useDoctorDashboard(user, router) {
 
       // Fetch recent reviews
       try {
-        const reviewsResponse = await api.get(
-          `/api/ratings/doctor/${user._id}`
-        );
-        const reviews = reviewsResponse.data || [];
+        const reviews = await reviewService.getDoctorReviews(user._id);
         // Get the 10 most recent reviews
         const sortedReviews = reviews
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))

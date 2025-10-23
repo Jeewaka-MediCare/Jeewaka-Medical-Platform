@@ -15,7 +15,7 @@ import PagerView from "react-native-pager-view";
 import useAuthStore from "../store/authStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 export default function HomePage() {
   const router = useRouter();
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    paddingTop: 20,
+    paddingTop: Math.round(height * 0.08), // 8% of screen height for better visibility
     marginBottom: 40,
   },
   logoContainer: {
@@ -397,8 +397,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   heroImage: {
-    width: 350,
-    height: 350,
+    width: "80%",
+    height: "80%",
   },
   featuresSection: {
     paddingVertical: 30,
