@@ -93,7 +93,7 @@ describe('API Service', () => {
         }
       );
 
-      expect(result).toEqual({ roomId: 'room-123' });
+      expect(result).toEqual('room-123');
     });
 
     it('handles API errors', async () => {
